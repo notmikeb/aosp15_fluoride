@@ -97,6 +97,12 @@ AudioConfiguration offload_config_to_hal_audio_config(const ::hfp::offload_confi
   return AudioConfiguration(hfp_config);
 }
 
+AudioConfiguration pcm_config_to_hal_audio_config(const ::hfp::pcm_config& pcm_config) {
+  PcmConfiguration config = get_default_pcm_configuration();
+  config.sampleRateHz = pcm_config.sample_rate_hz;
+  return AudioConfiguration(config);
+}
+
 bool is_aidl_support_hfp() {
   return HalVersionManager::GetHalTransport() == BluetoothAudioHalTransport::AIDL &&
          HalVersionManager::GetHalVersion() >= BluetoothAudioHalVersion::VERSION_AIDL_V4;
@@ -157,13 +163,23 @@ void HfpClientInterface::Decode::StopSession() {
 
 void HfpClientInterface::Decode::UpdateAudioConfigToHal(
         const ::hfp::offload_config& offload_config) {
+  log::warn(
+          "'UpdateAudioConfigToHal(offload_config)' should not be called on "
+          "HfpClientInterface::Decode");
+}
+
+void HfpClientInterface::Decode::UpdateAudioConfigToHal(const ::hfp::pcm_config& pcm_config) {
   if (!is_aidl_support_hfp()) {
     log::warn("Unsupported HIDL or AIDL version");
     return;
   }
 
-  log::warn("decode - Unsupported update audio config for software session");
-  return;
+  log::info("decode");
+  if (!get_decode_client_interface()->UpdateAudioConfig(
+              pcm_config_to_hal_audio_config(pcm_config))) {
+    log::error("cannot update audio config to HAL");
+    return;
+  }
 }
 
 size_t HfpClientInterface::Decode::Write(const uint8_t* p_buf, uint32_t len) {
@@ -308,13 +324,23 @@ void HfpClientInterface::Encode::StopSession() {
 
 void HfpClientInterface::Encode::UpdateAudioConfigToHal(
         const ::hfp::offload_config& offload_config) {
+  log::warn(
+          "'UpdateAudioConfigToHal(offload_config)' should not be called on "
+          "HfpClientInterface::Encode");
+}
+
+void HfpClientInterface::Encode::UpdateAudioConfigToHal(const ::hfp::pcm_config& pcm_config) {
   if (!is_aidl_support_hfp()) {
     log::warn("Unsupported HIDL or AIDL version");
     return;
   }
 
-  log::warn("encode - Unsupported update audio config for software session");
-  return;
+  log::info("encode");
+  if (!get_encode_client_interface()->UpdateAudioConfig(
+              pcm_config_to_hal_audio_config(pcm_config))) {
+    log::error("cannot update audio config to HAL");
+    return;
+  }
 }
 
 size_t HfpClientInterface::Encode::Read(uint8_t* p_buf, uint32_t len) {
@@ -467,6 +493,12 @@ void HfpClientInterface::Offload::UpdateAudioConfigToHal(
   log::info("offload");
   get_encode_client_interface()->UpdateAudioConfig(
           offload_config_to_hal_audio_config(offload_config));
+}
+
+void HfpClientInterface::Offload::UpdateAudioConfigToHal(const ::hfp::pcm_config& pcm_config) {
+  log::warn(
+          "'UpdateAudioConfigToHal(pcm_config)' should not be called on "
+          "HfpClientInterface::Offload");
 }
 
 void HfpClientInterface::Offload::ConfirmStreamingRequest() {

@@ -127,6 +127,22 @@ static const char* bta_ag_sco_state_str(uint8_t state) {
   }
 }
 
+static int codec_uuid_to_sample_rate(tBTA_AG_UUID_CODEC codec) {
+  int sample_rate;
+  switch (codec) {
+    case tBTA_AG_UUID_CODEC::UUID_CODEC_LC3:
+      sample_rate = 32000;
+      break;
+    case tBTA_AG_UUID_CODEC::UUID_CODEC_MSBC:
+      sample_rate = 16000;
+      break;
+    case tBTA_AG_UUID_CODEC::UUID_CODEC_CVSD:
+    default:
+      sample_rate = 8000;
+  }
+  return sample_rate;
+}
+
 /**
  * Check if bd_addr is the current active device.
  *
@@ -1426,18 +1442,21 @@ void bta_ag_sco_conn_open(tBTA_AG_SCB* p_scb, const tBTA_AG_DATA& /* data */) {
       is_controller_codec = sco_config_map[p_scb->inuse_codec].useControllerCodec;
     }
 
-    hfp::offload_config config{
-            .sco_codec = p_scb->inuse_codec,
-            .connection_handle = p_scb->conn_handle,
-            .is_controller_codec = is_controller_codec,
-            .is_nrec = p_scb->nrec_enabled,
-    };
     if (hfp_software_datapath_enabled) {
       if (hfp_encode_interface) {
+        int sample_rate = codec_uuid_to_sample_rate(p_scb->inuse_codec);
+        hfp::pcm_config config{.sample_rate_hz = sample_rate};
         hfp_encode_interface->UpdateAudioConfigToHal(config);
         hfp_decode_interface->UpdateAudioConfigToHal(config);
       }
     } else {
+      hfp::offload_config config{
+              .sco_codec = p_scb->inuse_codec,
+              .connection_handle = p_scb->conn_handle,
+              .is_controller_codec = is_controller_codec,
+              .is_nrec = p_scb->nrec_enabled,
+      };
+
       hfp_offload_interface->UpdateAudioConfigToHal(config);
     }
 
