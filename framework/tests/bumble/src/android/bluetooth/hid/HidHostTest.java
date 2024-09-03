@@ -14,10 +14,20 @@
  * limitations under the License.
  */
 
-package android.bluetooth;
+package android.bluetooth.hid;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothA2dp;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothHeadset;
+import android.bluetooth.BluetoothHidDevice;
+import android.bluetooth.BluetoothHidHost;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
+import android.bluetooth.PandoraDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -27,8 +37,8 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
-import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bluetooth.flags.Flags;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
@@ -52,11 +62,10 @@ import java.util.Iterator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-/** Test cases for {@link Hid Host}. */
+/** Test cases for {@link BluetoothHidHost}. */
 @RunWith(AndroidJUnit4.class)
-@Ignore("b/355328584")
 public class HidHostTest {
-    private static final String TAG = "HidHostTest";
+    private static final String TAG = HidHostTest.class.getSimpleName();
     private SettableFuture<Integer> mFutureConnectionIntent,
             mFutureAdapterStateIntent,
             mFutureBondIntent,
@@ -69,9 +78,10 @@ public class HidHostTest {
     private BluetoothHidHost mHidService;
     private BluetoothHeadset mHfpService;
     private BluetoothA2dp mA2dpService;
-    private final Context mContext = ApplicationProvider.getApplicationContext();
-    private final BluetoothManager mManager = mContext.getSystemService(BluetoothManager.class);
-    private final BluetoothAdapter mAdapter = mManager.getAdapter();
+    private final Context mContext =
+            InstrumentationRegistry.getInstrumentation().getTargetContext();
+    private final BluetoothAdapter mAdapter =
+            mContext.getSystemService(BluetoothManager.class).getAdapter();
     private HIDGrpc.HIDBlockingStub mHidBlockingStub;
     private byte mReportId;
     private static final int KEYBD_RPT_ID = 1;
@@ -92,8 +102,9 @@ public class HidHostTest {
     @Rule(order = 2)
     public final PandoraDevice mBumble = new PandoraDevice();
 
-    private BroadcastReceiver mHidStateReceiver =
+    private final BroadcastReceiver mHidStateReceiver =
             new BroadcastReceiver() {
+                @SuppressLint("MissingPermission")
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     switch (intent.getAction()) {
@@ -213,6 +224,7 @@ public class HidHostTest {
                 public void onServiceDisconnected(int profile) {}
             };
 
+    @SuppressLint("MissingPermission")
     @Before
     public void setUp() throws Exception {
         final IntentFilter filter = new IntentFilter();
@@ -259,6 +271,7 @@ public class HidHostTest {
         assertThat(mFutureConnectionIntent.get()).isEqualTo(BluetoothProfile.STATE_CONNECTED);
     }
 
+    @SuppressLint("MissingPermission")
     @After
     public void tearDown() throws Exception {
 
@@ -288,6 +301,7 @@ public class HidHostTest {
      *   <li>4. Bumble Disconnect the HID and Android verifies Connection state intent
      * </ol>
      */
+    @SuppressLint("MissingPermission")
     @Test
     public void disconnectHidDeviceTest() throws Exception {
 
@@ -313,6 +327,7 @@ public class HidHostTest {
      *   <li>10. Bumble connect the HID and Android verifies Connection state intent
      * </ol>
      */
+    @SuppressLint("MissingPermission")
     @Test
     @RequiresFlagsEnabled({
         Flags.FLAG_ALLOW_SWITCHING_HID_AND_HOGP,
@@ -368,6 +383,7 @@ public class HidHostTest {
      *   <li>4. Bumble reconnects and Android verifies Connection state intent
      * </ol>
      */
+    @SuppressLint("MissingPermission")
     @Test
     @RequiresFlagsEnabled({
         Flags.FLAG_ALLOW_SWITCHING_HID_AND_HOGP,
@@ -396,6 +412,7 @@ public class HidHostTest {
      *   <li>5. Bumble reconnects and Android verifies Connection state intent
      * </ol>
      */
+    @SuppressLint("MissingPermission")
     @Test
     @RequiresFlagsEnabled({
         Flags.FLAG_ALLOW_SWITCHING_HID_AND_HOGP,
@@ -426,6 +443,7 @@ public class HidHostTest {
      *   <li>4. Bumble reconnects and Android verifies Connection state intent
      * </ol>
      */
+    @SuppressLint("MissingPermission")
     @Test
     @RequiresFlagsEnabled({
         Flags.FLAG_ALLOW_SWITCHING_HID_AND_HOGP,
@@ -455,6 +473,7 @@ public class HidHostTest {
      *   <li>2. Android Virtual Unplug and verifies Bonding
      * </ol>
      */
+    @SuppressLint("MissingPermission")
     @Test
     public void hidVirtualUnplugFromHidHostTest() throws Exception {
         mHidService.virtualUnplug(mDevice);
@@ -470,6 +489,7 @@ public class HidHostTest {
      *   <li>2. Bumble Virtual Unplug and Android verifies Bonding
      * </ol>
      */
+    @SuppressLint("MissingPermission")
     @Test
     public void hidVirtualUnplugFromHidDeviceTest() throws Exception {
         mHidBlockingStub.virtualCableUnplugHost(Empty.getDefaultInstance());
@@ -486,6 +506,7 @@ public class HidHostTest {
      *   <li>2. Android Gets the Protocol mode and verifies the mode
      * </ol>
      */
+    @SuppressLint("MissingPermission")
     @Test
     public void hidGetProtocolModeTest() throws Exception {
         mHidService.getProtocolMode(mDevice);
@@ -502,6 +523,7 @@ public class HidHostTest {
      *   <li>2. Android Sets the Protocol mode and verifies the mode
      * </ol>
      */
+    @SuppressLint("MissingPermission")
     @Test
     @Ignore("b/349351673: sets wrong protocol mode value")
     public void hidSetProtocolModeTest() throws Exception {
@@ -529,6 +551,7 @@ public class HidHostTest {
      *   <li>2. Android get report and verifies the report
      * </ol>
      */
+    @SuppressLint("MissingPermission")
     @Test
     public void hidGetReportTest() throws Exception {
         // Keyboard report
@@ -561,6 +584,7 @@ public class HidHostTest {
      *   <li>2. Android Set report and verifies the report
      * </ol>
      */
+    @SuppressLint("MissingPermission")
     @Test
     public void hidSetReportTest() throws Exception {
         Iterator<ReportEvent> mHidReportEventObserver =
