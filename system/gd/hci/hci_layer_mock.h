@@ -40,6 +40,10 @@ public:
               (std::unique_ptr<CommandBuilder>,
                common::ContextualOnceCallback<void(CommandStatusView)>),
               (override));
+  MOCK_METHOD(void, EnqueueCommand,
+              (std::unique_ptr<CommandBuilder>,
+               common::ContextualOnceCallback<void(CommandStatusOrCompleteView)>),
+              (override));
   MOCK_METHOD((common::BidiQueueEnd<AclBuilder, AclView>*), GetAclQueueEnd, (), (override));
   MOCK_METHOD((common::BidiQueueEnd<ScoBuilder, ScoView>*), GetScoQueueEnd, (), (override));
   MOCK_METHOD((common::BidiQueueEnd<IsoBuilder, IsoView>*), GetIsoQueueEnd, (), (override));

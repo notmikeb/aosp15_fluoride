@@ -47,6 +47,7 @@ using bluetooth::common::ContextualCallback;
 using bluetooth::common::ContextualOnceCallback;
 using bluetooth::hci::CommandBuilder;
 using bluetooth::hci::CommandCompleteView;
+using bluetooth::hci::CommandStatusOrCompleteView;
 using bluetooth::hci::CommandStatusView;
 using bluetooth::hci::EventView;
 using bluetooth::hci::LeMetaEventView;
@@ -87,24 +88,34 @@ static void abort_after_time_out(OpCode op_code) {
 
 class CommandQueueEntry {
 public:
+  enum class WaitingFor { STATUS, COMPLETE, STATUS_OR_COMPLETE };
+
   CommandQueueEntry(unique_ptr<CommandBuilder> command_packet,
                     ContextualOnceCallback<void(CommandCompleteView)> on_complete_function)
       : command(std::move(command_packet)),
-        waiting_for_status_(false),
+        waiting_for_(WaitingFor::COMPLETE),
         on_complete(std::move(on_complete_function)) {}
 
   CommandQueueEntry(unique_ptr<CommandBuilder> command_packet,
                     ContextualOnceCallback<void(CommandStatusView)> on_status_function)
       : command(std::move(command_packet)),
-        waiting_for_status_(true),
+        waiting_for_(WaitingFor::STATUS),
         on_status(std::move(on_status_function)) {}
+
+  CommandQueueEntry(
+          unique_ptr<CommandBuilder> command_packet,
+          ContextualOnceCallback<void(CommandStatusOrCompleteView)> on_status_or_complete_function)
+      : command(std::move(command_packet)),
+        waiting_for_(WaitingFor::STATUS_OR_COMPLETE),
+        on_status_or_complete(std::move(on_status_or_complete_function)) {}
 
   unique_ptr<CommandBuilder> command;
   unique_ptr<CommandView> command_view;
 
-  bool waiting_for_status_;
+  WaitingFor waiting_for_;
   ContextualOnceCallback<void(CommandStatusView)> on_status;
   ContextualOnceCallback<void(CommandCompleteView)> on_complete;
+  ContextualOnceCallback<void(CommandStatusOrCompleteView)> on_status_or_complete;
 
   template <typename TView>
   ContextualOnceCallback<void(TView)>* GetCallback() {
@@ -119,6 +130,12 @@ public:
   template <>
   ContextualOnceCallback<void(CommandCompleteView)>* GetCallback<CommandCompleteView>() {
     return &on_complete;
+  }
+
+  template <>
+  ContextualOnceCallback<void(CommandStatusOrCompleteView)>*
+  GetCallback<CommandStatusOrCompleteView>() {
+    return &on_status_or_complete;
   }
 };
 
@@ -181,8 +198,8 @@ struct HciLayer::impl {
     OpCode op_code = response_view.GetCommandOpCode();
     ErrorCode status = response_view.GetStatus();
     if (status != ErrorCode::SUCCESS) {
-      log::error("Received UNEXPECTED command status:{} opcode:{}", ErrorCodeText(status),
-                 OpCodeText(op_code));
+      log::warn("Received UNEXPECTED command status:{} opcode:{}", ErrorCodeText(status),
+                OpCodeText(op_code));
     }
     handle_command_response<CommandStatusView>(event, "status");
   }
@@ -215,8 +232,10 @@ struct HciLayer::impl {
                      OpCodeText(waiting_command_), OpCodeText(op_code));
 
     bool is_vendor_specific = static_cast<int>(op_code) & (0x3f << 10);
+    using WaitingFor = CommandQueueEntry::WaitingFor;
+    WaitingFor waiting_for = command_queue_.front().waiting_for_;
     CommandStatusView status_view = CommandStatusView::Create(event);
-    if (is_vendor_specific && (is_status && !command_queue_.front().waiting_for_status_) &&
+    if (is_vendor_specific && (is_status && waiting_for == WaitingFor::COMPLETE) &&
         (status_view.IsValid() && status_view.GetStatus() == ErrorCode::UNKNOWN_HCI_COMMAND)) {
       // If this is a command status of a vendor specific command, and command complete is expected,
       // we can't treat this as hard failure since we have no way of probing this lack of support at
@@ -235,11 +254,14 @@ struct HciLayer::impl {
       log::assert_that(command_complete_view.IsValid(),
                        "assert failed: command_complete_view.IsValid()");
       (*command_queue_.front().GetCallback<CommandCompleteView>())(command_complete_view);
-    } else {
-      log::assert_that(command_queue_.front().waiting_for_status_ == is_status,
+    } else if (waiting_for != WaitingFor::STATUS_OR_COMPLETE) {
+      log::assert_that((waiting_for == WaitingFor::STATUS) == is_status,
                        "{} was not expecting {} event", OpCodeText(op_code), logging_id);
 
       (*command_queue_.front().GetCallback<TResponse>())(std::move(response_view));
+    } else {
+      (*command_queue_.front().GetCallback<CommandStatusOrCompleteView>())(
+              std::move(response_view));
     }
 
 #ifdef TARGET_FLOSS
@@ -598,6 +620,13 @@ void HciLayer::EnqueueCommand(unique_ptr<CommandBuilder> command,
                               ContextualOnceCallback<void(CommandStatusView)> on_status) {
   CallOn(impl_, &impl::enqueue_command<CommandStatusView>, std::move(command),
          std::move(on_status));
+}
+
+void HciLayer::EnqueueCommand(
+        unique_ptr<CommandBuilder> command,
+        ContextualOnceCallback<void(CommandStatusOrCompleteView)> on_status_or_complete) {
+  CallOn(impl_, &impl::enqueue_command<CommandStatusOrCompleteView>, std::move(command),
+         std::move(on_status_or_complete));
 }
 
 void HciLayer::RegisterEventHandler(EventCode event, ContextualCallback<void(EventView)> handler) {

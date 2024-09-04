@@ -50,6 +50,10 @@ public:
                       common::ContextualOnceCallback<void(CommandStatusView)> on_status) override =
           0;
 
+  void EnqueueCommand(std::unique_ptr<CommandBuilder> command,
+                      common::ContextualOnceCallback<void(CommandStatusOrCompleteView)>
+                              on_status_or_complete) override = 0;
+
   virtual common::BidiQueueEnd<AclBuilder, AclView>* GetAclQueueEnd() = 0;
 
   virtual common::BidiQueueEnd<ScoBuilder, ScoView>* GetScoQueueEnd() = 0;
@@ -138,6 +142,13 @@ protected:
             common::ContextualOnceCallback<void(CommandStatusView)> on_status) override {
       hci_->EnqueueCommand(std::move(command), std::move(on_status));
     }
+
+    void EnqueueCommand(std::unique_ptr<T> command,
+                        common::ContextualOnceCallback<void(CommandStatusOrCompleteView)>
+                                on_status_or_complete) override {
+      hci_->EnqueueCommand(std::move(command), std::move(on_status_or_complete));
+    }
+
     HciInterface* hci_;
     common::OnceCallback<void()> cleanup_;
   };
