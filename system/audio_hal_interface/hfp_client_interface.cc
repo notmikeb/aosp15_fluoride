@@ -206,7 +206,7 @@ void HfpClientInterface::Decode::CancelStreamingRequest() {
       return;
     case aidl::hfp::HFP_CTRL_CMD_SUSPEND:
       log::info("suspends");
-      aidl::hfp::HfpEncodingTransport::software_hal_interface->StreamSuspended(
+      aidl::hfp::HfpDecodingTransport::software_hal_interface->StreamSuspended(
               aidl::BluetoothAudioCtrlAck::SUCCESS_FINISHED);
       instance->ResetPendingCmd();
       return;
