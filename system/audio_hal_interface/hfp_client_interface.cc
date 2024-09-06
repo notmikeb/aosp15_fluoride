@@ -179,13 +179,13 @@ void HfpClientInterface::Decode::ConfirmStreamingRequest() {
   auto instance = aidl::hfp::HfpDecodingTransport::instance_;
   auto pending_cmd = instance->GetPendingCmd();
   switch (pending_cmd) {
+    case aidl::hfp::HFP_CTRL_CMD_NONE:
+      log::warn("no pending start stream request");
+      FALLTHROUGH_INTENDED;
     case aidl::hfp::HFP_CTRL_CMD_START:
       aidl::hfp::HfpDecodingTransport::software_hal_interface->StreamStarted(
               aidl::BluetoothAudioCtrlAck::SUCCESS_FINISHED);
       instance->ResetPendingCmd();
-      return;
-    case aidl::hfp::HFP_CTRL_CMD_NONE:
-      log::warn("no pending start stream request");
       return;
     default:
       log::warn("Invalid state, {}", pending_cmd);
@@ -203,7 +203,7 @@ void HfpClientInterface::Decode::CancelStreamingRequest() {
       return;
     case aidl::hfp::HFP_CTRL_CMD_NONE:
       log::warn("no pending start stream request");
-      return;
+      FALLTHROUGH_INTENDED;
     case aidl::hfp::HFP_CTRL_CMD_SUSPEND:
       log::info("suspends");
       aidl::hfp::HfpDecodingTransport::software_hal_interface->StreamSuspended(
@@ -330,13 +330,13 @@ void HfpClientInterface::Encode::ConfirmStreamingRequest() {
   auto instance = aidl::hfp::HfpEncodingTransport::instance_;
   auto pending_cmd = instance->GetPendingCmd();
   switch (pending_cmd) {
+    case aidl::hfp::HFP_CTRL_CMD_NONE:
+      log::warn("no pending start stream request");
+      FALLTHROUGH_INTENDED;
     case aidl::hfp::HFP_CTRL_CMD_START:
       aidl::hfp::HfpEncodingTransport::software_hal_interface->StreamStarted(
               aidl::BluetoothAudioCtrlAck::SUCCESS_FINISHED);
       instance->ResetPendingCmd();
-      return;
-    case aidl::hfp::HFP_CTRL_CMD_NONE:
-      log::warn("no pending start stream request");
       return;
     default:
       log::warn("Invalid state, {}", pending_cmd);
@@ -354,7 +354,7 @@ void HfpClientInterface::Encode::CancelStreamingRequest() {
       return;
     case aidl::hfp::HFP_CTRL_CMD_NONE:
       log::warn("no pending start stream request");
-      return;
+      FALLTHROUGH_INTENDED;
     case aidl::hfp::HFP_CTRL_CMD_SUSPEND:
       log::info("suspends");
       aidl::hfp::HfpEncodingTransport::software_hal_interface->StreamSuspended(
