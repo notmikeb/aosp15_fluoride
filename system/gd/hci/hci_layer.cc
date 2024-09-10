@@ -400,6 +400,12 @@ struct HciLayer::impl {
     vs_event_handlers_.erase(vs_event_handlers_.find(event));
   }
 
+  void register_vs_event_default(ContextualCallback<void(VendorSpecificEventView)> handler) {
+    vs_event_default_handler_ = std::move(handler);
+  }
+
+  void unregister_vs_event_default() { vs_event_default_handler_.reset(); }
+
   static void abort_after_root_inflammation(uint8_t vse_error) {
     log::fatal("Root inflammation with reason 0x{:02x}", vse_error);
   }
@@ -524,11 +530,13 @@ struct HciLayer::impl {
     VendorSpecificEventView vs_event_view = VendorSpecificEventView::Create(event);
     log::assert_that(vs_event_view.IsValid(), "assert failed: vs_event_view.IsValid()");
     VseSubeventCode subevent_code = vs_event_view.GetSubeventCode();
-    if (vs_event_handlers_.find(subevent_code) == vs_event_handlers_.end()) {
+    if (vs_event_handlers_.find(subevent_code) != vs_event_handlers_.end()) {
+      vs_event_handlers_[subevent_code](vs_event_view);
+    } else if (vs_event_default_handler_.has_value()) {
+      (*vs_event_default_handler_)(vs_event_view);
+    } else {
       log::warn("Unhandled vendor specific event of type {}", VseSubeventCodeText(subevent_code));
-      return;
     }
-    vs_event_handlers_[subevent_code](vs_event_view);
   }
 
   hal::HciHal* hal_;
@@ -540,6 +548,7 @@ struct HciLayer::impl {
   std::map<EventCode, ContextualCallback<void(EventView)>> event_handlers_;
   std::map<SubeventCode, ContextualCallback<void(LeMetaEventView)>> le_event_handlers_;
   std::map<VseSubeventCode, ContextualCallback<void(VendorSpecificEventView)>> vs_event_handlers_;
+  std::optional<ContextualCallback<void(VendorSpecificEventView)>> vs_event_default_handler_;
 
   OpCode waiting_command_{OpCode::NONE};
   uint8_t command_credits_{1};  // Send reset first
@@ -653,6 +662,15 @@ void HciLayer::RegisterVendorSpecificEventHandler(
 
 void HciLayer::UnregisterVendorSpecificEventHandler(VseSubeventCode event) {
   CallOn(impl_, &impl::unregister_vs_event, event);
+}
+
+void HciLayer::RegisterDefaultVendorSpecificEventHandler(
+        ContextualCallback<void(VendorSpecificEventView)> handler) {
+  CallOn(impl_, &impl::register_vs_event_default, handler);
+}
+
+void HciLayer::UnregisterDefaultVendorSpecificEventHandler() {
+  CallOn(impl_, &impl::unregister_vs_event_default);
 }
 
 void HciLayer::on_disconnection_complete(EventView event_view) {

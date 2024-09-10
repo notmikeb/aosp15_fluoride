@@ -27,7 +27,42 @@
 namespace bluetooth {
 namespace hci_vs {
 
+using hci::CommandCompleteView;
+using hci::CommandStatusOrCompleteView;
+using hci::CommandStatusView;
+using hci::OpCode;
+using hci::VendorSpecificEventView;
+
 std::unique_ptr<BluetoothHciVendorSpecificInterface> hciVendorSpecificInterface;
+
+static void CommandStatusOrCompleteCallback(BluetoothHciVendorSpecificCallbacks* callbacks,
+                                            Cookie cookie,
+                                            CommandStatusOrCompleteView status_or_complete) {
+  if (std::holds_alternative<CommandStatusView>(status_or_complete)) {
+    auto view = std::get<CommandStatusView>(status_or_complete);
+    auto ocf = static_cast<uint16_t>(view.GetCommandOpCode()) & 0x3ff;
+    auto status = static_cast<uint8_t>(view.GetStatus());
+    callbacks->commandStatusDelivery(ocf, status, cookie);
+
+  } else if (std::holds_alternative<CommandCompleteView>(status_or_complete)) {
+    auto view = std::get<CommandCompleteView>(status_or_complete);
+    auto ocf = static_cast<uint16_t>(view.GetCommandOpCode()) & 0x3ff;
+    std::vector<uint8_t> return_parameters(view.GetPayload().begin(), view.GetPayload().end());
+    callbacks->commandCompleteDelivery(ocf, return_parameters, cookie);
+  }
+}
+
+static void EventCallback(BluetoothHciVendorSpecificCallbacks* callbacks,
+                          VendorSpecificEventView view) {
+  const uint8_t aosp_reserved_codes_range[] = {0x50, 0x60};
+  auto code = static_cast<uint8_t>(view.GetSubeventCode());
+  if (code >= aosp_reserved_codes_range[0] && code < aosp_reserved_codes_range[1]) {
+    return;
+  }
+
+  std::vector<uint8_t> data(view.GetPayload().begin(), view.GetPayload().end());
+  callbacks->eventDelivery(code, data);
+}
 
 class BluetoothHciVendorSpecificInterfaceImpl
     : public bluetooth::hci_vs::BluetoothHciVendorSpecificInterface {
@@ -35,18 +70,34 @@ class BluetoothHciVendorSpecificInterfaceImpl
 
   void init(BluetoothHciVendorSpecificCallbacks* callbacks) override {
     log::info("BluetoothHciVendorSpecificInterfaceImpl");
-    this->callbacks = callbacks;
+    log::assert_that(callbacks != nullptr, "callbacks cannot be null");
+    callbacks_ = callbacks;
+
+    shim::GetHciLayer()->RegisterDefaultVendorSpecificEventHandler(
+            get_main()->Bind(EventCallback, callbacks_));
   }
 
   void sendCommand(uint16_t ocf, std::vector<uint8_t> parameters, Cookie cookie) override {
-    // TODO: Send HCI Command
-    (void)ocf;
-    (void)parameters;
-    (void)cookie;
+    if (callbacks_ == nullptr) {
+      log::error("not initialized");
+      return;
+    }
+
+    if (ocf & ~0x3ff) {
+      log::error("invalid vendor-specific op-code");
+      return;
+    }
+
+    const uint16_t ogf_vendor_specific = 0x3f;
+    auto op_code = static_cast<OpCode>((ogf_vendor_specific << 10) | ocf);
+
+    shim::GetHciLayer()->EnqueueCommand(
+            hci::CommandBuilder::Create(op_code, std::make_unique<packet::RawBuilder>(parameters)),
+            get_main()->BindOnce(CommandStatusOrCompleteCallback, callbacks_, std::move(cookie)));
   }
 
 private:
-  BluetoothHciVendorSpecificCallbacks* callbacks = nullptr;
+  BluetoothHciVendorSpecificCallbacks* callbacks_ = nullptr;
 };
 
 BluetoothHciVendorSpecificInterface* getBluetoothHciVendorSpecificInterface() {

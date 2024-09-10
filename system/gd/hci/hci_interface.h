@@ -65,6 +65,11 @@ public:
 
   virtual void UnregisterEventHandler(EventCode event_code) = 0;
 
+  virtual void RegisterDefaultVendorSpecificEventHandler(
+          common::ContextualCallback<void(VendorSpecificEventView)> handler) = 0;
+
+  virtual void UnregisterDefaultVendorSpecificEventHandler() = 0;
+
   virtual void RegisterLeEventHandler(
           SubeventCode subevent_code,
           common::ContextualCallback<void(LeMetaEventView)> event_handler) = 0;

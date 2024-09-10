@@ -57,6 +57,9 @@ public:
               (VseSubeventCode, common::ContextualCallback<void(VendorSpecificEventView)>),
               (override));
   MOCK_METHOD((void), UnregisterVendorSpecificEventHandler, (VseSubeventCode), (override));
+  MOCK_METHOD((void), RegisterDefaultVendorSpecificEventHandler,
+              (common::ContextualCallback<void(VendorSpecificEventView)>), (override));
+  MOCK_METHOD((void), UnregisterDefaultVendorSpecificEventHandler, (), (override));
   MOCK_METHOD((SecurityInterface*), GetSecurityInterface,
               (common::ContextualCallback<void(EventView)> event_handler), (override));
 
