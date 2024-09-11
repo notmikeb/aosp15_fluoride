@@ -42,13 +42,15 @@ static void CommandStatusOrCompleteCallback(BluetoothHciVendorSpecificCallbacks*
     auto view = std::get<CommandStatusView>(status_or_complete);
     auto ocf = static_cast<uint16_t>(view.GetCommandOpCode()) & 0x3ff;
     auto status = static_cast<uint8_t>(view.GetStatus());
-    callbacks->commandStatusDelivery(ocf, status, cookie);
+    do_in_jni_thread(base::BindOnce(&BluetoothHciVendorSpecificCallbacks::onCommandStatus,
+                                    base::Unretained(callbacks), ocf, status, cookie));
 
   } else if (std::holds_alternative<CommandCompleteView>(status_or_complete)) {
     auto view = std::get<CommandCompleteView>(status_or_complete);
     auto ocf = static_cast<uint16_t>(view.GetCommandOpCode()) & 0x3ff;
     std::vector<uint8_t> return_parameters(view.GetPayload().begin(), view.GetPayload().end());
-    callbacks->commandCompleteDelivery(ocf, return_parameters, cookie);
+    do_in_jni_thread(base::BindOnce(&BluetoothHciVendorSpecificCallbacks::onCommandComplete,
+                                    base::Unretained(callbacks), ocf, return_parameters, cookie));
   }
 }
 
@@ -61,7 +63,8 @@ static void EventCallback(BluetoothHciVendorSpecificCallbacks* callbacks,
   }
 
   std::vector<uint8_t> data(view.GetPayload().begin(), view.GetPayload().end());
-  callbacks->eventDelivery(code, data);
+  do_in_jni_thread(base::BindOnce(&BluetoothHciVendorSpecificCallbacks::onEvent,
+                                  base::Unretained(callbacks), code, data));
 }
 
 class BluetoothHciVendorSpecificInterfaceImpl
@@ -92,7 +95,8 @@ class BluetoothHciVendorSpecificInterfaceImpl
     auto op_code = static_cast<OpCode>((ogf_vendor_specific << 10) | ocf);
 
     shim::GetHciLayer()->EnqueueCommand(
-            hci::CommandBuilder::Create(op_code, std::make_unique<packet::RawBuilder>(parameters)),
+            hci::CommandBuilder::Create(
+                    op_code, std::make_unique<packet::RawBuilder>(std::move(parameters))),
             get_main()->BindOnce(CommandStatusOrCompleteCallback, callbacks_, std::move(cookie)));
   }
 
