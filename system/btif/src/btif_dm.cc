@@ -2503,6 +2503,12 @@ void btif_dm_cancel_bond(const RawAddress bd_addr) {
   **  2. special handling for HID devices
   */
   if (is_bonding_or_sdp()) {
+    if (com::android::bluetooth::flags::ignore_unrelated_cancel_bond() &&
+        (pairing_cb.bd_addr != bd_addr)) {
+      log::warn("Ignoring bond cancel for unrelated device: {} pairing: {}", bd_addr,
+                pairing_cb.bd_addr);
+      return;
+    }
     if (pairing_cb.is_ssp) {
       if (pairing_cb.is_le_only) {
         BTA_DmBleSecurityGrant(bd_addr, tBTA_DM_BLE_SEC_GRANT::BTA_DM_SEC_PAIR_NOT_SPT);
