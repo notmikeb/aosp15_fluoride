@@ -188,7 +188,13 @@ size_t HfpClientInterface::Decode::Write(const uint8_t* p_buf, uint32_t len) {
     return 0;
   }
   log::verbose("decode");
-  return get_decode_client_interface()->WriteAudioData(p_buf, len);
+
+  auto instance = aidl::hfp::HfpDecodingTransport::instance_;
+  if (instance->IsStreamActive()) {
+    return get_decode_client_interface()->WriteAudioData(p_buf, len);
+  }
+
+  return len;
 }
 
 void HfpClientInterface::Decode::ConfirmStreamingRequest() {
@@ -349,7 +355,15 @@ size_t HfpClientInterface::Encode::Read(uint8_t* p_buf, uint32_t len) {
     return 0;
   }
   log::verbose("encode");
-  return get_encode_client_interface()->ReadAudioData(p_buf, len);
+
+  auto instance = aidl::hfp::HfpEncodingTransport::instance_;
+  if (instance->IsStreamActive()) {
+    return get_encode_client_interface()->ReadAudioData(p_buf, len);
+  }
+
+  memset(p_buf, 0x00, len);
+
+  return len;
 }
 
 void HfpClientInterface::Encode::ConfirmStreamingRequest() {
