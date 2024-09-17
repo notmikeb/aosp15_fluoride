@@ -30,7 +30,7 @@
 
 #include "audio_hal_interface/hfp_client_interface.h"
 #include "bta/ag/bta_ag_int.h"
-#include "bta_ag_swb_aptx.h"
+#include "bta/include/bta_ag_swb_aptx.h"
 #include "btm_status.h"
 #include "hci/controller_interface.h"
 #include "internal_include/bt_target.h"
