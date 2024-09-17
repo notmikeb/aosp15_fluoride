@@ -73,7 +73,18 @@ public:
   static A2dpCodecConfig* mCodec;
 };
 
+class TestAudioPort : public bluetooth::audio::a2dp::BluetoothAudioPort {
+  BluetoothAudioStatus StartStream(bool /*low_latency*/) const override {
+    return BluetoothAudioStatus::PENDING;
+  }
+  BluetoothAudioStatus SuspendStream() const override { return BluetoothAudioStatus::PENDING; }
+  BluetoothAudioStatus SetLatencyMode(bool /*low_latency*/) const override {
+    return BluetoothAudioStatus::SUCCESS;
+  }
+};
+
 A2dpCodecConfig* A2dpEncodingFuzzer::mCodec{nullptr};
+const TestAudioPort test_audio_port;
 
 void A2dpEncodingFuzzer::process(const uint8_t* data, size_t size) {
   FuzzedDataProvider fdp(data, size);
@@ -95,7 +106,7 @@ void A2dpEncodingFuzzer::process(const uint8_t* data, size_t size) {
   uint16_t delayReport = fdp.ConsumeIntegral<uint16_t>();
   bluetooth::audio::a2dp::set_remote_delay(delayReport);
 
-  if (!bluetooth::audio::a2dp::init(&messageLoopThread)) {
+  if (!bluetooth::audio::a2dp::init(&messageLoopThread, &test_audio_port)) {
     return;
   }
 
