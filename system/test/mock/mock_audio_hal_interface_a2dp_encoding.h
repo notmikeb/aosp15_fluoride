@@ -137,14 +137,14 @@ extern struct get_a2dp_configuration get_a2dp_configuration;
 struct init {
   static bool return_value;
   std::function<bool(bluetooth::common::MessageLoopThread* message_loop,
-                     bluetooth::audio::a2dp::BluetoothAudioPort const*)>
+                     bluetooth::audio::a2dp::BluetoothAudioPort const*, bool)>
           body{[](bluetooth::common::MessageLoopThread* /* message_loop */,
-                  bluetooth::audio::a2dp::BluetoothAudioPort const* /* audio_port */) {
-            return return_value;
-          }};
+                  bluetooth::audio::a2dp::BluetoothAudioPort const* /* audio_port */,
+                  bool /* offload_enabled */) { return return_value; }};
   bool operator()(bluetooth::common::MessageLoopThread* message_loop,
-                  bluetooth::audio::a2dp::BluetoothAudioPort const* audio_port) {
-    return body(message_loop, audio_port);
+                  bluetooth::audio::a2dp::BluetoothAudioPort const* audio_port,
+                  bool offload_enabled) {
+    return body(message_loop, audio_port, offload_enabled);
   }
 };
 extern struct init init;

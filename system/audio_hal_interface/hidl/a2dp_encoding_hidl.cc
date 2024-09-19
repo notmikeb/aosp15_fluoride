@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "a2dp_sbc_constants.h"
-#include "btif/include/btif_av.h"
 #include "client_interface_hidl.h"
 #include "codec_status_hidl.h"
 #include "osi/include/properties.h"
@@ -302,7 +301,7 @@ bool is_hal_2_0_offloading() {
 
 // Initialize BluetoothAudio HAL: openProvider
 bool init(bluetooth::common::MessageLoopThread* message_loop,
-          bluetooth::audio::a2dp::BluetoothAudioPort const* audio_port) {
+          bluetooth::audio::a2dp::BluetoothAudioPort const* audio_port, bool offload_enabled) {
   log::info("");
   log::assert_that(audio_port != nullptr, "audio_port != nullptr");
 
@@ -316,7 +315,7 @@ bool init(bluetooth::common::MessageLoopThread* message_loop,
     return false;
   }
 
-  if (btif_av_is_a2dp_offload_enabled()) {
+  if (offload_enabled) {
     a2dp_sink = new A2dpTransport(SessionType::A2DP_HARDWARE_OFFLOAD_DATAPATH);
     offloading_hal_interface = new BluetoothAudioSinkClientInterface(a2dp_sink, message_loop);
     if (!offloading_hal_interface->IsValid()) {

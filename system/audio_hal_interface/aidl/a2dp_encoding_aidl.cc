@@ -25,7 +25,6 @@
 #include "a2dp_provider_info.h"
 #include "a2dp_transport.h"
 #include "audio_aidl_interfaces.h"
-#include "btif/include/btif_av.h"
 #include "codec_status_aidl.h"
 #include "transport_instance.h"
 
@@ -347,7 +346,7 @@ static void delete_hal_interface(BluetoothAudioSinkClientInterface* hal_interfac
 
 // Initialize BluetoothAudio HAL: openProvider
 bool init(bluetooth::common::MessageLoopThread* /*message_loop*/,
-          BluetoothAudioPort const* audio_port) {
+          BluetoothAudioPort const* audio_port, bool offload_enabled) {
   log::info("");
   log::assert_that(audio_port != nullptr, "audio_port != nullptr");
 
@@ -365,7 +364,7 @@ bool init(bluetooth::common::MessageLoopThread* /*message_loop*/,
     return false;
   }
 
-  if (btif_av_is_a2dp_offload_enabled() && offloading_hal_interface == nullptr) {
+  if (offload_enabled && offloading_hal_interface == nullptr) {
     offloading_hal_interface =
             new_hal_interface(SessionType::A2DP_HARDWARE_OFFLOAD_ENCODING_DATAPATH);
     if (offloading_hal_interface == nullptr) {

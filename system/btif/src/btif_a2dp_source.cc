@@ -384,7 +384,8 @@ static void btif_a2dp_source_init_delayed(void) {
   // the provider needs to be initialized earlier in order to ensure
   // get_a2dp_configuration and parse_a2dp_configuration can be
   // invoked before the stream is started.
-  bluetooth::audio::a2dp::init(&btif_a2dp_source_thread, &a2dp_audio_port);
+  bluetooth::audio::a2dp::init(&btif_a2dp_source_thread, &a2dp_audio_port,
+                               btif_av_is_a2dp_offload_enabled());
 }
 
 bool btif_a2dp_source_startup(void) {
@@ -412,7 +413,8 @@ static void btif_a2dp_source_startup_delayed() {
     log::fatal("unable to enable real time scheduling");
 #endif
   }
-  if (!bluetooth::audio::a2dp::init(&btif_a2dp_source_thread, &a2dp_audio_port)) {
+  if (!bluetooth::audio::a2dp::init(&btif_a2dp_source_thread, &a2dp_audio_port,
+                                    btif_av_is_a2dp_offload_enabled())) {
     log::warn("Failed to setup the bluetooth audio HAL");
   }
   btif_a2dp_source_cb.SetState(BtifA2dpSource::kStateRunning);
