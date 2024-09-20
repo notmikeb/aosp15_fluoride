@@ -21,6 +21,7 @@
 
 #include <vector>
 
+#include "client_interface_aidl.h"
 #include "android/binder_ibinder_platform.h"
 #include "btif/include/btif_common.h"
 #include "common/stop_watch_legacy.h"
@@ -41,9 +42,9 @@ BluetoothAudioPortImpl::~BluetoothAudioPortImpl() {}
 
 ndk::ScopedAStatus BluetoothAudioPortImpl::startStream(bool is_low_latency) {
   StopWatchLegacy stop_watch(__func__);
-  BluetoothAudioCtrlAck ack = transport_instance_->StartRequest(is_low_latency);
-  if (ack != BluetoothAudioCtrlAck::PENDING) {
-    auto aidl_retval = provider_->streamStarted(BluetoothAudioCtrlAckToHalStatus(ack));
+  BluetoothAudioStatus ack = transport_instance_->StartRequest(is_low_latency);
+  if (ack != BluetoothAudioStatus::PENDING) {
+    auto aidl_retval = provider_->streamStarted(BluetoothAudioStatusToHalStatus(ack));
     if (!aidl_retval.isOk()) {
       log::error("BluetoothAudioHal failure: {}", aidl_retval.getDescription());
     }
@@ -53,9 +54,9 @@ ndk::ScopedAStatus BluetoothAudioPortImpl::startStream(bool is_low_latency) {
 
 ndk::ScopedAStatus BluetoothAudioPortImpl::suspendStream() {
   StopWatchLegacy stop_watch(__func__);
-  BluetoothAudioCtrlAck ack = transport_instance_->SuspendRequest();
-  if (ack != BluetoothAudioCtrlAck::PENDING) {
-    auto aidl_retval = provider_->streamSuspended(BluetoothAudioCtrlAckToHalStatus(ack));
+  BluetoothAudioStatus ack = transport_instance_->SuspendRequest();
+  if (ack != BluetoothAudioStatus::PENDING) {
+    auto aidl_retval = provider_->streamSuspended(BluetoothAudioStatusToHalStatus(ack));
     if (!aidl_retval.isOk()) {
       log::error("BluetoothAudioHal failure: {}", aidl_retval.getDescription());
     }

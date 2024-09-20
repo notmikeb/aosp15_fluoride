@@ -24,11 +24,14 @@
 #include <vector>
 
 #include "audio_aidl_interfaces.h"
-#include "audio_ctrl_ack.h"
 #include "bluetooth_audio_port_impl.h"
 #include "bta/le_audio/broadcaster/broadcaster_types.h"
 #include "bta/le_audio/le_audio_types.h"
 #include "transport_instance.h"
+
+// Keep after audio_aidl_interfaces.h because of <base/logging.h>
+// conflicting definitions.
+#include "a2dp_encoding.h"
 
 namespace bluetooth {
 namespace audio {
@@ -62,6 +65,20 @@ using MqDataMode = SynchronizedReadWrite;
 using DataMQ = AidlMessageQueue<MqDataType, MqDataMode>;
 using DataMQDesc = MQDescriptor<MqDataType, MqDataMode>;
 
+inline ::aidl::android::hardware::bluetooth::audio::BluetoothAudioStatus
+BluetoothAudioStatusToHalStatus(BluetoothAudioStatus ack) {
+  switch (ack) {
+    case BluetoothAudioStatus::SUCCESS:
+      return ::aidl::android::hardware::bluetooth::audio::BluetoothAudioStatus::SUCCESS;
+    case BluetoothAudioStatus::UNSUPPORTED_CODEC_CONFIGURATION:
+      return ::aidl::android::hardware::bluetooth::audio::BluetoothAudioStatus::UNSUPPORTED_CODEC_CONFIGURATION;
+    case BluetoothAudioStatus::PENDING:
+    case BluetoothAudioStatus::FAILURE:
+    default:
+      return ::aidl::android::hardware::bluetooth::audio::BluetoothAudioStatus::FAILURE;
+  }
+}
+
 /***
  * The client interface connects an IBluetoothTransportInstance to
  * IBluetoothAudioProvider and helps to route callbacks to
@@ -89,9 +106,9 @@ public:
           std::vector<A2dpRemoteCapabilities> const& remote_capabilities,
           A2dpConfigurationHint const& hint) const;
 
-  void StreamStarted(const BluetoothAudioCtrlAck& ack);
+  void StreamStarted(const BluetoothAudioStatus& ack);
 
-  void StreamSuspended(const BluetoothAudioCtrlAck& ack);
+  void StreamSuspended(const BluetoothAudioStatus& ack);
 
   int StartSession();
 
