@@ -157,7 +157,7 @@ class HapTest(base_test.BaseTestClass):
 
         return dut_connection_to_ref
 
-    async def assertIdentiqPresetInDutAndRef(self, dut_connection_to_ref: Connection):
+    async def assertIdenticalPreset(self, dut_connection_to_ref: Connection):
         remote_preset = toBumblePresetList(
             (await self.hap_grpc.GetAllPresetRecords(connection=dut_connection_to_ref)).preset_record_list)
         AssertThat(remote_preset).ContainsExactlyElementsIn(  # type: ignore
@@ -177,5 +177,17 @@ class HapTest(base_test.BaseTestClass):
         await self.logcat.Log("test_get_preset")
         dut_connection_to_ref = await self.setupHapConnection()
 
-        await self.assertIdentiqPresetInDutAndRef(dut_connection_to_ref)
+        await self.assertIdenticalPreset(dut_connection_to_ref)
 
+    @asynchronous
+    async def test_preset__remove_preset__verify_dut_is_updated(self) -> None:
+        await self.logcat.Log("test_preset__remove_preset__verify_dut_is_updated")
+        dut_connection_to_ref = await self.setupHapConnection()
+
+        await self.assertIdenticalPreset(dut_connection_to_ref)
+
+        await self.logcat.Log("Remove preset in server")
+        await self.has.delete_preset(unavailable_preset.index)
+        await asyncio.sleep(1)  # wait event
+
+        await self.assertIdenticalPreset(dut_connection_to_ref)
