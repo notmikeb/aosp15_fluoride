@@ -29,14 +29,18 @@
  */
 
 #define LOG_TAG "bt_btif_storage"
-
 #include "btif/include/btif_storage.h"
 
 #include <alloca.h>
 #include <bluetooth/log.h>
+#include <com_android_bluetooth_flags.h>
+#ifndef TARGET_FLOSS
+#include <cutils/multiuser.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <unordered_set>
 #include <vector>
@@ -59,6 +63,9 @@
 
 /* This is a local property to add a device found */
 #define BT_PROPERTY_REMOTE_DEVICE_TIMESTAMP 0xFF
+
+// Default user ID to use when real user ID is not available
+#define BTIF_STORAGE_RESTRICTED_USER_ID_DEFAULT 1
 
 // TODO(b/369381361) Enfore -Wmissing-prototypes
 #pragma GCC diagnostic ignored "-Wmissing-prototypes"
@@ -107,11 +114,24 @@ static bool btif_has_ble_keys(const std::string& bdstr);
  *  Static functions
  ******************************************************************************/
 
+static int btif_storage_get_user_id() {
+  if (!com::android::bluetooth::flags::guest_mode_bond()) {
+    return BTIF_STORAGE_RESTRICTED_USER_ID_DEFAULT;
+  }
+#ifdef TARGET_FLOSS
+  return BTIF_STORAGE_RESTRICTED_USER_ID_DEFAULT;
+#else
+  return multiuser_get_user_id(getuid());
+#endif
+}
+
 static void btif_storage_set_mode(RawAddress* remote_bd_addr) {
   std::string bdstr = remote_bd_addr->ToString();
   if (GetInterfaceToProfiles()->config->isRestrictedMode()) {
-    log::info("{} will be removed exiting restricted mode", *remote_bd_addr);
-    btif_config_set_int(bdstr, BTIF_STORAGE_KEY_RESTRICTED, 1);
+    int user_id = btif_storage_get_user_id();
+    log::info("{} added by user {}, will be removed on exiting restricted mode", *remote_bd_addr,
+              user_id);
+    btif_config_set_int(bdstr, BTIF_STORAGE_KEY_RESTRICTED, user_id);
   }
 }
 
