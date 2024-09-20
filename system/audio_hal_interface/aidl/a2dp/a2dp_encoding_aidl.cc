@@ -23,10 +23,22 @@
 #include <vector>
 
 #include "a2dp_provider_info.h"
-#include "a2dp_transport.h"
 #include "audio_aidl_interfaces.h"
+#include "client_interface_aidl.h"
 #include "codec_status_aidl.h"
 #include "transport_instance.h"
+
+typedef enum {
+  A2DP_CTRL_CMD_NONE,
+  A2DP_CTRL_CMD_CHECK_READY,
+  A2DP_CTRL_CMD_START,
+  A2DP_CTRL_CMD_STOP,
+  A2DP_CTRL_CMD_SUSPEND,
+  A2DP_CTRL_GET_INPUT_AUDIO_CONFIG,
+  A2DP_CTRL_GET_OUTPUT_AUDIO_CONFIG,
+  A2DP_CTRL_SET_OUTPUT_AUDIO_CONFIG,
+  A2DP_CTRL_GET_PRESENTATION_POSITION,
+} tA2DP_CTRL_CMD;
 
 namespace fmt {
 template <>
@@ -41,6 +53,47 @@ namespace bluetooth {
 namespace audio {
 namespace aidl {
 namespace a2dp {
+
+namespace {
+
+using ::bluetooth::audio::a2dp::BluetoothAudioStatus;
+using ::bluetooth::audio::aidl::a2dp::LatencyMode;
+
+// Provide call-in APIs for the Bluetooth Audio HAL
+class A2dpTransport : public ::bluetooth::audio::aidl::a2dp::IBluetoothTransportInstance {
+public:
+  A2dpTransport(SessionType sessionType);
+
+  BluetoothAudioStatus StartRequest(bool is_low_latency) override;
+
+  BluetoothAudioStatus SuspendRequest() override;
+
+  void StopRequest() override;
+
+  void SetLatencyMode(LatencyMode latency_mode) override;
+
+  bool GetPresentationPosition(uint64_t* remote_delay_report_ns, uint64_t* total_bytes_read,
+                               timespec* data_position) override;
+
+  tA2DP_CTRL_CMD GetPendingCmd() const;
+
+  void ResetPendingCmd();
+
+  void ResetPresentationPosition();
+
+  void LogBytesRead(size_t bytes_read) override;
+
+  // delay reports from AVDTP is based on 1/10 ms (100us)
+  void SetRemoteDelay(uint16_t delay_report);
+
+private:
+  static tA2DP_CTRL_CMD a2dp_pending_cmd_;
+  static uint16_t remote_delay_report_;
+  uint64_t total_bytes_read_;
+  timespec data_position_;
+};
+
+}  // namespace
 
 using ::bluetooth::audio::a2dp::BluetoothAudioPort;
 using ::bluetooth::audio::a2dp::BluetoothAudioStatus;
@@ -57,7 +110,7 @@ using ::aidl::android::hardware::bluetooth::audio::CodecConfiguration;
 using ::aidl::android::hardware::bluetooth::audio::PcmConfiguration;
 using ::aidl::android::hardware::bluetooth::audio::SessionType;
 
-using ::bluetooth::audio::aidl::a2dp::BluetoothAudioSinkClientInterface;
+using ::bluetooth::audio::aidl::a2dp::BluetoothAudioClientInterface;
 using ::bluetooth::audio::aidl::a2dp::codec::A2dpAacToHalConfig;
 using ::bluetooth::audio::aidl::a2dp::codec::A2dpAptxToHalConfig;
 using ::bluetooth::audio::aidl::a2dp::codec::A2dpCodecToHalBitsPerSample;
@@ -78,7 +131,7 @@ tA2DP_CTRL_CMD A2dpTransport::a2dp_pending_cmd_ = A2DP_CTRL_CMD_NONE;
 uint16_t A2dpTransport::remote_delay_report_ = 0;
 
 A2dpTransport::A2dpTransport(SessionType sessionType)
-    : IBluetoothSinkTransportInstance(sessionType, (AudioConfiguration){}),
+    : IBluetoothTransportInstance(sessionType, (AudioConfiguration){}),
       total_bytes_read_(0),
       data_position_({}) {
   a2dp_pending_cmd_ = A2DP_CTRL_CMD_NONE;
@@ -151,20 +204,6 @@ bool A2dpTransport::GetPresentationPosition(uint64_t* remote_delay_report_ns,
   return true;
 }
 
-void A2dpTransport::SourceMetadataChanged(const source_metadata_v7_t& source_metadata) {
-  auto track_count = source_metadata.track_count;
-  auto tracks = source_metadata.tracks;
-  log::verbose("{} track(s) received", track_count);
-  while (track_count) {
-    log::verbose("usage={}, content_type={}, gain={}", tracks->base.usage,
-                 tracks->base.content_type, tracks->base.gain);
-    --track_count;
-    ++tracks;
-  }
-}
-
-void A2dpTransport::SinkMetadataChanged(const sink_metadata_v7_t&) {}
-
 tA2DP_CTRL_CMD A2dpTransport::GetPendingCmd() const { return a2dp_pending_cmd_; }
 
 void A2dpTransport::ResetPendingCmd() { a2dp_pending_cmd_ = A2DP_CTRL_CMD_NONE; }
@@ -192,9 +231,9 @@ void A2dpTransport::LogBytesRead(size_t bytes_read) {
 void A2dpTransport::SetRemoteDelay(uint16_t delay_report) { remote_delay_report_ = delay_report; }
 
 // Common interface to call-out into Bluetooth Audio HAL
-BluetoothAudioSinkClientInterface* software_hal_interface = nullptr;
-BluetoothAudioSinkClientInterface* offloading_hal_interface = nullptr;
-BluetoothAudioSinkClientInterface* active_hal_interface = nullptr;
+BluetoothAudioClientInterface* software_hal_interface = nullptr;
+BluetoothAudioClientInterface* offloading_hal_interface = nullptr;
+BluetoothAudioClientInterface* active_hal_interface = nullptr;
 
 // ProviderInfo for A2DP hardware offload encoding and decoding data paths,
 // if supported by the HAL and enabled. nullptr if not supported
@@ -305,9 +344,9 @@ bool is_hal_offloading() {
 // Opens the HAL client interface of the specified session type and check
 // that is is valid. Returns nullptr if the client interface did not open
 // properly.
-static BluetoothAudioSinkClientInterface* new_hal_interface(SessionType session_type) {
+static BluetoothAudioClientInterface* new_hal_interface(SessionType session_type) {
   auto a2dp_transport = new A2dpTransport(session_type);
-  auto hal_interface = new BluetoothAudioSinkClientInterface(a2dp_transport);
+  auto hal_interface = new BluetoothAudioClientInterface(a2dp_transport);
   if (hal_interface->IsValid()) {
     return hal_interface;
   } else {
@@ -319,7 +358,7 @@ static BluetoothAudioSinkClientInterface* new_hal_interface(SessionType session_
 }
 
 /// Delete the selected HAL client interface.
-static void delete_hal_interface(BluetoothAudioSinkClientInterface* hal_interface) {
+static void delete_hal_interface(BluetoothAudioClientInterface* hal_interface) {
   if (hal_interface == nullptr) {
     return;
   }
