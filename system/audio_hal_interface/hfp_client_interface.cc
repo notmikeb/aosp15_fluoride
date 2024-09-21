@@ -27,6 +27,9 @@
 #include "os/log.h"
 #include "osi/include/properties.h"
 
+// TODO(b/369381361) Enfore -Wmissing-prototypes
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+
 using ::bluetooth::audio::aidl::hfp::HfpDecodingTransport;
 using ::bluetooth::audio::aidl::hfp::HfpEncodingTransport;
 using AudioConfiguration = ::aidl::android::hardware::bluetooth::audio::AudioConfiguration;
