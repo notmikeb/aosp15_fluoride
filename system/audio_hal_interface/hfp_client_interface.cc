@@ -187,7 +187,7 @@ size_t HfpClientInterface::Decode::Write(const uint8_t* p_buf, uint32_t len) {
     log::warn("Unsupported HIDL or AIDL version");
     return 0;
   }
-  log::info("decode");
+  log::verbose("decode");
   return get_decode_client_interface()->WriteAudioData(p_buf, len);
 }
 
@@ -348,7 +348,7 @@ size_t HfpClientInterface::Encode::Read(uint8_t* p_buf, uint32_t len) {
     log::warn("Unsupported HIDL or AIDL version");
     return 0;
   }
-  log::info("encode");
+  log::verbose("encode");
   return get_encode_client_interface()->ReadAudioData(p_buf, len);
 }
 
