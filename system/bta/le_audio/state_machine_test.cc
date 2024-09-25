@@ -1806,13 +1806,14 @@ TEST_F(StateMachineTest, testConfigureCodecSingleFb2) {
    */
   auto* leAudioDevice = group->GetFirstDevice();
   PrepareConfigureCodecHandler(group, 1);
+  PrepareConfigureQosHandler(group, 1);
 
   /* Start the configuration and stream Media content.
-   * Expect 2 times: for Codec Configure & QoS Configure */
+   * Expect 3 times: for Codec Configure & QoS Configure & Enable */
   EXPECT_CALL(gatt_queue,
               WriteCharacteristic(leAudioDevice->conn_id_, leAudioDevice->ctp_hdls_.val_hdl, _,
                                   GATT_WRITE_NO_RSP, _, _))
-          .Times(2);
+          .Times(3);
 
   InjectInitialIdleNotification(group);
 

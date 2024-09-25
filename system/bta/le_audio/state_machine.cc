@@ -505,9 +505,6 @@ public:
     /* Assign all connection handles to multiple device ASEs */
     group->AssignCisConnHandlesToAses();
 
-    /* Last node configured, process group to codec configured state */
-    group->SetState(AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED);
-
     PrepareAndSendQoSToTheGroup(group);
   }
 
@@ -2229,6 +2226,8 @@ private:
           log::debug("Waiting for all the devices to be in QoS state");
           return;
         }
+
+        group->SetState(AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED);
 
         PrepareAndSendEnableToTheGroup(group);
 
