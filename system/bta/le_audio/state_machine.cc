@@ -241,7 +241,25 @@ public:
       case AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED: {
         LeAudioDevice* leAudioDevice = group->GetFirstActiveDevice();
         if (!leAudioDevice) {
-          log::error("group has no active devices");
+          group->PrintDebugState();
+          log::error("group_id: {} has no active devices", group->group_id_);
+          return false;
+        }
+
+        if (!group->IsConfiguredForContext(context_type)) {
+          if (group->GetConfigurationContextType() == context_type) {
+            log::info(
+                    "Looks like another device connected in the meantime to group_id: {}, try to "
+                    "reconfigure.",
+                    group->group_id_);
+            if (group->Configure(context_type, metadata_context_types, ccid_lists)) {
+              return PrepareAndSendCodecConfigToTheGroup(group);
+            }
+          }
+          log::error("Trying to start stream not configured for the context {} in group_id: {} ",
+                     ToString(context_type), group->group_id_);
+          group->PrintDebugState();
+          StopStream(group);
           return false;
         }
 
@@ -1864,6 +1882,7 @@ private:
     }
 
     std::vector<uint8_t> value;
+    log::info("{} -> ", leAudioDevice->address_);
     bluetooth::le_audio::client_parser::ascs::PrepareAseCtpCodecConfig(confs, value);
     WriteToControlPoint(leAudioDevice, value);
 
@@ -1997,8 +2016,12 @@ private:
           if (group->cig.GetState() == CigState::CREATED) {
             /* It can happen on the earbuds switch scenario. When one device
              * is getting remove while other is adding to the stream and CIG is
-             * already created */
-            PrepareAndSendConfigQos(group, leAudioDevice);
+             * already created.
+             * Also if one of the set members got reconnected while the other was in QoSConfigured
+             * state. In this case, state machine will keep CIG but will send Codec Config to all
+             * the set members and when ASEs will move to Codec Configured State, we would like a
+             * whole group to move to QoS Configure.*/
+            PrepareAndSendQoSToTheGroup(group);
           } else if (!CigCreate(group)) {
             log::error("Could not create CIG. Stop the stream for group {}", group->group_id_);
             StopStream(group);
@@ -2467,11 +2490,22 @@ private:
     msg_stream << kLogAseQoSConfigOp;
 
     std::stringstream extra_stream;
+    int number_of_active_ases = 0;
+    int number_of_streaming_ases = 0;
 
     for (struct ase* ase = leAudioDevice->GetFirstActiveAse(); ase != nullptr;
          ase = leAudioDevice->GetNextActiveAse(ase)) {
       log::debug("device: {}, ase_id: {}, cis_id: {}, ase state: {}", leAudioDevice->address_,
                  ase->id, ase->cis_id, ToString(ase->state));
+
+      /* QoS Config can be done on ASEs which are in Codec Configured and QoS Configured state.
+       * If ASE is streaming, it can be skipped.
+       */
+      number_of_active_ases++;
+      if (ase->state == AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING) {
+        number_of_streaming_ases++;
+        continue;
+      }
 
       /* Fill in the whole group dependent ASE parameters */
       if (!group->GetPresentationDelay(&ase->qos_config.presentation_delay, ase->direction)) {
@@ -2521,6 +2555,11 @@ private:
       // dir...cis_id,sdu,lat,rtn,phy,frm;;
       extra_stream << +conf.cis << "," << +conf.max_sdu << "," << +conf.max_transport_latency << ","
                    << +conf.retrans_nb << "," << +conf.phy << "," << +conf.framing << ";;";
+    }
+
+    if (number_of_streaming_ases > 0 && number_of_streaming_ases == number_of_active_ases) {
+      log::debug("Device {} is already streaming", leAudioDevice->address_);
+      return;
     }
 
     if (confs.size() == 0 || !validate_transport_latency || !validate_max_sdu_size) {
