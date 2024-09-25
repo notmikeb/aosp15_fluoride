@@ -301,11 +301,24 @@ public:
 
   bool ConfigureStream(LeAudioDeviceGroup* group, LeAudioContextType context_type,
                        const BidirectionalPair<AudioContexts>& metadata_context_types,
-                       BidirectionalPair<std::vector<uint8_t>> ccid_lists) override {
+                       BidirectionalPair<std::vector<uint8_t>> ccid_lists,
+                       bool configure_qos) override {
     if (group->GetState() > AseState::BTA_LE_AUDIO_ASE_STATE_CODEC_CONFIGURED) {
       log::error("Stream should be stopped or in configured stream. Current state: {}",
                  ToString(group->GetState()));
       return false;
+    }
+
+    if (configure_qos) {
+      if (group->IsConfiguredForContext(context_type)) {
+        if (group->Activate(context_type, metadata_context_types, ccid_lists)) {
+          SetTargetState(group, AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED);
+          if (CigCreate(group)) {
+            return true;
+          }
+        }
+      }
+      log::info("Could not activate device, try to configure it again");
     }
 
     group->Deactivate();
@@ -319,7 +332,11 @@ public:
     }
 
     group->cig.GenerateCisIds(context_type);
-    SetTargetState(group, AseState::BTA_LE_AUDIO_ASE_STATE_CODEC_CONFIGURED);
+    if (configure_qos) {
+      SetTargetState(group, AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED);
+    } else {
+      SetTargetState(group, AseState::BTA_LE_AUDIO_ASE_STATE_CODEC_CONFIGURED);
+    }
     return PrepareAndSendCodecConfigToTheGroup(group);
   }
 
@@ -507,7 +524,8 @@ public:
               group->group_id_, ToString(group->cig.GetState()),
               static_cast<int>(conn_handles.size()));
 
-    if (group->GetTargetState() != AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING) {
+    if (group->GetTargetState() != AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING &&
+        group->GetTargetState() != AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED) {
       /* Group is not going to stream. It happen while CIG was creating.
        * Remove CIG in such a case
        */
@@ -2012,7 +2030,8 @@ private:
         /* Last node configured, process group to codec configured state */
         group->SetState(AseState::BTA_LE_AUDIO_ASE_STATE_CODEC_CONFIGURED);
 
-        if (group->GetTargetState() == AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING) {
+        if (group->GetTargetState() == AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING ||
+            group->GetTargetState() == AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED) {
           if (group->cig.GetState() == CigState::CREATED) {
             /* It can happen on the earbuds switch scenario. When one device
              * is getting remove while other is adding to the stream and CIG is
@@ -2224,7 +2243,8 @@ private:
       case AseState::BTA_LE_AUDIO_ASE_STATE_CODEC_CONFIGURED: {
         SetAseState(leAudioDevice, ase, AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED);
 
-        if (group->GetTargetState() != AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING) {
+        if (group->GetTargetState() != AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING &&
+            group->GetTargetState() != AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED) {
           log::warn("{}, ase_id: {}, target state: {}", leAudioDevice->address_, ase->id,
                     ToString(group->GetTargetState()));
           group->PrintDebugState();
@@ -2252,6 +2272,12 @@ private:
 
         group->SetState(AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED);
 
+        if (group->GetTargetState() == AseState::BTA_LE_AUDIO_ASE_STATE_QOS_CONFIGURED) {
+          cancel_watchdog_if_needed(group->group_id_);
+          state_machine_callbacks_->StatusReportCb(group->group_id_,
+                                                   GroupStreamStatus::CONFIGURED_BY_USER);
+          return;
+        }
         PrepareAndSendEnableToTheGroup(group);
 
         break;
