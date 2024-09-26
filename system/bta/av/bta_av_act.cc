@@ -33,6 +33,7 @@
 #include "bta/include/bta_ar_api.h"
 #include "bta/include/utl.h"
 #include "btif/avrcp/avrcp_service.h"
+#include "btif/include/btif_av.h"
 #include "device/include/device_iot_config.h"
 #include "device/include/interop.h"
 #include "internal_include/bt_target.h"
@@ -71,13 +72,6 @@ static void bta_av_accept_signalling_timer_cback(void* data);
 #ifndef AVRC_MIN_META_CMD_LEN
 #define AVRC_MIN_META_CMD_LEN 20
 #endif
-
-extern bool btif_av_is_source_enabled(void);
-extern bool btif_av_both_enable(void);
-extern bool btif_av_src_sink_coexist_enabled(void);
-extern bool btif_av_is_sink_enabled(void);
-extern bool btif_av_peer_is_connected_sink(const RawAddress& peer_address);
-extern const RawAddress& btif_av_find_by_handle(tBTA_AV_HNDL bta_handle);
 
 /*******************************************************************************
  *
