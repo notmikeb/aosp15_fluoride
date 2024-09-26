@@ -1177,7 +1177,6 @@ public class HeadsetService extends ProfileService {
                             am.setCommunicationDevice(audioDeviceInfo.get());
                             Log.i(TAG, "Audio Manager will initiate the SCO for Voice Recognition");
                         });
-                return true;
             } else {
                 Log.w(
                         TAG,
@@ -1232,7 +1231,6 @@ public class HeadsetService extends ProfileService {
                     () -> {
                         mSystemInterface.getAudioManager().clearCommunicationDevice();
                     });
-            return true;
         }
         enableSwbCodec(HeadsetHalConstants.BTHF_SWB_CODEC_VENDOR_APTX, false, device);
         return true;
