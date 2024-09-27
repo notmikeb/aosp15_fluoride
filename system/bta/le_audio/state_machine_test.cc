@@ -2609,6 +2609,62 @@ TEST_F(StateMachineTest, testStreamMultipleMedia_OneMemberHasNoAsesAndNotConnect
   ASSERT_EQ(1, get_func_call_count("alarm_cancel"));
 }
 
+TEST_F(StateMachineTest, testStreamSingleConversational_TwsWithTwoBidirectional) {
+  const auto context_type = kContextTypeConversational;
+  const auto leaudio_group_id = 4;
+  const auto num_devices = 1;
+
+  /* Conversational to single device which has 4 ASE Sink and 2 ASE Source and channel count 1.
+   * This should result with CIG configured with 2 bidirectional channels .
+   */
+
+  additional_snk_ases = 3;
+  additional_src_ases = 1;
+
+  auto* group = PrepareSingleTestDeviceGroup(leaudio_group_id, context_type, num_devices);
+  ASSERT_EQ(group->Size(), num_devices);
+
+  PrepareConfigureCodecHandler(group);
+  PrepareConfigureQosHandler(group);
+  PrepareEnableHandler(group);
+  PrepareReceiverStartReadyHandler(group);
+
+  EXPECT_CALL(*mock_iso_manager_, CreateCig(_, _)).Times(1);
+  EXPECT_CALL(*mock_iso_manager_, EstablishCis(_)).Times(1);
+  EXPECT_CALL(*mock_iso_manager_, SetupIsoDataPath(_, _)).Times(4);
+  EXPECT_CALL(*mock_iso_manager_, RemoveIsoDataPath(_, _)).Times(0);
+  EXPECT_CALL(*mock_iso_manager_, DisconnectCis(_, _)).Times(0);
+  EXPECT_CALL(*mock_iso_manager_, RemoveCig(_, _)).Times(0);
+
+  InjectInitialIdleNotification(group);
+
+  auto* leAudioDevice = group->GetFirstDevice();
+  auto expected_devices_written = 0;
+  while (leAudioDevice) {
+    EXPECT_CALL(gatt_queue,
+                WriteCharacteristic(leAudioDevice->conn_id_, leAudioDevice->ctp_hdls_.val_hdl, _,
+                                    GATT_WRITE_NO_RSP, _, _))
+            .Times(4);
+    expected_devices_written++;
+    leAudioDevice = group->GetNextDevice(leAudioDevice);
+  }
+  ASSERT_EQ(expected_devices_written, num_devices);
+
+  // Validate GroupStreamStatus
+  EXPECT_CALL(mock_callbacks_,
+              StatusReportCb(leaudio_group_id, bluetooth::le_audio::GroupStreamStatus::STREAMING));
+
+  // Start the configuration and stream Media content
+  ASSERT_TRUE(LeAudioGroupStateMachine::Get()->StartStream(
+          group, context_type,
+          {.sink = types::AudioContexts(context_type),
+           .source = types::AudioContexts(context_type)}));
+
+  // Check if group has transitioned to a proper state
+  ASSERT_EQ(group->GetState(), types::AseState::BTA_LE_AUDIO_ASE_STATE_STREAMING);
+  ASSERT_EQ(1, get_func_call_count("alarm_cancel"));
+}
+
 TEST_F(StateMachineTest, testStreamMultipleConversational) {
   const auto context_type = kContextTypeConversational;
   const auto leaudio_group_id = 4;
