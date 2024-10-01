@@ -2224,7 +2224,6 @@ public class BassClientStateMachineTest {
     public void periodicAdvertisingCallbackOnSyncLost_notifySourceLost() {
         mSetFlagsRule.disableFlags(
                 Flags.FLAG_LEAUDIO_BROADCAST_EXTRACT_PERIODIC_SCANNER_FROM_STATE_MACHINE);
-        mSetFlagsRule.enableFlags(Flags.FLAG_LEAUDIO_BROADCAST_MONITOR_SOURCE_SYNC_STATUS);
         PeriodicAdvertisingCallback cb = mBassClientStateMachine.mLocalPeriodicAdvCallback;
         BassClientService.Callbacks callbacks = Mockito.mock(BassClientService.Callbacks.class);
         int syncHandle = 1;
@@ -2240,7 +2239,6 @@ public class BassClientStateMachineTest {
     public void periodicAdvertisingCallbackOnBigInfoAdvertisingReport_updateRssi() {
         mSetFlagsRule.disableFlags(
                 Flags.FLAG_LEAUDIO_BROADCAST_EXTRACT_PERIODIC_SCANNER_FROM_STATE_MACHINE);
-        mSetFlagsRule.enableFlags(Flags.FLAG_LEAUDIO_BROADCAST_MONITOR_SOURCE_SYNC_STATUS);
         PeriodicAdvertisingCallback cb = mBassClientStateMachine.mLocalPeriodicAdvCallback;
         BassClientService.Callbacks callbacks = Mockito.mock(BassClientService.Callbacks.class);
         int testRssi = -40;
