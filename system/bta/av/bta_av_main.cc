@@ -1192,7 +1192,9 @@ static void bta_av_non_state_machine_event(uint16_t event, tBTA_AV_DATA* p_data)
   }
 }
 
-static void bta_av_better_state_machine(tBTA_AV_CB* p_cb, uint16_t event, tBTA_AV_DATA* p_data) {
+void bta_av_sm_execute(tBTA_AV_CB* p_cb, uint16_t event, tBTA_AV_DATA* p_data) {
+  log::verbose("AV event=0x{:x}({}) state={}({})", event, bta_av_evt_code(event), p_cb->state,
+               bta_av_st_code(p_cb->state));
   switch (p_cb->state) {
     case BTA_AV_INIT_ST:
       switch (event) {
@@ -1244,12 +1246,6 @@ static void bta_av_better_state_machine(tBTA_AV_CB* p_cb, uint16_t event, tBTA_A
       }
       break;
   }
-}
-
-void bta_av_sm_execute(tBTA_AV_CB* p_cb, uint16_t event, tBTA_AV_DATA* p_data) {
-  log::verbose("AV event=0x{:x}({}) state={}({})", event, bta_av_evt_code(event), p_cb->state,
-               bta_av_st_code(p_cb->state));
-  bta_av_better_state_machine(p_cb, event, p_data);
 }
 
 /*******************************************************************************
