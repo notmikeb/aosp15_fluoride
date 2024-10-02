@@ -195,7 +195,6 @@ extern VolumeControlInterface* btif_volume_control_get_interface();
 bt_status_t btif_av_sink_execute_service(bool b_enable);
 bt_status_t btif_hh_execute_service(bool b_enable);
 bt_status_t btif_hf_client_execute_service(bool b_enable);
-bt_status_t btif_sdp_execute_service(bool b_enable);
 bt_status_t btif_hd_execute_service(bool b_enable);
 
 extern void gatt_tcb_dump(int fd);
