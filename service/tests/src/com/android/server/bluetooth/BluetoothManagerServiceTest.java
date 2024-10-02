@@ -302,13 +302,7 @@ public class BluetoothManagerServiceTest {
         IBluetoothCallback btCallback = captureBluetoothCallback(mAdapterBinder);
         verify(mAdapterBinder).offToBleOn(anyBoolean(), any());
 
-        // AdapterService is sending AdapterState.BLE_TURN_ON that will trigger this callback
-        // and in parallel it call its `bringUpBle()`
-        btCallback.onBluetoothStateChange(STATE_OFF, STATE_BLE_TURNING_ON);
-        syncHandler(MESSAGE_BLUETOOTH_STATE_CHANGE);
         assertThat(mManagerService.getState()).isEqualTo(STATE_BLE_TURNING_ON);
-
-        // assertThat(mManagerService.waitForManagerState(STATE_BLE_TURNING_ON)).isTrue();
 
         // GattService has been started by AdapterService and it will enable native side then
         // trigger the stateChangeCallback from native
@@ -319,7 +313,7 @@ public class BluetoothManagerServiceTest {
 
     private IBluetoothCallback transition_offToOn() throws Exception {
         IBluetoothCallback btCallback = transition_offToBleOn();
-        verify(mAdapterBinder, times(1)).bleOnToOn(any());
+        verify(mAdapterBinder).bleOnToOn(any());
 
         // AdapterService go to turning_on and start all profile on its own
         btCallback.onBluetoothStateChange(STATE_BLE_ON, STATE_TURNING_ON);
@@ -334,6 +328,45 @@ public class BluetoothManagerServiceTest {
         verify(mContext, times(6)).sendBroadcastAsUser(any(), any(), any(), any());
 
         return btCallback;
+    }
+
+    @Test
+    public void enable_whileTurningToBleOn_shouldEnable() throws Exception {
+        mManagerService.enableBle("enable_whileTurningToBleOn_shouldEnable", mBinder);
+        syncHandler(MESSAGE_ENABLE);
+
+        acceptBluetoothBinding(mBinder, "btservice.AdapterService", 1);
+        IBluetoothCallback btCallback = captureBluetoothCallback(mAdapterBinder);
+        assertThat(mManagerService.getState()).isEqualTo(STATE_BLE_TURNING_ON);
+
+        // receive enable when Bluetooth is in BLE_TURNING_ON
+        mManagerService.enable("enable_whileTurningToBleOn_shouldEnable");
+        syncHandler(MESSAGE_ENABLE);
+
+        btCallback.onBluetoothStateChange(STATE_BLE_TURNING_ON, STATE_BLE_ON);
+        syncHandler(MESSAGE_BLUETOOTH_STATE_CHANGE);
+
+        verify(mAdapterBinder).bleOnToOn(any());
+    }
+
+    @Test
+    public void enable_whileNotYetBoundToBle_shouldEnable() throws Exception {
+        mManagerService.enableBle("enable_whileTurningToBleOn_shouldEnable", mBinder);
+        syncHandler(MESSAGE_ENABLE);
+        assertThat(mManagerService.getState()).isEqualTo(STATE_OFF);
+
+        // receive enable when Bluetooth is OFF and not yet binded
+        mManagerService.enable("enable_whileTurningToBleOn_shouldEnable");
+        syncHandler(MESSAGE_ENABLE);
+
+        acceptBluetoothBinding(mBinder, "btservice.AdapterService", 1);
+        IBluetoothCallback btCallback = captureBluetoothCallback(mAdapterBinder);
+        assertThat(mManagerService.getState()).isEqualTo(STATE_BLE_TURNING_ON);
+
+        btCallback.onBluetoothStateChange(STATE_BLE_TURNING_ON, STATE_BLE_ON);
+        syncHandler(MESSAGE_BLUETOOTH_STATE_CHANGE);
+
+        verify(mAdapterBinder).bleOnToOn(any());
     }
 
     @Test
