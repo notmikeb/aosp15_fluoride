@@ -341,7 +341,7 @@ public class BluetoothManagerServiceTest {
         mManagerService.enableBle("enable_whileTurningToBleOn_shouldEnable", mBinder);
         syncHandler(MESSAGE_ENABLE);
 
-        acceptBluetoothBinding(mBinder, "btservice.AdapterService", 1);
+        acceptBluetoothBinding();
         IBluetoothCallback btCallback = captureBluetoothCallback(mAdapterBinder);
         assertThat(mManagerService.getState()).isEqualTo(STATE_BLE_TURNING_ON);
 
@@ -365,7 +365,7 @@ public class BluetoothManagerServiceTest {
         mManagerService.enable("enable_whileTurningToBleOn_shouldEnable");
         syncHandler(MESSAGE_ENABLE);
 
-        acceptBluetoothBinding(mBinder, "btservice.AdapterService", 1);
+        acceptBluetoothBinding();
         IBluetoothCallback btCallback = captureBluetoothCallback(mAdapterBinder);
         assertThat(mManagerService.getState()).isEqualTo(STATE_BLE_TURNING_ON);
 
