@@ -83,7 +83,6 @@ static void bta_av_api_enable(tBTA_AV_DATA* p_data);
 static void bta_av_api_register(tBTA_AV_DATA* p_data);
 static void bta_av_ci_data(tBTA_AV_DATA* p_data);
 static void bta_av_rpc_conn(tBTA_AV_DATA* p_data);
-static void bta_av_api_to_ssm(tBTA_AV_DATA* p_data);
 
 static void bta_av_sco_chg_cback(tBTA_SYS_CONN_STATUS status, uint8_t num_sco_links, uint8_t app_id,
                                  const RawAddress& peer_addr);
@@ -799,26 +798,6 @@ static void bta_av_rpc_conn(tBTA_AV_DATA* /* p_data */) {}
 
 /*******************************************************************************
  *
- * Function         bta_av_api_to_ssm
- *
- * Description      forward the API request to stream state machine
- *
- *
- * Returns          void
- *
- ******************************************************************************/
-static void bta_av_api_to_ssm(tBTA_AV_DATA* p_data) {
-  uint16_t event = p_data->hdr.event - BTA_AV_FIRST_A2S_API_EVT + BTA_AV_FIRST_A2S_SSM_EVT;
-  tBTA_AV_HNDL handle = p_data->hdr.layer_specific;
-  tBTA_AV_SCB* p_scb = bta_av_hndl_to_scb(handle);
-
-  if (p_scb != nullptr) {
-    bta_av_ssm_execute(p_scb, event, p_data);
-  }
-}
-
-/*******************************************************************************
- *
  * Function         bta_av_chk_start
  *
  * Description      if this is audio channel, check if more than one audio
@@ -1207,12 +1186,6 @@ static void bta_av_non_state_machine_event(uint16_t event, tBTA_AV_DATA* p_data)
     case BTA_AV_AVDT_RPT_CONN_EVT:
       bta_av_rpc_conn(p_data);
       break;
-    case BTA_AV_API_START_EVT:
-      bta_av_api_to_ssm(p_data);
-      break;
-    case BTA_AV_API_STOP_EVT:
-      bta_av_api_to_ssm(p_data);
-      break;
     case BTA_AV_API_PEER_SEP_EVT:
       bta_av_api_set_peer_sep(p_data);
       break;
@@ -1462,10 +1435,6 @@ const char* bta_av_evt_code(uint16_t evt_code) {
       return "DEREG_COMP";
     case BTA_AV_AVDT_RPT_CONN_EVT:
       return "RPT_CONN";
-    case BTA_AV_API_START_EVT:
-      return "API_START";
-    case BTA_AV_API_STOP_EVT:
-      return "API_STOP";
     default:
       return "unknown";
   }
