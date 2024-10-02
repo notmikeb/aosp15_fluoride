@@ -991,9 +991,7 @@ class BluetoothManagerService {
             Log.i(TAG, "enableBle: Bluetooth is already in state" + mState);
             return true;
         }
-        synchronized (mReceiver) {
-            sendEnableMsg(false, ENABLE_DISABLE_REASON_APPLICATION_REQUEST, packageName, true);
-        }
+        sendEnableMsg(false, ENABLE_DISABLE_REASON_APPLICATION_REQUEST, packageName, true);
         return true;
     }
 
@@ -1118,11 +1116,9 @@ class BluetoothManagerService {
             return false;
         }
 
-        synchronized (mReceiver) {
-            mQuietEnableExternal = true;
-            mEnableExternal = true;
-            sendEnableMsg(true, ENABLE_DISABLE_REASON_APPLICATION_REQUEST, packageName);
-        }
+        mQuietEnableExternal = true;
+        mEnableExternal = true;
+        sendEnableMsg(true, ENABLE_DISABLE_REASON_APPLICATION_REQUEST, packageName);
         return true;
     }
 
@@ -1144,13 +1140,11 @@ class BluetoothManagerService {
             return false;
         }
 
-        synchronized (mReceiver) {
-            mQuietEnableExternal = false;
-            mEnableExternal = true;
-            AirplaneModeListener.notifyUserToggledBluetooth(
-                    mContentResolver, mCurrentUserContext, true);
-            sendEnableMsg(false, ENABLE_DISABLE_REASON_APPLICATION_REQUEST, packageName);
-        }
+        mQuietEnableExternal = false;
+        mEnableExternal = true;
+        AirplaneModeListener.notifyUserToggledBluetooth(
+                mContentResolver, mCurrentUserContext, true);
+        sendEnableMsg(false, ENABLE_DISABLE_REASON_APPLICATION_REQUEST, packageName);
         return true;
     }
 
@@ -1167,16 +1161,14 @@ class BluetoothManagerService {
                         + (" isBinding=" + isBinding())
                         + (" mState=" + mState));
 
-        synchronized (mReceiver) {
-            AirplaneModeListener.notifyUserToggledBluetooth(
-                    mContentResolver, mCurrentUserContext, false);
+        AirplaneModeListener.notifyUserToggledBluetooth(
+                mContentResolver, mCurrentUserContext, false);
 
-            if (persist) {
-                setBluetoothPersistedState(BLUETOOTH_OFF);
-            }
-            mEnableExternal = false;
-            sendDisableMsg(ENABLE_DISABLE_REASON_APPLICATION_REQUEST, packageName);
+        if (persist) {
+            setBluetoothPersistedState(BLUETOOTH_OFF);
         }
+        mEnableExternal = false;
+        sendDisableMsg(ENABLE_DISABLE_REASON_APPLICATION_REQUEST, packageName);
         return true;
     }
 
