@@ -32,7 +32,6 @@
 #include "hci/hci_layer.h"
 #include "module.h"
 #include "os/handler.h"
-#include "os/log.h"
 #include "os/repeating_alarm.h"
 #include "packet/packet_view.h"
 #include "ras/ras_packets.h"
