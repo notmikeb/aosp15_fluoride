@@ -73,7 +73,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.hamcrest.MockitoHamcrest;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
@@ -107,7 +106,6 @@ public class HeadsetClientStateMachineTest {
     private static final int QUERY_CURRENT_CALLS_WAIT_MILLIS = 2000;
     private static final int QUERY_CURRENT_CALLS_TEST_WAIT_MILLIS =
             QUERY_CURRENT_CALLS_WAIT_MILLIS * 3 / 2;
-    private static final int TIMEOUT_MS = 1000;
 
     @Before
     public void setUp() throws Exception {
@@ -1383,10 +1381,10 @@ public class HeadsetClientStateMachineTest {
     @Test
     public void testProcessConnectTimeoutMessage_onConnectingState() {
         initToConnectingState();
-        Message msg =
+        sendMessageAndVerifyTransition(
                 mHeadsetClientStateMachine.obtainMessage(
-                        HeadsetClientStateMachine.CONNECTING_TIMEOUT);
-        sendMessageAndVerifyTransition(msg, HeadsetClientStateMachine.Disconnected.class);
+                        HeadsetClientStateMachine.CONNECTING_TIMEOUT),
+                HeadsetClientStateMachine.Disconnected.class);
         verify(mHeadsetService).updateInbandRinging(eq(mTestDevice), eq(false));
     }
 
@@ -1607,12 +1605,16 @@ public class HeadsetClientStateMachineTest {
     }
 
     private <T> void sendMessageAndVerifyTransition(Message msg, Class<T> type) {
-        Mockito.clearInvocations(mHeadsetClientService);
+        int previousState = mHeadsetClientStateMachine.getConnectionState(mTestDevice);
+
         mHeadsetClientStateMachine.sendMessage(msg);
-        // Verify that one connection state broadcast is executed
-        verify(mHeadsetClientService, timeout(TIMEOUT_MS))
-                .sendBroadcastMultiplePermissions(
-                        any(Intent.class), any(String[].class), any(BroadcastOptions.class));
+        TestUtils.waitForLooperToFinishScheduledTask(mHandlerThread.getLooper());
+
+        int newState = mHeadsetClientStateMachine.getConnectionState(mTestDevice);
+        verifySendBroadcastMultiplePermissions(
+                hasExtra(BluetoothProfile.EXTRA_PREVIOUS_STATE, previousState),
+                hasExtra(BluetoothProfile.EXTRA_STATE, newState));
+
         assertThat(mHeadsetClientStateMachine.getCurrentState()).isInstanceOf(type);
     }
 
