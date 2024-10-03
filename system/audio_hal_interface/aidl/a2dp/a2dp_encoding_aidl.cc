@@ -57,7 +57,6 @@ using ::aidl::android::hardware::bluetooth::audio::CodecConfiguration;
 using ::aidl::android::hardware::bluetooth::audio::PcmConfiguration;
 using ::aidl::android::hardware::bluetooth::audio::SessionType;
 
-using ::bluetooth::audio::aidl::a2dp::BluetoothAudioCtrlAck;
 using ::bluetooth::audio::aidl::a2dp::BluetoothAudioSinkClientInterface;
 using ::bluetooth::audio::aidl::a2dp::codec::A2dpAacToHalConfig;
 using ::bluetooth::audio::aidl::a2dp::codec::A2dpAptxToHalConfig;
@@ -67,21 +66,6 @@ using ::bluetooth::audio::aidl::a2dp::codec::A2dpCodecToHalSampleRate;
 using ::bluetooth::audio::aidl::a2dp::codec::A2dpLdacToHalConfig;
 using ::bluetooth::audio::aidl::a2dp::codec::A2dpOpusToHalConfig;
 using ::bluetooth::audio::aidl::a2dp::codec::A2dpSbcToHalConfig;
-
-static BluetoothAudioCtrlAck a2dp_ack_to_bt_audio_ctrl_ack(BluetoothAudioStatus ack) {
-  switch (ack) {
-    case BluetoothAudioStatus::SUCCESS:
-      return BluetoothAudioCtrlAck::SUCCESS_FINISHED;
-    case BluetoothAudioStatus::PENDING:
-      return BluetoothAudioCtrlAck::PENDING;
-    case BluetoothAudioStatus::UNSUPPORTED_CODEC_CONFIGURATION:
-      return BluetoothAudioCtrlAck::FAILURE_UNSUPPORTED;
-    case BluetoothAudioStatus::UNKNOWN:
-    case BluetoothAudioStatus::FAILURE:
-    default:
-      return BluetoothAudioCtrlAck::FAILURE;
-  }
-}
 
 /***
  *
@@ -101,17 +85,17 @@ A2dpTransport::A2dpTransport(SessionType sessionType)
   remote_delay_report_ = 0;
 }
 
-BluetoothAudioCtrlAck A2dpTransport::StartRequest(bool is_low_latency) {
+BluetoothAudioStatus A2dpTransport::StartRequest(bool is_low_latency) {
   // Check if a previous Start request is ongoing.
   if (a2dp_pending_cmd_ == A2DP_CTRL_CMD_START) {
     log::warn("unable to start stream: already pending");
-    return BluetoothAudioCtrlAck::PENDING;
+    return BluetoothAudioStatus::PENDING;
   }
 
   // Check if a different request is ongoing.
   if (a2dp_pending_cmd_ != A2DP_CTRL_CMD_NONE) {
     log::warn("unable to start stream: busy with pending command {}", a2dp_pending_cmd_);
-    return BluetoothAudioCtrlAck::FAILURE;
+    return BluetoothAudioStatus::FAILURE;
   }
 
   log::info("");
@@ -120,20 +104,20 @@ BluetoothAudioCtrlAck A2dpTransport::StartRequest(bool is_low_latency) {
   a2dp_pending_cmd_ =
           status == BluetoothAudioStatus::PENDING ? A2DP_CTRL_CMD_START : A2DP_CTRL_CMD_NONE;
 
-  return a2dp_ack_to_bt_audio_ctrl_ack(status);
+  return status;
 }
 
-BluetoothAudioCtrlAck A2dpTransport::SuspendRequest() {
+BluetoothAudioStatus A2dpTransport::SuspendRequest() {
   // Check if a previous Suspend request is ongoing.
   if (a2dp_pending_cmd_ == A2DP_CTRL_CMD_SUSPEND) {
     log::warn("unable to suspend stream: already pending");
-    return BluetoothAudioCtrlAck::PENDING;
+    return BluetoothAudioStatus::PENDING;
   }
 
   // Check if a different request is ongoing.
   if (a2dp_pending_cmd_ != A2DP_CTRL_CMD_NONE) {
     log::warn("unable to suspend stream: busy with pending command {}", a2dp_pending_cmd_);
-    return BluetoothAudioCtrlAck::FAILURE;
+    return BluetoothAudioStatus::FAILURE;
   }
 
   log::info("");
@@ -142,7 +126,7 @@ BluetoothAudioCtrlAck A2dpTransport::SuspendRequest() {
   a2dp_pending_cmd_ =
           status == BluetoothAudioStatus::PENDING ? A2DP_CTRL_CMD_SUSPEND : A2DP_CTRL_CMD_NONE;
 
-  return a2dp_ack_to_bt_audio_ctrl_ack(status);
+  return status;
 }
 
 void A2dpTransport::StopRequest() {
@@ -534,7 +518,7 @@ void ack_stream_started(BluetoothAudioStatus ack) {
   auto a2dp_sink = static_cast<A2dpTransport*>(active_hal_interface->GetTransportInstance());
   auto pending_cmd = a2dp_sink->GetPendingCmd();
   if (pending_cmd == A2DP_CTRL_CMD_START) {
-    active_hal_interface->StreamStarted(a2dp_ack_to_bt_audio_ctrl_ack(ack));
+    active_hal_interface->StreamStarted(ack);
   } else {
     log::warn("pending={} ignore result={}", pending_cmd, ack);
     return;
@@ -553,7 +537,7 @@ void ack_stream_suspended(BluetoothAudioStatus ack) {
   auto a2dp_sink = static_cast<A2dpTransport*>(active_hal_interface->GetTransportInstance());
   auto pending_cmd = a2dp_sink->GetPendingCmd();
   if (pending_cmd == A2DP_CTRL_CMD_SUSPEND) {
-    active_hal_interface->StreamSuspended(a2dp_ack_to_bt_audio_ctrl_ack(ack));
+    active_hal_interface->StreamSuspended(ack);
   } else if (pending_cmd == A2DP_CTRL_CMD_STOP) {
     log::info("A2DP_CTRL_CMD_STOP result={}", ack);
   } else {

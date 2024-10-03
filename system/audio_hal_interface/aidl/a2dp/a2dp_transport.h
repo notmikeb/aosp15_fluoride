@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "a2dp_encoding.h"
 #include "client_interface_aidl.h"
 
 typedef enum {
@@ -37,6 +38,7 @@ namespace a2dp {
 
 namespace {
 
+using ::bluetooth::audio::a2dp::BluetoothAudioStatus;
 using ::bluetooth::audio::aidl::a2dp::LatencyMode;
 
 // Provide call-in APIs for the Bluetooth Audio HAL
@@ -44,9 +46,9 @@ class A2dpTransport : public ::bluetooth::audio::aidl::a2dp::IBluetoothSinkTrans
 public:
   A2dpTransport(SessionType sessionType);
 
-  BluetoothAudioCtrlAck StartRequest(bool is_low_latency) override;
+  BluetoothAudioStatus StartRequest(bool is_low_latency) override;
 
-  BluetoothAudioCtrlAck SuspendRequest() override;
+  BluetoothAudioStatus SuspendRequest() override;
 
   void StopRequest() override;
 
