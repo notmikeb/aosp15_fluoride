@@ -18,8 +18,8 @@
 
 #include <hardware/audio.h>
 
+#include "a2dp_encoding.h"
 #include "audio_aidl_interfaces.h"
-#include "audio_ctrl_ack.h"
 
 namespace bluetooth {
 namespace audio {
@@ -29,6 +29,7 @@ namespace a2dp {
 using ::aidl::android::hardware::bluetooth::audio::AudioConfiguration;
 using ::aidl::android::hardware::bluetooth::audio::LatencyMode;
 using ::aidl::android::hardware::bluetooth::audio::SessionType;
+using ::bluetooth::audio::a2dp::BluetoothAudioStatus;
 
 /***
  * An IBluetoothTransportInstance needs to be implemented by a Bluetooth
@@ -73,9 +74,9 @@ public:
     }
   }
 
-  virtual BluetoothAudioCtrlAck StartRequest(bool is_low_latency) = 0;
+  virtual BluetoothAudioStatus StartRequest(bool is_low_latency) = 0;
 
-  virtual BluetoothAudioCtrlAck SuspendRequest() = 0;
+  virtual BluetoothAudioStatus SuspendRequest() = 0;
 
   virtual void StopRequest() = 0;
 
