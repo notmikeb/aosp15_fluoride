@@ -72,6 +72,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.hamcrest.MockitoHamcrest;
 import org.mockito.junit.MockitoJUnit;
@@ -87,6 +88,7 @@ public class HeadsetClientStateMachineTest {
     private BluetoothAdapter mAdapter;
     private HandlerThread mHandlerThread;
     private TestHeadsetClientStateMachine mHeadsetClientStateMachine;
+    private InOrder mInOrder;
     private BluetoothDevice mTestDevice;
 
     @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
@@ -109,6 +111,7 @@ public class HeadsetClientStateMachineTest {
 
     @Before
     public void setUp() throws Exception {
+        mInOrder = inOrder(mHeadsetClientService);
         // Setup mocks and test assets
         // Set a valid volume
         when(mAudioManager.getStreamVolume(anyInt())).thenReturn(2);
@@ -248,7 +251,9 @@ public class HeadsetClientStateMachineTest {
                 .isInstanceOf(HeadsetClientStateMachine.Connecting.class);
 
         // Verify that one connection state broadcast is executed
-        verify(mHeadsetClientService, timeout(HeadsetClientStateMachine.CONNECTING_TIMEOUT_MS * 2))
+        mInOrder.verify(
+                        mHeadsetClientService,
+                        timeout(HeadsetClientStateMachine.CONNECTING_TIMEOUT_MS * 2))
                 .sendBroadcastMultiplePermissions(
                         MockitoHamcrest.argThat(
                                 hasExtra(
@@ -393,7 +398,7 @@ public class HeadsetClientStateMachineTest {
         TestUtils.waitForLooperToFinishScheduledTask(mHandlerThread.getLooper());
         mHeadsetClientStateMachine.sendMessage(StackEvent.STACK_EVENT, eventCallStatusUpdated);
         TestUtils.waitForLooperToFinishScheduledTask(mHandlerThread.getLooper());
-        verify(mHeadsetClientService, timeout(STANDARD_WAIT_MILLIS))
+        mInOrder.verify(mHeadsetClientService, never())
                 .sendBroadcast(any(Intent.class), anyString(), any(Bundle.class));
 
         // Provide information about the new call
@@ -406,7 +411,8 @@ public class HeadsetClientStateMachineTest {
         eventIncomingCall.device = mTestDevice;
 
         mHeadsetClientStateMachine.sendMessage(StackEvent.STACK_EVENT, eventIncomingCall);
-        verify(mHeadsetClientService, timeout(STANDARD_WAIT_MILLIS))
+        TestUtils.waitForLooperToFinishScheduledTask(mHandlerThread.getLooper());
+        mInOrder.verify(mHeadsetClientService, never())
                 .sendBroadcast(any(Intent.class), anyString(), any(Bundle.class));
 
         // Signal that the complete list of calls was received.
@@ -416,17 +422,15 @@ public class HeadsetClientStateMachineTest {
         TestUtils.waitForLooperToFinishScheduledTask(mHandlerThread.getLooper());
 
         ArgumentCaptor<Intent> intentArgument = ArgumentCaptor.forClass(Intent.class);
-        verify(mHeadsetClientService, timeout(QUERY_CURRENT_CALLS_TEST_WAIT_MILLIS).times(2))
+        mInOrder.verify(mHeadsetClientService, timeout(QUERY_CURRENT_CALLS_TEST_WAIT_MILLIS))
                 .sendBroadcast(intentArgument.capture(), anyString(), any(Bundle.class));
         // Verify that the new call is being registered with the inBandRing flag set.
-        assertThat(
-                        ((HfpClientCall)
-                                        intentArgument
-                                                .getValue()
-                                                .getParcelableExtra(
-                                                        BluetoothHeadsetClient.EXTRA_CALL))
-                                .isInBandRing())
-                .isTrue();
+        HfpClientCall clientCall =
+                (HfpClientCall)
+                        intentArgument
+                                .getValue()
+                                .getParcelableExtra(BluetoothHeadsetClient.EXTRA_CALL);
+        assertThat(clientCall.isInBandRing()).isTrue();
 
         // Disable In Band Ring and verify state gets propagated.
         eventInBandRing.valueInt = 0;
@@ -479,17 +483,17 @@ public class HeadsetClientStateMachineTest {
 
         // Verify the broadcast
         ArgumentCaptor<Intent> intentArgument = ArgumentCaptor.forClass(Intent.class);
-        verify(mHeadsetClientService)
+        mInOrder.verify(mHeadsetClientService)
                 .sendBroadcast(intentArgument.capture(), anyString(), any(Bundle.class));
 
         // Verify that the parcelable extra has a legacy {@code BluetoothHeadsetClientCall} type for
         // wearables.
-        assertThat(
-                        (Object)
-                                intentArgument
-                                        .getValue()
-                                        .getParcelableExtra(BluetoothHeadsetClient.EXTRA_CALL))
-                .isInstanceOf(BluetoothHeadsetClientCall.class);
+        Object clientCall =
+                (Object)
+                        intentArgument
+                                .getValue()
+                                .getParcelableExtra(BluetoothHeadsetClient.EXTRA_CALL);
+        assertThat(clientCall).isInstanceOf(BluetoothHeadsetClientCall.class);
 
         // To satisfy the @After verification
         verify(mHeadsetService).updateInbandRinging(eq(mTestDevice), eq(true));
@@ -825,7 +829,7 @@ public class HeadsetClientStateMachineTest {
                 BluetoothHeadsetClient.STATE_AUDIO_CONNECTED,
                 BluetoothHeadsetClient.STATE_AUDIO_CONNECTING);
 
-        verify(mHeadsetClientService).sendBroadcast(any(), any(), any());
+        mInOrder.verify(mHeadsetClientService).sendBroadcast(any(), any(), any());
     }
 
     @Test
@@ -1589,7 +1593,7 @@ public class HeadsetClientStateMachineTest {
     }
 
     private void verifySendBroadcastMultiplePermissions(Matcher<Intent>... matchers) {
-        verify(mHeadsetClientService, timeout(STANDARD_WAIT_MILLIS))
+        mInOrder.verify(mHeadsetClientService, timeout(STANDARD_WAIT_MILLIS))
                 .sendBroadcastMultiplePermissions(
                         MockitoHamcrest.argThat(AllOf.allOf(matchers)),
                         any(String[].class),
@@ -1597,7 +1601,7 @@ public class HeadsetClientStateMachineTest {
     }
 
     private void verifySendBroadcast(Matcher<Intent>... matchers) {
-        verify(mHeadsetClientService, timeout(STANDARD_WAIT_MILLIS))
+        mInOrder.verify(mHeadsetClientService, timeout(STANDARD_WAIT_MILLIS))
                 .sendBroadcast(
                         MockitoHamcrest.argThat(AllOf.allOf(matchers)),
                         anyString(),
