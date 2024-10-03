@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- *  Copyright 2014 The Android Open Source Project
+ *  Copyright 2024 Google, LLC.
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -16,23 +16,10 @@
  *
  ******************************************************************************/
 
-/*******************************************************************************
- *
- *  Filename:      btif_sdp.h
- *
- *  Description:   Bluetooth SDP search Interface
- *
- ******************************************************************************/
+#pragma once
 
-#ifndef BTIF_SDP_H
-#define BTIF_SDP_H
+#include <hardware/bluetooth.h>
+#include <hardware/bt_hf_client.h>
 
-#include <hardware/bt_sdp.h>
-
-const btsdp_interface_t* btif_sdp_get_interface();
-bt_status_t btif_sdp_execute_service(bool b_enable);
-
-bt_status_t sdp_server_init();
-void sdp_server_cleanup();
-
-#endif
+const bthf_client_interface_t* btif_hf_client_get_interface();
+bt_status_t btif_hf_client_execute_service(bool b_enable);
