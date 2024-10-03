@@ -71,7 +71,8 @@ BluetoothAudioStatusToHalStatus(BluetoothAudioStatus ack) {
     case BluetoothAudioStatus::SUCCESS:
       return ::aidl::android::hardware::bluetooth::audio::BluetoothAudioStatus::SUCCESS;
     case BluetoothAudioStatus::UNSUPPORTED_CODEC_CONFIGURATION:
-      return ::aidl::android::hardware::bluetooth::audio::BluetoothAudioStatus::UNSUPPORTED_CODEC_CONFIGURATION;
+      return ::aidl::android::hardware::bluetooth::audio::BluetoothAudioStatus::
+              UNSUPPORTED_CODEC_CONFIGURATION;
     case BluetoothAudioStatus::PENDING:
     case BluetoothAudioStatus::FAILURE:
     default:
@@ -87,9 +88,10 @@ BluetoothAudioStatusToHalStatus(BluetoothAudioStatus ack) {
 class BluetoothAudioClientInterface {
 public:
   BluetoothAudioClientInterface(IBluetoothTransportInstance* instance);
-  virtual ~BluetoothAudioClientInterface() = default;
+  virtual ~BluetoothAudioClientInterface();
 
   bool IsValid() const;
+  IBluetoothTransportInstance* GetTransportInstance() const { return transport_; }
 
   std::vector<AudioCapabilities> GetAudioCapabilities() const;
 
@@ -123,35 +125,10 @@ public:
 
   bool SetAllowedLatencyModes(std::vector<LatencyMode> latency_modes);
 
-  void FlushAudioData();
-
-  void SetCodecPriority(CodecId codec_id, int32_t priority);
-
-  std::vector<IBluetoothAudioProvider::LeAudioAseConfigurationSetting> GetLeAudioAseConfiguration(
-          std::optional<
-                  std::vector<std::optional<IBluetoothAudioProvider::LeAudioDeviceCapabilities>>>&
-                  remoteSinkAudioCapabilities,
-          std::optional<
-                  std::vector<std::optional<IBluetoothAudioProvider::LeAudioDeviceCapabilities>>>&
-                  remoteSourceAudioCapabilities,
-          std::vector<IBluetoothAudioProvider::LeAudioConfigurationRequirement>& requirements);
-
-  IBluetoothAudioProvider::LeAudioAseQosConfigurationPair getLeAudioAseQosConfiguration(
-          IBluetoothAudioProvider::LeAudioAseQosConfigurationRequirement& qosRequirement);
-
-  void onSinkAseMetadataChanged(IBluetoothAudioProvider::AseState state, int32_t cigId,
-                                int32_t cisId,
-                                std::optional<std::vector<std::optional<MetadataLtv>>>& metadata);
-
-  void onSourceAseMetadataChanged(IBluetoothAudioProvider::AseState state, int32_t cigId,
-                                  int32_t cisId,
-                                  std::optional<std::vector<std::optional<MetadataLtv>>>& metadata);
-
-  IBluetoothAudioProvider::LeAudioBroadcastConfigurationSetting getLeAudioBroadcastConfiguration(
-          const std::optional<
-                  std::vector<std::optional<IBluetoothAudioProvider::LeAudioDeviceCapabilities>>>&
-                  remoteSinkAudioCapabilities,
-          const IBluetoothAudioProvider::LeAudioBroadcastConfigurationRequirement& requirement);
+  /***
+   * Read data from audio HAL through fmq
+   ***/
+  size_t ReadAudioData(uint8_t* p_buf, uint32_t len);
 
   static constexpr PcmConfiguration kInvalidPcmConfiguration = {};
 
@@ -170,7 +147,6 @@ protected:
   static void binderDiedCallbackAidl(void* cookie_ptr);
 
   std::shared_ptr<IBluetoothAudioProvider> provider_;
-
   std::shared_ptr<IBluetoothAudioProviderFactory> provider_factory_;
 
   bool session_started_;
@@ -186,57 +162,9 @@ private:
   IBluetoothTransportInstance* transport_;
   std::vector<AudioCapabilities> capabilities_;
   std::vector<LatencyMode> latency_modes_;
-};
-
-/***
- * The client interface connects an IBluetoothTransportInstance to
- * IBluetoothAudioProvider and helps to route callbacks to
- * IBluetoothTransportInstance
- ***/
-class BluetoothAudioSinkClientInterface : public BluetoothAudioClientInterface {
-public:
-  /***
-   * Constructs an BluetoothAudioSinkClientInterface to communicate to
-   * BluetoothAudio HAL. |sink| is the implementation for the transport.
-   ***/
-  BluetoothAudioSinkClientInterface(IBluetoothSinkTransportInstance* sink);
-  virtual ~BluetoothAudioSinkClientInterface();
-
-  IBluetoothSinkTransportInstance* GetTransportInstance() const { return sink_; }
-
-  /***
-   * Read data from audio HAL through fmq
-   ***/
-  size_t ReadAudioData(uint8_t* p_buf, uint32_t len);
-
-private:
-  IBluetoothSinkTransportInstance* sink_;
 
   static constexpr int kDefaultDataReadTimeoutMs = 10;
   static constexpr int kDefaultDataReadPollIntervalMs = 1;
-};
-
-class BluetoothAudioSourceClientInterface : public BluetoothAudioClientInterface {
-public:
-  /***
-   * Constructs an BluetoothAudioSourceClientInterface to communicate to
-   * BluetoothAudio HAL. |source| is the implementation for the transport.
-   ***/
-  BluetoothAudioSourceClientInterface(IBluetoothSourceTransportInstance* source);
-  virtual ~BluetoothAudioSourceClientInterface();
-
-  IBluetoothSourceTransportInstance* GetTransportInstance() const { return source_; }
-
-  /***
-   * Write data to audio HAL through fmq
-   ***/
-  size_t WriteAudioData(const uint8_t* p_buf, uint32_t len);
-
-private:
-  IBluetoothSourceTransportInstance* source_;
-
-  static constexpr int kDefaultDataWriteTimeoutMs = 10;
-  static constexpr int kDefaultDataWritePollIntervalMs = 1;
 };
 
 }  // namespace a2dp
