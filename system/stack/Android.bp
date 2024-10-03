@@ -1773,6 +1773,7 @@ cc_test {
     shared_libs: [
         "libaconfig_storage_read_api_cc",
         "libcrypto",
+        "libcutils",
         "server_configurable_flags",
     ],
     sanitize: {
@@ -2355,6 +2356,7 @@ cc_test {
     shared_libs: [
         "libaconfig_storage_read_api_cc",
         "libcrypto",
+        "libcutils",
         "server_configurable_flags",
     ],
     sanitize: {
