@@ -561,21 +561,21 @@ bool PORT_IsCollisionDetected(RawAddress bd_addr) {
 
 /*******************************************************************************
  *
- * Function         PORT_SetState
+ * Function         PORT_SetSettings
  *
  * Description      This function configures connection according to the
- *                  specifications in the tPORT_STATE structure.
+ *                  specifications in the PortSettings structure.
  *
  * Parameters:      handle     - Handle returned in the RFCOMM_CreateConnection
- *                  p_settings - Pointer to a tPORT_STATE structure containing
+ *                  p_settings - Pointer to a PortSettings structure containing
  *                               configuration information for the connection.
  *
  *
  ******************************************************************************/
-int PORT_SetState(uint16_t handle, tPORT_STATE* p_settings) {
+int PORT_SetSettings(uint16_t handle, PortSettings* p_settings) {
   uint8_t baud_rate;
 
-  log::verbose("PORT_SetState() handle:{}", handle);
+  log::verbose("PORT_SetSettings() handle:{}", handle);
   tPORT* p_port = get_port_from_handle(handle);
   if (p_port == nullptr) {
     log::error("Unable to get RFCOMM port control block bad handle:{}", handle);
@@ -590,10 +590,10 @@ int PORT_SetState(uint16_t handle, tPORT_STATE* p_settings) {
     return PORT_LINE_ERR;
   }
 
-  log::verbose("PORT_SetState() handle:{} FC_TYPE:0x{:x}", handle, p_settings->fc_type);
+  log::verbose("PORT_SetSettings() handle:{} FC_TYPE:0x{:x}", handle, p_settings->fc_type);
 
-  baud_rate = p_port->user_port_pars.baud_rate;
-  p_port->user_port_pars = *p_settings;
+  baud_rate = p_port->user_port_settings.baud_rate;
+  p_port->user_port_settings = *p_settings;
 
   /* for now we've been asked to pass only baud rate */
   if (baud_rate != p_settings->baud_rate) {
@@ -604,18 +604,18 @@ int PORT_SetState(uint16_t handle, tPORT_STATE* p_settings) {
 
 /*******************************************************************************
  *
- * Function         PORT_GetState
+ * Function         PORT_GetSettings
  *
- * Description      This function is called to fill tPORT_STATE structure
+ * Description      This function is called to fill PortSettings structure
  *                  with the curremt control settings for the port
  *
  * Parameters:      handle     - Handle returned in the RFCOMM_CreateConnection
- *                  p_settings - Pointer to a tPORT_STATE structure in which
+ *                  p_settings - Pointer to a PortSettings structure in which
  *                               configuration information is returned.
  *
  ******************************************************************************/
-int PORT_GetState(uint16_t handle, tPORT_STATE* p_settings) {
-  log::verbose("PORT_GetState() handle:{}", handle);
+int PORT_GetSettings(uint16_t handle, PortSettings* p_settings) {
+  log::verbose("PORT_GetSettings() handle:{}", handle);
 
   tPORT* p_port = get_port_from_handle(handle);
   if (p_port == nullptr) {
@@ -631,7 +631,7 @@ int PORT_GetState(uint16_t handle, tPORT_STATE* p_settings) {
     return PORT_LINE_ERR;
   }
 
-  *p_settings = p_port->user_port_pars;
+  *p_settings = p_port->user_port_settings;
   return PORT_SUCCESS;
 }
 
