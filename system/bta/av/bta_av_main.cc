@@ -209,7 +209,6 @@ tBTA_AV_SCB* bta_av_addr_to_scb(const RawAddress& bd_addr) {
   return p_scb;
 }
 
-extern const RawAddress& btif_av_find_by_handle(tBTA_AV_HNDL bta_handle);
 int BTA_AvObtainPeerChannelIndex(const RawAddress& peer_address) {
   // Find the entry for the peer (if exists)
   tBTA_AV_SCB* p_scb = bta_av_addr_to_scb(peer_address);
