@@ -57,7 +57,6 @@ import android.os.test.TestLooper;
 import android.platform.test.flag.junit.SetFlagsRule;
 import android.util.Pair;
 
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -326,7 +325,6 @@ public class HeadsetClientStateMachineTest {
 
     /** Test that In Band Ringtone information is relayed from phone. */
     @Test
-    @FlakyTest
     public void testInBandRingtone() {
         // Return true for priority.
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
