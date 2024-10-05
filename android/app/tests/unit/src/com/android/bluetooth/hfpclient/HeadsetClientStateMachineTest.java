@@ -16,6 +16,12 @@
 
 package com.android.bluetooth.hfpclient;
 
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_ALLOWED;
+import static android.bluetooth.BluetoothProfile.CONNECTION_POLICY_FORBIDDEN;
+import static android.bluetooth.BluetoothProfile.EXTRA_PREVIOUS_STATE;
+import static android.bluetooth.BluetoothProfile.EXTRA_STATE;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTED;
+import static android.bluetooth.BluetoothProfile.STATE_CONNECTING;
 import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 import static android.content.pm.PackageManager.FEATURE_WATCH;
 
@@ -38,7 +44,6 @@ import android.bluetooth.BluetoothAssignedNumbers;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHeadsetClient;
 import android.bluetooth.BluetoothHeadsetClientCall;
-import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
 import android.bluetooth.BluetoothStatusCodes;
 import android.content.Intent;
@@ -152,7 +157,7 @@ public class HeadsetClientStateMachineTest {
     @Test
     public void testDefaultDisconnectedState() {
         assertThat(mHeadsetClientStateMachine.getConnectionState(null))
-                .isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
+                .isEqualTo(STATE_DISCONNECTED);
     }
 
     /** Test that an incoming connection with low priority is rejected */
@@ -160,7 +165,7 @@ public class HeadsetClientStateMachineTest {
     public void testIncomingPriorityReject() {
         // Return false for priority.
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_FORBIDDEN);
+                .thenReturn(CONNECTION_POLICY_FORBIDDEN);
 
         // Inject an event for when incoming connection is requested
         StackEvent connStCh = new StackEvent(StackEvent.EVENT_TYPE_CONNECTION_STATE_CHANGED);
@@ -171,10 +176,8 @@ public class HeadsetClientStateMachineTest {
         // Verify that only DISCONNECTED -> DISCONNECTED broadcast is fired
         verifySendBroadcastMultiplePermissions(
                 hasAction(BluetoothHeadsetClient.ACTION_CONNECTION_STATE_CHANGED),
-                hasExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_DISCONNECTED),
-                hasExtra(
-                        BluetoothProfile.EXTRA_PREVIOUS_STATE,
-                        BluetoothProfile.STATE_DISCONNECTED));
+                hasExtra(EXTRA_STATE, STATE_DISCONNECTED),
+                hasExtra(EXTRA_PREVIOUS_STATE, STATE_DISCONNECTED));
         assertThat(mHeadsetClientStateMachine.getCurrentState())
                 .isInstanceOf(HeadsetClientStateMachine.Disconnected.class);
     }
@@ -184,7 +187,7 @@ public class HeadsetClientStateMachineTest {
     public void testIncomingPriorityAccept() {
         // Return true for priority.
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
 
         // Inject an event for when incoming connection is requested
         StackEvent connStCh = new StackEvent(StackEvent.EVENT_TYPE_CONNECTION_STATE_CHANGED);
@@ -193,8 +196,7 @@ public class HeadsetClientStateMachineTest {
         mHeadsetClientStateMachine.sendMessage(StackEvent.STACK_EVENT, connStCh);
 
         // Verify that one connection state broadcast is executed
-        verifySendBroadcastMultiplePermissions(
-                hasExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_CONNECTING));
+        verifySendBroadcastMultiplePermissions(hasExtra(EXTRA_STATE, STATE_CONNECTING));
 
         assertThat(mHeadsetClientStateMachine.getCurrentState())
                 .isInstanceOf(HeadsetClientStateMachine.Connecting.class);
@@ -210,8 +212,7 @@ public class HeadsetClientStateMachineTest {
         setUpAndroidAt(false);
 
         // Verify that one connection state broadcast is executed
-        verifySendBroadcastMultiplePermissions(
-                hasExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_CONNECTED));
+        verifySendBroadcastMultiplePermissions(hasExtra(EXTRA_STATE, STATE_CONNECTED));
         assertThat(mHeadsetClientStateMachine.getCurrentState())
                 .isInstanceOf(HeadsetClientStateMachine.Connected.class);
         verify(mHeadsetService).updateInbandRinging(eq(mTestDevice), eq(true));
@@ -222,7 +223,7 @@ public class HeadsetClientStateMachineTest {
     public void testIncomingTimeout() {
         // Return true for priority.
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
 
         // Inject an event for when incoming connection is requested
         StackEvent connStCh = new StackEvent(StackEvent.EVENT_TYPE_CONNECTION_STATE_CHANGED);
@@ -231,16 +232,14 @@ public class HeadsetClientStateMachineTest {
         mHeadsetClientStateMachine.sendMessage(StackEvent.STACK_EVENT, connStCh);
 
         // Verify that one connection state broadcast is executed
-        verifySendBroadcastMultiplePermissions(
-                hasExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_CONNECTING));
+        verifySendBroadcastMultiplePermissions(hasExtra(EXTRA_STATE, STATE_CONNECTING));
         assertThat(mHeadsetClientStateMachine.getCurrentState())
                 .isInstanceOf(HeadsetClientStateMachine.Connecting.class);
 
         // Trigger timeout
         mTestLooper.moveTimeForward(HeadsetClientStateMachine.CONNECTING_TIMEOUT_MS);
         mTestLooper.dispatchAll();
-        verifySendBroadcastMultiplePermissions(
-                hasExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_DISCONNECTED));
+        verifySendBroadcastMultiplePermissions(hasExtra(EXTRA_STATE, STATE_DISCONNECTED));
         assertThat(mHeadsetClientStateMachine.getCurrentState())
                 .isInstanceOf(HeadsetClientStateMachine.Disconnected.class);
         verify(mHeadsetService).updateInbandRinging(eq(mTestDevice), eq(false));
@@ -331,7 +330,7 @@ public class HeadsetClientStateMachineTest {
     public void testInBandRingtone() {
         // Return true for priority.
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
 
         assertThat(mHeadsetClientStateMachine.getInBandRing()).isFalse();
 
@@ -342,8 +341,7 @@ public class HeadsetClientStateMachineTest {
         mHeadsetClientStateMachine.sendMessage(StackEvent.STACK_EVENT, connStCh);
 
         // Verify that one connection state broadcast is executed
-        verifySendBroadcastMultiplePermissions(
-                hasExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_CONNECTING));
+        verifySendBroadcastMultiplePermissions(hasExtra(EXTRA_STATE, STATE_CONNECTING));
 
         // Send a message to trigger SLC connection
         StackEvent slcEvent = new StackEvent(StackEvent.EVENT_TYPE_CONNECTION_STATE_CHANGED);
@@ -355,8 +353,7 @@ public class HeadsetClientStateMachineTest {
 
         setUpAndroidAt(false);
 
-        verifySendBroadcastMultiplePermissions(
-                hasExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_CONNECTED));
+        verifySendBroadcastMultiplePermissions(hasExtra(EXTRA_STATE, STATE_CONNECTED));
 
         verify(mHeadsetService).updateInbandRinging(eq(mTestDevice), eq(true));
 
@@ -429,7 +426,7 @@ public class HeadsetClientStateMachineTest {
 
         // Return true for connection policy to allow connections
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
 
         // Send an incoming connection event
         StackEvent event = new StackEvent(StackEvent.EVENT_TYPE_CONNECTION_STATE_CHANGED);
@@ -485,8 +482,7 @@ public class HeadsetClientStateMachineTest {
         connStCh.valueInt = HeadsetClientHalConstants.CONNECTION_STATE_CONNECTED;
         connStCh.device = mTestDevice;
         mHeadsetClientStateMachine.sendMessage(StackEvent.STACK_EVENT, connStCh);
-        verifySendBroadcastMultiplePermissions(
-                hasExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_CONNECTING));
+        verifySendBroadcastMultiplePermissions(hasExtra(EXTRA_STATE, STATE_CONNECTING));
     }
 
     /* Utility function to simulate SLC connection. */
@@ -506,8 +502,7 @@ public class HeadsetClientStateMachineTest {
 
         setUpAndroidAt(androidAtSupported);
 
-        verifySendBroadcastMultiplePermissions(
-                hasExtra(BluetoothProfile.EXTRA_STATE, BluetoothProfile.STATE_CONNECTED));
+        verifySendBroadcastMultiplePermissions(hasExtra(EXTRA_STATE, STATE_CONNECTED));
         assertThat(mHeadsetClientStateMachine.getCurrentState())
                 .isInstanceOf(HeadsetClientStateMachine.Connected.class);
         verify(mHeadsetService).updateInbandRinging(eq(mTestDevice), eq(true));
@@ -553,7 +548,7 @@ public class HeadsetClientStateMachineTest {
     private void runSupportedVendorAtCommand(String atCommand, int vendorId) {
         // Return true for priority.
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
 
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
@@ -593,7 +588,7 @@ public class HeadsetClientStateMachineTest {
     public void runUnsupportedVendorAtCommand(String atCommand, int vendorId) {
         // Return true for priority.
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
 
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
@@ -630,7 +625,7 @@ public class HeadsetClientStateMachineTest {
             int vendorId, String vendorEventCode, String vendorEventArgument) {
         // Setup connection state machine to be in connected state
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
 
@@ -672,7 +667,7 @@ public class HeadsetClientStateMachineTest {
             int vendorId, String vendorEventCode, String vendorEventArgument) {
         // Setup connection state machine to be in connected state
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
 
@@ -711,7 +706,7 @@ public class HeadsetClientStateMachineTest {
     public void testVoiceRecognitionStateChange() {
         // Setup connection state machine to be in connected state
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
         doReturn(true).when(mNativeInterface).startVoiceRecognition(any(BluetoothDevice.class));
         doReturn(true).when(mNativeInterface).stopVoiceRecognition(any(BluetoothDevice.class));
 
@@ -754,7 +749,7 @@ public class HeadsetClientStateMachineTest {
     public void testSendBIEVCommand() {
         // Setup connection state machine to be in connected state
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
 
@@ -784,7 +779,7 @@ public class HeadsetClientStateMachineTest {
     public void testSendBatteryUpdateIndicatorWhenConnect() {
         // Setup connection state machine to be in connected state
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
 
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
@@ -923,7 +918,7 @@ public class HeadsetClientStateMachineTest {
     @Test
     public void testGetConnectionState_withNullDevice() {
         assertThat(mHeadsetClientStateMachine.getConnectionState(null))
-                .isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
+                .isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
@@ -931,7 +926,7 @@ public class HeadsetClientStateMachineTest {
         mHeadsetClientStateMachine.mCurrentDevice = mTestDevice;
 
         assertThat(mHeadsetClientStateMachine.getConnectionState(mTestDevice))
-                .isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
+                .isEqualTo(STATE_DISCONNECTED);
     }
 
     @Test
@@ -1130,7 +1125,7 @@ public class HeadsetClientStateMachineTest {
     public void testAndroidAtRemoteNotSupported_StateTransition_setAudioPolicy() {
         // Setup connection state machine to be in connected state
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
 
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
@@ -1146,7 +1141,7 @@ public class HeadsetClientStateMachineTest {
     public void testSetGetCallAudioPolicy() {
         // Return true for priority.
         when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(BluetoothProfile.CONNECTION_POLICY_ALLOWED);
+                .thenReturn(CONNECTION_POLICY_ALLOWED);
 
         setUpHfpClientConnection();
         setUpServiceLevelConnection(true);
@@ -1586,8 +1581,7 @@ public class HeadsetClientStateMachineTest {
 
         int newState = mHeadsetClientStateMachine.getConnectionState(mTestDevice);
         verifySendBroadcastMultiplePermissions(
-                hasExtra(BluetoothProfile.EXTRA_PREVIOUS_STATE, previousState),
-                hasExtra(BluetoothProfile.EXTRA_STATE, newState));
+                hasExtra(EXTRA_PREVIOUS_STATE, previousState), hasExtra(EXTRA_STATE, newState));
 
         assertThat(mHeadsetClientStateMachine.getCurrentState()).isInstanceOf(type);
     }
