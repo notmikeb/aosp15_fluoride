@@ -1394,6 +1394,12 @@ private:
         break;
       }
 
+      if (!device.has_presets.contains(nt.index)) {
+        log::error("Unknown preset. Notification is discarded: {}", nt);
+        device.has_journal_.Append(HasJournalRecord(nt));
+        device.ctp_notifications_.pop_front();
+        continue;
+      }
       auto preset = device.has_presets.extract(nt.index).value();
       auto new_props = preset.GetProperties();
 
