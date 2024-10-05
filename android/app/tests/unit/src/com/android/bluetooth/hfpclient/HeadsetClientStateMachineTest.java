@@ -44,8 +44,10 @@ import android.bluetooth.BluetoothAssignedNumbers;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHeadsetClient;
 import android.bluetooth.BluetoothHeadsetClientCall;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothSinkAudioPolicy;
 import android.bluetooth.BluetoothStatusCodes;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -57,10 +59,12 @@ import android.os.test.TestLooper;
 import android.platform.test.flag.junit.SetFlagsRule;
 import android.util.Pair;
 
+import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bluetooth.R;
+import com.android.bluetooth.TestUtils;
 import com.android.bluetooth.btservice.AdapterService;
 import com.android.bluetooth.btservice.RemoteDevices;
 import com.android.bluetooth.hfp.HeadsetService;
@@ -85,10 +89,13 @@ import java.util.Set;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class HeadsetClientStateMachineTest {
-    private BluetoothAdapter mAdapter;
+    private final Context mTargetContext = InstrumentationRegistry.getTargetContext();
+    private final BluetoothAdapter mAdapter =
+            mTargetContext.getSystemService(BluetoothManager.class).getAdapter();
+    private final BluetoothDevice mTestDevice = TestUtils.getTestDevice(mAdapter, 42);
+
     private TestHeadsetClientStateMachine mHeadsetClientStateMachine;
     private InOrder mInOrder;
-    private BluetoothDevice mTestDevice;
     private TestLooper mTestLooper;
 
     @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
@@ -109,24 +116,22 @@ public class HeadsetClientStateMachineTest {
         mInOrder = inOrder(mHeadsetClientService);
         // Setup mocks and test assets
         // Set a valid volume
-        when(mAudioManager.getStreamVolume(anyInt())).thenReturn(2);
-        when(mAudioManager.getStreamMaxVolume(anyInt())).thenReturn(10);
-        when(mAudioManager.getStreamMinVolume(anyInt())).thenReturn(1);
-        when(mHeadsetClientService.getAudioManager()).thenReturn(mAudioManager);
-        when(mHeadsetClientService.getResources()).thenReturn(mMockHfpResources);
-        when(mHeadsetClientService.getPackageManager()).thenReturn(mPackageManager);
-        when(mPackageManager.hasSystemFeature(FEATURE_WATCH)).thenReturn(false);
-        when(mMockHfpResources.getBoolean(R.bool.hfp_clcc_poll_during_call)).thenReturn(true);
-        when(mMockHfpResources.getInteger(R.integer.hfp_clcc_poll_interval_during_call))
-                .thenReturn(2000);
+        doReturn(2).when(mAudioManager).getStreamVolume(anyInt());
+        doReturn(10).when(mAudioManager).getStreamMaxVolume(anyInt());
+        doReturn(1).when(mAudioManager).getStreamMinVolume(anyInt());
+
+        doReturn(mAudioManager).when(mHeadsetClientService).getAudioManager();
+        doReturn(mMockHfpResources).when(mHeadsetClientService).getResources();
+        doReturn(mPackageManager).when(mHeadsetClientService).getPackageManager();
+        doReturn(CONNECTION_POLICY_ALLOWED).when(mHeadsetClientService).getConnectionPolicy(any());
+
+        doReturn(true).when(mMockHfpResources).getBoolean(eq(R.bool.hfp_clcc_poll_during_call));
+        doReturn(2000)
+                .when(mMockHfpResources)
+                .getInteger(eq(R.integer.hfp_clcc_poll_interval_during_call));
 
         doReturn(mRemoteDevices).when(mAdapterService).getRemoteDevices();
         doReturn(true).when(mNativeInterface).sendAndroidAt(anyObject(), anyString());
-
-        // This line must be called to make sure relevant objects are initialized properly
-        mAdapter = BluetoothAdapter.getDefaultAdapter();
-        // Get a device for testing
-        mTestDevice = mAdapter.getRemoteDevice("00:01:02:03:04:05");
 
         // Setup thread and looper
         mTestLooper = new TestLooper();
@@ -152,7 +157,6 @@ public class HeadsetClientStateMachineTest {
     }
 
     /** Test that default state is disconnected */
-    @SmallTest
     @Test
     public void testDefaultDisconnectedState() {
         assertThat(mHeadsetClientStateMachine.getConnectionState(null))
@@ -162,9 +166,9 @@ public class HeadsetClientStateMachineTest {
     /** Test that an incoming connection with low priority is rejected */
     @Test
     public void testIncomingPriorityReject() {
-        // Return false for priority.
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_FORBIDDEN);
+        doReturn(CONNECTION_POLICY_FORBIDDEN)
+                .when(mHeadsetClientService)
+                .getConnectionPolicy(any());
 
         // Inject an event for when incoming connection is requested
         StackEvent connStCh = new StackEvent(StackEvent.EVENT_TYPE_CONNECTION_STATE_CHANGED);
@@ -184,10 +188,6 @@ public class HeadsetClientStateMachineTest {
     /** Test that an incoming connection with high priority is accepted */
     @Test
     public void testIncomingPriorityAccept() {
-        // Return true for priority.
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
-
         // Inject an event for when incoming connection is requested
         StackEvent connStCh = new StackEvent(StackEvent.EVENT_TYPE_CONNECTION_STATE_CHANGED);
         connStCh.valueInt = HeadsetClientHalConstants.CONNECTION_STATE_CONNECTED;
@@ -220,10 +220,6 @@ public class HeadsetClientStateMachineTest {
     /** Test that an incoming connection that times out */
     @Test
     public void testIncomingTimeout() {
-        // Return true for priority.
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
-
         // Inject an event for when incoming connection is requested
         StackEvent connStCh = new StackEvent(StackEvent.EVENT_TYPE_CONNECTION_STATE_CHANGED);
         connStCh.valueInt = HeadsetClientHalConstants.CONNECTION_STATE_CONNECTED;
@@ -326,10 +322,6 @@ public class HeadsetClientStateMachineTest {
     /** Test that In Band Ringtone information is relayed from phone. */
     @Test
     public void testInBandRingtone() {
-        // Return true for priority.
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
-
         assertThat(mHeadsetClientStateMachine.getInBandRing()).isFalse();
 
         // Inject an event for when incoming connection is requested
@@ -417,14 +409,10 @@ public class HeadsetClientStateMachineTest {
     @Test
     public void testWearablesUseBluetoothHeadsetClientCallInIntent() {
         // Specify the watch form factor when package manager is asked
-        when(mPackageManager.hasSystemFeature(FEATURE_WATCH)).thenReturn(true);
+        doReturn(true).when(mPackageManager).hasSystemFeature(FEATURE_WATCH);
 
         // Skip over the Android AT commands to test this code path
         doReturn(false).when(mNativeInterface).sendAndroidAt(anyObject(), anyString());
-
-        // Return true for connection policy to allow connections
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
 
         // Send an incoming connection event
         StackEvent event = new StackEvent(StackEvent.EVENT_TYPE_CONNECTION_STATE_CHANGED);
@@ -544,10 +532,6 @@ public class HeadsetClientStateMachineTest {
 
     /* Utility function: supported AT command should lead to native call */
     private void runSupportedVendorAtCommand(String atCommand, int vendorId) {
-        // Return true for priority.
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
-
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
 
@@ -584,10 +568,6 @@ public class HeadsetClientStateMachineTest {
 
     /* utility function: unsupported vendor specific command shall be filtered. */
     public void runUnsupportedVendorAtCommand(String atCommand, int vendorId) {
-        // Return true for priority.
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
-
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
 
@@ -621,9 +601,6 @@ public class HeadsetClientStateMachineTest {
      */
     private void runSupportedVendorEvent(
             int vendorId, String vendorEventCode, String vendorEventArgument) {
-        // Setup connection state machine to be in connected state
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
 
@@ -663,9 +640,6 @@ public class HeadsetClientStateMachineTest {
     /* Utility test function: unsupported vendor specific response shall be filtered out*/
     public void runUnsupportedVendorEvent(
             int vendorId, String vendorEventCode, String vendorEventArgument) {
-        // Setup connection state machine to be in connected state
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
 
@@ -702,9 +676,6 @@ public class HeadsetClientStateMachineTest {
     /** Test voice recognition state change broadcast. */
     @Test
     public void testVoiceRecognitionStateChange() {
-        // Setup connection state machine to be in connected state
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
         doReturn(true).when(mNativeInterface).startVoiceRecognition(any(BluetoothDevice.class));
         doReturn(true).when(mNativeInterface).stopVoiceRecognition(any(BluetoothDevice.class));
 
@@ -745,9 +716,6 @@ public class HeadsetClientStateMachineTest {
     /** Test send BIEV command */
     @Test
     public void testSendBIEVCommand() {
-        // Setup connection state machine to be in connected state
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
 
@@ -775,10 +743,6 @@ public class HeadsetClientStateMachineTest {
      */
     @Test
     public void testSendBatteryUpdateIndicatorWhenConnect() {
-        // Setup connection state machine to be in connected state
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
-
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
 
@@ -1121,10 +1085,6 @@ public class HeadsetClientStateMachineTest {
      */
     @Test
     public void testAndroidAtRemoteNotSupported_StateTransition_setAudioPolicy() {
-        // Setup connection state machine to be in connected state
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
-
         setUpHfpClientConnection();
         setUpServiceLevelConnection();
 
@@ -1134,12 +1094,8 @@ public class HeadsetClientStateMachineTest {
                 .sendAndroidAt(mTestDevice, "+ANDROID=SINKAUDIOPOLICY,0,0,0");
     }
 
-    @SmallTest
     @Test
     public void testSetGetCallAudioPolicy() {
-        // Return true for priority.
-        when(mHeadsetClientService.getConnectionPolicy(any(BluetoothDevice.class)))
-                .thenReturn(CONNECTION_POLICY_ALLOWED);
 
         setUpHfpClientConnection();
         setUpServiceLevelConnection(true);
