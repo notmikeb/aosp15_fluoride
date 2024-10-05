@@ -237,47 +237,30 @@ public class HeadsetClientStateMachineTest {
         verify(mHeadsetService).updateInbandRinging(eq(mTestDevice), eq(false));
     }
 
+    private boolean processAndroidSlcCommand(String command) {
+        return mHeadsetClientStateMachine.processAndroidSlcCommand(command, mTestDevice);
+    }
+
     @Test
     public void testProcessAndroidSlcCommand() {
         initToConnectedState();
 
         // True on correct AT command and BluetothDevice
+        assertThat(processAndroidSlcCommand("+ANDROID: (SINKAUDIOPOLICY)")).isTrue();
+        assertThat(processAndroidSlcCommand("+ANDROID: ()")).isTrue();
+        assertThat(processAndroidSlcCommand("+ANDROID: (,,,)")).isTrue();
+        assertThat(processAndroidSlcCommand("+ANDROID: (SINKAUDIOPOLICY),(OTHERFEATURE)")).isTrue();
         assertThat(
-                        mHeadsetClientStateMachine.processAndroidSlcCommand(
-                                "+ANDROID: (SINKAUDIOPOLICY)", mTestDevice))
+                        processAndroidSlcCommand(
+                                "+ANDROID: (SINKAUDIOPOLICY),(OTHERFEATURE,1,2,3),(1,2,3)"))
                 .isTrue();
-        assertThat(mHeadsetClientStateMachine.processAndroidSlcCommand("+ANDROID: ()", mTestDevice))
-                .isTrue();
-        assertThat(
-                        mHeadsetClientStateMachine.processAndroidSlcCommand(
-                                "+ANDROID: (,,,)", mTestDevice))
-                .isTrue();
-        assertThat(
-                        mHeadsetClientStateMachine.processAndroidSlcCommand(
-                                "+ANDROID: (SINKAUDIOPOLICY),(OTHERFEATURE)", mTestDevice))
-                .isTrue();
-        assertThat(
-                        mHeadsetClientStateMachine.processAndroidSlcCommand(
-                                "+ANDROID: (SINKAUDIOPOLICY),(OTHERFEATURE,1,2,3),(1,2,3)",
-                                mTestDevice))
-                .isTrue();
-        assertThat(
-                        mHeadsetClientStateMachine.processAndroidSlcCommand(
-                                "+ANDROID: 123", mTestDevice))
-                .isTrue();
-        assertThat(mHeadsetClientStateMachine.processAndroidSlcCommand("+ANDROID: ", mTestDevice))
-                .isTrue();
+        assertThat(processAndroidSlcCommand("+ANDROID: 123")).isTrue();
+        assertThat(processAndroidSlcCommand("+ANDROID: ")).isTrue();
 
         // False on incorrect AT command format
-        assertThat(
-                        mHeadsetClientStateMachine.processAndroidSlcCommand(
-                                "+ANDROID= (SINKAUDIOPOLICY)", mTestDevice))
-                .isFalse();
-        assertThat(
-                        mHeadsetClientStateMachine.processAndroidSlcCommand(
-                                "RANDOM ^%$# STRING", mTestDevice))
-                .isFalse();
-        assertThat(mHeadsetClientStateMachine.processAndroidSlcCommand("", mTestDevice)).isFalse();
+        assertThat(processAndroidSlcCommand("+ANDROID= (SINKAUDIOPOLICY)")).isFalse();
+        assertThat(processAndroidSlcCommand("RANDOM ^%$# STRING")).isFalse();
+        assertThat(processAndroidSlcCommand("")).isFalse();
 
         // False on incorrect BluetoothDevice
         assertThat(
@@ -292,26 +275,17 @@ public class HeadsetClientStateMachineTest {
         initToConnectedState();
 
         mHeadsetClientStateMachine.setAudioPolicyRemoteSupported(false);
-        assertThat(
-                        mHeadsetClientStateMachine.processAndroidSlcCommand(
-                                "RANDOM ^%$# STRING", mTestDevice))
-                .isFalse();
+        assertThat(processAndroidSlcCommand("RANDOM ^%$# STRING")).isFalse();
         assertThat(mHeadsetClientStateMachine.getAudioPolicyRemoteSupported())
                 .isEqualTo(BluetoothStatusCodes.FEATURE_NOT_SUPPORTED);
 
         mHeadsetClientStateMachine.setAudioPolicyRemoteSupported(false);
-        assertThat(
-                        mHeadsetClientStateMachine.processAndroidSlcCommand(
-                                "+ANDROID= (SINKAUDIOPOLICY)", mTestDevice))
-                .isFalse();
+        assertThat(processAndroidSlcCommand("+ANDROID= (SINKAUDIOPOLICY)")).isFalse();
         assertThat(mHeadsetClientStateMachine.getAudioPolicyRemoteSupported())
                 .isEqualTo(BluetoothStatusCodes.FEATURE_NOT_SUPPORTED);
 
         mHeadsetClientStateMachine.setAudioPolicyRemoteSupported(false);
-        assertThat(
-                        mHeadsetClientStateMachine.processAndroidSlcCommand(
-                                "+ANDROID: (SINKAUDIOPOLICY)", mTestDevice))
-                .isTrue();
+        assertThat(processAndroidSlcCommand("+ANDROID: (SINKAUDIOPOLICY)")).isTrue();
         assertThat(mHeadsetClientStateMachine.getAudioPolicyRemoteSupported())
                 .isEqualTo(BluetoothStatusCodes.FEATURE_SUPPORTED);
     }
@@ -976,79 +950,38 @@ public class HeadsetClientStateMachineTest {
         assertThat(currentCalls.get(0)).isEqualTo(call);
     }
 
+    private void assertName(int message, String message_name) {
+        assertThat(HeadsetClientStateMachine.getMessageName(message)).isEqualTo(message_name);
+    }
+
     @Test
     public void testGetMessageName() {
-        assertThat(HeadsetClientStateMachine.getMessageName(StackEvent.STACK_EVENT))
-                .isEqualTo("STACK_EVENT");
-        assertThat(HeadsetClientStateMachine.getMessageName(HeadsetClientStateMachine.CONNECT))
-                .isEqualTo("CONNECT");
-        assertThat(HeadsetClientStateMachine.getMessageName(HeadsetClientStateMachine.DISCONNECT))
-                .isEqualTo("DISCONNECT");
-        assertThat(
-                        HeadsetClientStateMachine.getMessageName(
-                                HeadsetClientStateMachine.CONNECT_AUDIO))
-                .isEqualTo("CONNECT_AUDIO");
-        assertThat(
-                        HeadsetClientStateMachine.getMessageName(
-                                HeadsetClientStateMachine.DISCONNECT_AUDIO))
-                .isEqualTo("DISCONNECT_AUDIO");
-        assertThat(HeadsetClientStateMachine.getMessageName(VOICE_RECOGNITION_START))
-                .isEqualTo("VOICE_RECOGNITION_START");
-        assertThat(HeadsetClientStateMachine.getMessageName(VOICE_RECOGNITION_STOP))
-                .isEqualTo("VOICE_RECOGNITION_STOP");
-        assertThat(
-                        HeadsetClientStateMachine.getMessageName(
-                                HeadsetClientStateMachine.SET_MIC_VOLUME))
-                .isEqualTo("SET_MIC_VOLUME");
-        assertThat(
-                        HeadsetClientStateMachine.getMessageName(
-                                HeadsetClientStateMachine.SET_SPEAKER_VOLUME))
-                .isEqualTo("SET_SPEAKER_VOLUME");
-        assertThat(HeadsetClientStateMachine.getMessageName(HeadsetClientStateMachine.DIAL_NUMBER))
-                .isEqualTo("DIAL_NUMBER");
-        assertThat(HeadsetClientStateMachine.getMessageName(HeadsetClientStateMachine.ACCEPT_CALL))
-                .isEqualTo("ACCEPT_CALL");
-        assertThat(HeadsetClientStateMachine.getMessageName(HeadsetClientStateMachine.REJECT_CALL))
-                .isEqualTo("REJECT_CALL");
-        assertThat(HeadsetClientStateMachine.getMessageName(HeadsetClientStateMachine.HOLD_CALL))
-                .isEqualTo("HOLD_CALL");
-        assertThat(
-                        HeadsetClientStateMachine.getMessageName(
-                                HeadsetClientStateMachine.TERMINATE_CALL))
-                .isEqualTo("TERMINATE_CALL");
-        assertThat(HeadsetClientStateMachine.getMessageName(ENTER_PRIVATE_MODE))
-                .isEqualTo("ENTER_PRIVATE_MODE");
-        assertThat(HeadsetClientStateMachine.getMessageName(HeadsetClientStateMachine.SEND_DTMF))
-                .isEqualTo("SEND_DTMF");
-        assertThat(HeadsetClientStateMachine.getMessageName(EXPLICIT_CALL_TRANSFER))
-                .isEqualTo("EXPLICIT_CALL_TRANSFER");
-        assertThat(HeadsetClientStateMachine.getMessageName(HeadsetClientStateMachine.DISABLE_NREC))
-                .isEqualTo("DISABLE_NREC");
-        assertThat(
-                        HeadsetClientStateMachine.getMessageName(
-                                HeadsetClientStateMachine.SEND_VENDOR_AT_COMMAND))
-                .isEqualTo("SEND_VENDOR_AT_COMMAND");
-        assertThat(HeadsetClientStateMachine.getMessageName(HeadsetClientStateMachine.SEND_BIEV))
-                .isEqualTo("SEND_BIEV");
-        assertThat(
-                        HeadsetClientStateMachine.getMessageName(
-                                HeadsetClientStateMachine.QUERY_CURRENT_CALLS))
-                .isEqualTo("QUERY_CURRENT_CALLS");
-        assertThat(
-                        HeadsetClientStateMachine.getMessageName(
-                                HeadsetClientStateMachine.QUERY_OPERATOR_NAME))
-                .isEqualTo("QUERY_OPERATOR_NAME");
-        assertThat(
-                        HeadsetClientStateMachine.getMessageName(
-                                HeadsetClientStateMachine.SUBSCRIBER_INFO))
-                .isEqualTo("SUBSCRIBER_INFO");
-        assertThat(
-                        HeadsetClientStateMachine.getMessageName(
-                                HeadsetClientStateMachine.CONNECTING_TIMEOUT))
-                .isEqualTo("CONNECTING_TIMEOUT");
+        assertName(StackEvent.STACK_EVENT, "STACK_EVENT");
+        assertName(HeadsetClientStateMachine.CONNECT, "CONNECT");
+        assertName(HeadsetClientStateMachine.DISCONNECT, "DISCONNECT");
+        assertName(HeadsetClientStateMachine.CONNECT_AUDIO, "CONNECT_AUDIO");
+        assertName(HeadsetClientStateMachine.DISCONNECT_AUDIO, "DISCONNECT_AUDIO");
+        assertName(VOICE_RECOGNITION_START, "VOICE_RECOGNITION_START");
+        assertName(VOICE_RECOGNITION_STOP, "VOICE_RECOGNITION_STOP");
+        assertName(HeadsetClientStateMachine.SET_MIC_VOLUME, "SET_MIC_VOLUME");
+        assertName(HeadsetClientStateMachine.SET_SPEAKER_VOLUME, "SET_SPEAKER_VOLUME");
+        assertName(HeadsetClientStateMachine.DIAL_NUMBER, "DIAL_NUMBER");
+        assertName(HeadsetClientStateMachine.ACCEPT_CALL, "ACCEPT_CALL");
+        assertName(HeadsetClientStateMachine.REJECT_CALL, "REJECT_CALL");
+        assertName(HeadsetClientStateMachine.HOLD_CALL, "HOLD_CALL");
+        assertName(HeadsetClientStateMachine.TERMINATE_CALL, "TERMINATE_CALL");
+        assertName(ENTER_PRIVATE_MODE, "ENTER_PRIVATE_MODE");
+        assertName(HeadsetClientStateMachine.SEND_DTMF, "SEND_DTMF");
+        assertName(EXPLICIT_CALL_TRANSFER, "EXPLICIT_CALL_TRANSFER");
+        assertName(HeadsetClientStateMachine.DISABLE_NREC, "DISABLE_NREC");
+        assertName(HeadsetClientStateMachine.SEND_VENDOR_AT_COMMAND, "SEND_VENDOR_AT_COMMAND");
+        assertName(HeadsetClientStateMachine.SEND_BIEV, "SEND_BIEV");
+        assertName(HeadsetClientStateMachine.QUERY_CURRENT_CALLS, "QUERY_CURRENT_CALLS");
+        assertName(HeadsetClientStateMachine.QUERY_OPERATOR_NAME, "QUERY_OPERATOR_NAME");
+        assertName(HeadsetClientStateMachine.SUBSCRIBER_INFO, "SUBSCRIBER_INFO");
+        assertName(HeadsetClientStateMachine.CONNECTING_TIMEOUT, "CONNECTING_TIMEOUT");
         int unknownMessageInt = 54;
-        assertThat(HeadsetClientStateMachine.getMessageName(unknownMessageInt))
-                .isEqualTo("UNKNOWN(" + unknownMessageInt + ")");
+        assertName(unknownMessageInt, "UNKNOWN(" + unknownMessageInt + ")");
     }
 
     /**
