@@ -153,6 +153,20 @@ class L2cap(val context: Context) : L2CAPImplBase(), Closeable {
         }
     }
 
+    override fun waitDisconnection(
+        request: WaitDisconnectionRequest,
+        responseObserver: StreamObserver<WaitDisconnectionResponse>,
+    ) {
+        grpcUnary(scope, responseObserver) {
+            Log.i(TAG, "waitDisconnection: ${request.channel.id()}")
+            val bluetoothSocket = request.channel.toBluetoothSocket(channels)
+
+            while (bluetoothSocket.isConnected()) Thread.sleep(100)
+
+            WaitDisconnectionResponse.getDefaultInstance()
+        }
+    }
+
     override fun send(request: SendRequest, responseObserver: StreamObserver<SendResponse>) {
         grpcUnary(scope, responseObserver) {
             Log.i(TAG, "send")
