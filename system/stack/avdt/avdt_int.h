@@ -308,14 +308,12 @@ enum {
 
 /* "states" used in transport channel table */
 enum tTRANSPORT_CHANNEL_STATE : uint8_t {
-  AVDT_AD_ST_UNUSED = 0,  /* Unused - unallocated */
-  AVDT_AD_ST_IDLE = 1,    /* No connection */
-  AVDT_AD_ST_ACP = 2,     /* Waiting to accept a connection */
-  AVDT_AD_ST_CONN = 4,    /* Waiting for connection confirm */
-  AVDT_AD_ST_CFG = 5,     /* Waiting for configuration complete */
-  AVDT_AD_ST_OPEN = 6,    /* Channel opened */
-  AVDT_AD_ST_SEC_INT = 7, /* Security process as INT */
-  AVDT_AD_ST_SEC_ACP = 8, /* Security process as ACP */
+  AVDT_AD_ST_UNUSED = 0, /* Unused - unallocated */
+  AVDT_AD_ST_IDLE = 1,   /* No connection */
+  AVDT_AD_ST_ACP = 2,    /* Waiting to accept a connection */
+  AVDT_AD_ST_CONN = 4,   /* Waiting for connection confirm */
+  AVDT_AD_ST_CFG = 5,    /* Waiting for configuration complete */
+  AVDT_AD_ST_OPEN = 6,   /* Channel opened */
 };
 
 inline std::string tc_state_text(uint8_t state) {
@@ -327,8 +325,6 @@ inline std::string tc_state_text(uint8_t state) {
     CASE_RETURN_TEXT(AVDT_AD_ST_CONN);
     CASE_RETURN_TEXT(AVDT_AD_ST_CFG);
     CASE_RETURN_TEXT(AVDT_AD_ST_OPEN);
-    CASE_RETURN_TEXT(AVDT_AD_ST_SEC_INT);
-    CASE_RETURN_TEXT(AVDT_AD_ST_SEC_ACP);
     default:
       RETURN_UNKNOWN_TYPE_STRING(tTRANSPORT_CHANNEL_STATE, state_);
   }
