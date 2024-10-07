@@ -365,10 +365,8 @@ void avdt_ccb_event(AvdtpCcb* p_ccb, uint8_t event, tAVDT_CCB_EVT* p_data) {
   uint8_t action;
   int i;
 
-#if (AVDT_DEBUG == TRUE)
   log::verbose("CCB ccb={} event={} state={} p_ccb={}", avdt_ccb_to_idx(p_ccb),
                avdt_ccb_evt_str[event], avdt_ccb_st_str[p_ccb->state], fmt::ptr(p_ccb));
-#endif
 
   /* look up the state table for the current state */
   state_table = avdt_ccb_st_tbl[p_ccb->state];

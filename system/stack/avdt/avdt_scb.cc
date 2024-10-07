@@ -41,8 +41,6 @@ using namespace bluetooth;
 /*****************************************************************************
  * state machine constants and types
  ****************************************************************************/
-#if (AVDT_DEBUG == TRUE)
-
 /* verbose state strings for trace */
 const char* const avdt_scb_st_str[] = {"SCB_IDLE_ST", "SCB_CONF_ST",   "SCB_OPENING_ST",
                                        "SCB_OPEN_ST", "SCB_STREAM_ST", "SCB_CLOSING_ST"};
@@ -65,8 +63,6 @@ const char* const avdt_scb_evt_str[] = {
         "MSG_OPEN_REJ_EVT",      "MSG_START_REJ_EVT",     "MSG_SUSPEND_REJ_EVT",
         "TC_TOUT_EVT",           "TC_OPEN_EVT",           "TC_CLOSE_EVT",
         "TC_CONG_EVT",           "TC_DATA_EVT",           "CC_CLOSE_EVT"};
-
-#endif
 
 /* action function list */
 const tAVDT_SCB_ACTION avdt_scb_action[] = {avdt_scb_hdl_abort_cmd,
@@ -763,11 +759,9 @@ void avdt_scb_event(AvdtpScb* p_scb, uint8_t event, tAVDT_SCB_EVT* p_data) {
   tAVDT_SCB_ST_TBL state_table;
   uint8_t action;
 
-#if (AVDT_DEBUG == TRUE)
   log::verbose("SCB hdl={} event={}/{} state={} p_avdt_scb={} scb_index={}", avdt_scb_to_hdl(p_scb),
                event, avdt_scb_evt_str[event], avdt_scb_st_str[p_scb->state], fmt::ptr(p_scb),
                p_scb->stream_config.scb_index);
-#endif
 
   /* Check that we only send AVDT_SCB_API_WRITE_REQ_EVT to the active stream
    * device */
