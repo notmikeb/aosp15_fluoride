@@ -163,7 +163,7 @@ void avdt_l2c_connect_ind_cback(const RawAddress& bd_addr, uint16_t lcid, uint16
       p_tbl->tcid = AVDT_CHAN_SIG;
       p_tbl->lcid = lcid;
       p_tbl->state = AVDT_AD_ST_SEC_ACP;
-      p_tbl->cfg_flags = AVDT_L2C_CFG_CONN_ACP;
+      p_tbl->role = tAVDT_ROLE::AVDT_ACP;
 
       if (interop_match_addr(INTEROP_2MBPS_LINK_ONLY, &bd_addr)) {
         // Disable 3DH packets for AVDT ACL to improve sensitivity on HS
@@ -286,7 +286,7 @@ void avdt_l2c_connect_cfm_cback(uint16_t lcid, tL2CAP_CONN result) {
 
   p_tbl->state = AVDT_AD_ST_SEC_INT;
   p_tbl->lcid = lcid;
-  p_tbl->cfg_flags = AVDT_L2C_CFG_CONN_INT;
+  p_tbl->role = tAVDT_ROLE::AVDT_INT;
 
   if (interop_match_addr(INTEROP_2MBPS_LINK_ONLY, (const RawAddress*)&p_ccb->peer_addr)) {
     // Disable 3DH packets for AVDT ACL to improve sensitivity on HS

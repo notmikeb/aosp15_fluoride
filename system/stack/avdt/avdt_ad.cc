@@ -250,7 +250,7 @@ AvdtpTransportChannel* avdt_ad_tc_tbl_alloc(AvdtpCcb* p_ccb) {
 
   /* initialize entry */
   p_tbl->peer_mtu = L2CAP_DEFAULT_MTU;
-  p_tbl->cfg_flags = 0;
+  p_tbl->role = tAVDT_ROLE::AVDT_UNKNOWN;
   p_tbl->ccb_idx = avdt_ccb_to_idx(p_ccb);
   p_tbl->state = AVDT_AD_ST_IDLE;
   return p_tbl;
@@ -297,7 +297,7 @@ void avdt_ad_tc_close_ind(AvdtpTransportChannel* p_tbl) {
   close.old_tc_state = p_tbl->state;
   /* clear avdt_ad_tc_tbl entry */
   p_tbl->state = AVDT_AD_ST_UNUSED;
-  p_tbl->cfg_flags = 0;
+  p_tbl->role = tAVDT_ROLE::AVDT_UNKNOWN;
   p_tbl->peer_mtu = L2CAP_DEFAULT_MTU;
 
   /* if signaling channel, notify ccb that channel close */
@@ -356,10 +356,7 @@ void avdt_ad_tc_open_ind(AvdtpTransportChannel* p_tbl) {
 
     p_ccb = avdt_ccb_by_idx(p_tbl->ccb_idx);
     /* use err_param to indicate the role of connection */
-    evt.err_param = static_cast<uint8_t>(tAVDT_ROLE::AVDT_INT);
-    if (p_tbl->cfg_flags & AVDT_L2C_CFG_CONN_ACP) {
-      evt.err_param = static_cast<uint8_t>(tAVDT_ROLE::AVDT_ACP);
-    }
+    evt.err_param = static_cast<uint8_t>(p_tbl->role);
     tAVDT_CCB_EVT avdt_ccb_evt;
     avdt_ccb_evt.msg.hdr = evt;
     avdt_ccb_event(p_ccb, AVDT_CCB_LL_OPEN_EVT, &avdt_ccb_evt);

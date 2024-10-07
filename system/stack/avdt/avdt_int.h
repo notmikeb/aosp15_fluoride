@@ -306,13 +306,6 @@ enum {
 /* 2 channels(1 media, 1 report) for each SEP and one for signalling */
 #define AVDT_NUM_RT_TBL (AVDT_NUM_SEPS * AVDT_CHAN_NUM_TYPES + 1)
 
-/* Adaptation layer number of transport channel table entries - moved to target.h
-#define AVDT_NUM_TC_TBL     (AVDT_NUM_SEPS + AVDT_NUM_LINKS) */
-
-/* Configuration flags. AvdtpTransportChannel.cfg_flags */
-#define AVDT_L2C_CFG_CONN_INT (1 << 2)
-#define AVDT_L2C_CFG_CONN_ACP (1 << 3)
-
 /* "states" used in transport channel table */
 enum tTRANSPORT_CHANNEL_STATE : uint8_t {
   AVDT_AD_ST_UNUSED = 0,  /* Unused - unallocated */
@@ -677,7 +670,13 @@ private:
 class AvdtpTransportChannel {
 public:
   AvdtpTransportChannel()
-      : peer_mtu(0), my_mtu(0), lcid(0), tcid(0), ccb_idx(0), state(0), cfg_flags(0) {}
+      : peer_mtu(0),
+        my_mtu(0),
+        lcid(0),
+        tcid(0),
+        ccb_idx(0),
+        state(0),
+        role(tAVDT_ROLE::AVDT_UNKNOWN) {}
 
   void Reset() {
     peer_mtu = 0;
@@ -686,7 +685,7 @@ public:
     tcid = 0;
     ccb_idx = 0;
     state = 0;
-    cfg_flags = 0;
+    role = tAVDT_ROLE::AVDT_UNKNOWN;
   }
 
   uint16_t peer_mtu;  // L2CAP MTU of the peer device
@@ -695,7 +694,7 @@ public:
   uint8_t tcid;       // Transport channel ID
   uint8_t ccb_idx;    // Channel control block for with this transport channel
   uint8_t state;      // Transport channel state
-  uint8_t cfg_flags;  // L2CAP configuration flags
+  tAVDT_ROLE role;    // Role for the establishment of the AVDTP signaling channel
 };
 
 /**
