@@ -375,15 +375,4 @@
             column="16"/>
     </issue>
 
-    <issue
-        id="SupportAnnotationUsage"
-        message="This annotation does not apply for type double; expected int"
-        errorLine1="    public @DistanceMeasurementMethodId double getId() {"
-        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="packages/modules/Bluetooth/framework/java/android/bluetooth/le/DistanceMeasurementMethod.java"
-            line="97"
-            column="12"/>
-    </issue>
-
 </issues>

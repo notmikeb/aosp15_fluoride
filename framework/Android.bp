@@ -92,6 +92,9 @@ java_sdk_library {
         "error_prone_android_framework",
     ],
     lint: {
+        error_checks: [
+            "SupportAnnotationUsage",
+        ],
         strict_updatability_linting: true,
         baseline_filename: "lint-baseline.xml",
     },
