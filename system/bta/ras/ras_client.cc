@@ -438,7 +438,7 @@ public:
   }
 
   void GattWriteCallbackForVendorSpecificData(tCONN_ID conn_id, tGATT_STATUS status,
-                                              uint16_t handle, const uint8_t* value,
+                                              uint16_t handle, const uint8_t* /*value*/,
                                               GattWriteCallbackData* data) {
     if (data != nullptr) {
       GattWriteCallbackData* structPtr = static_cast<GattWriteCallbackData*>(data);
@@ -473,7 +473,7 @@ public:
   }
 
   void GattWriteCallback(tCONN_ID conn_id, tGATT_STATUS status, uint16_t handle,
-                         const uint8_t* value) {
+                         const uint8_t* /*value*/) {
     if (status != GATT_SUCCESS) {
       log::error("Fail to write conn_id {}, status {}, handle {}", conn_id,
                  gatt_status_text(status), handle);
@@ -497,7 +497,7 @@ public:
   }
 
   static void GattWriteCallback(tCONN_ID conn_id, tGATT_STATUS status, uint16_t handle,
-                                uint16_t len, const uint8_t* value, void* data) {
+                                uint16_t /*len*/, const uint8_t* value, void* data) {
     if (instance != nullptr) {
       if (data != nullptr) {
         GattWriteCallbackData* structPtr = static_cast<GattWriteCallbackData*>(data);
@@ -549,8 +549,8 @@ public:
             nullptr);
   }
 
-  void OnDescriptorWrite(tCONN_ID conn_id, tGATT_STATUS status, uint16_t handle, uint16_t len,
-                         const uint8_t* value, void* data) {
+  void OnDescriptorWrite(tCONN_ID conn_id, tGATT_STATUS status, uint16_t handle, uint16_t /*len*/,
+                         const uint8_t* /*value*/, void* /*data*/) {
     log::info("conn_id:{}, handle:{}, status:{}", conn_id, handle, gatt_status_text(status));
   }
 
