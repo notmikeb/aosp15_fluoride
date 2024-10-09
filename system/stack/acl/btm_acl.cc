@@ -2494,10 +2494,6 @@ bool acl_create_le_connection_with_id(uint8_t id, const RawAddress& bd_addr,
   return true;
 }
 
-bool acl_create_le_connection(const RawAddress& bd_addr) {
-  return acl_create_le_connection_with_id(CONN_MGR_ID_L2CAP, bd_addr);
-}
-
 void acl_rcv_acl_data(BT_HDR* p_msg) {
   acl_header_t acl_header{
           .handle = HCI_INVALID_HANDLE,
