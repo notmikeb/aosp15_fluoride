@@ -356,6 +356,10 @@ typedef enum {
   // Peer can request proper latency based on its power state later.
   INTEROP_HID_PREF_CONN_ZERO_LATENCY,
 
+  // Some HOGP devices have the report map longer than the maximum GATT attribute value length (512
+  // bytes).
+  INTEROP_HOGP_LONG_REPORT,
+
   END_OF_INTEROP_LIST
 } interop_feature_t;
 
