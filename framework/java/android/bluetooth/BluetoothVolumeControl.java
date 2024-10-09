@@ -268,12 +268,12 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
     }
 
     /**
-     * Close this VolumeControl server instance.
+     * {@inheritDoc}
      *
-     * <p>Application should call this method as early as possible after it is done with this
-     * VolumeControl server.
+     * @hide
      */
     @Override
+    @SystemApi
     public void close() {
         Log.v(TAG, "close()");
 
@@ -343,11 +343,12 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
     }
 
     /**
-     * Get the list of devices matching specified states. Currently at most one.
+     * {@inheritDoc}
      *
-     * @return list of matching devices
      * @hide
      */
+    @Override
+    @SystemApi
     @RequiresBluetoothConnectPermission
     @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public List<BluetoothDevice> getDevicesMatchingConnectionStates(int[] states) {
@@ -368,11 +369,12 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
     }
 
     /**
-     * Get connection state of device
+     * {@inheritDoc}
      *
-     * @return device connection state
      * @hide
      */
+    @Override
+    @SystemApi
     @RequiresBluetoothConnectPermission
     @RequiresPermission(BLUETOOTH_CONNECT)
     public int getConnectionState(BluetoothDevice device) {
