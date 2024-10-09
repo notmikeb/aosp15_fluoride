@@ -326,11 +326,7 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
      */
     @SystemApi
     @RequiresBluetoothConnectPermission
-    @RequiresPermission(
-            allOf = {
-                BLUETOOTH_CONNECT,
-                BLUETOOTH_PRIVILEGED,
-            })
+    @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public @NonNull List<BluetoothDevice> getConnectedDevices() {
         if (DBG) log("getConnectedDevices()");
         final IBluetoothVolumeControl service = getService();
@@ -413,11 +409,7 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
      */
     @SystemApi
     @RequiresBluetoothConnectPermission
-    @RequiresPermission(
-            allOf = {
-                BLUETOOTH_CONNECT,
-                BLUETOOTH_PRIVILEGED,
-            })
+    @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public void registerCallback(
             @NonNull @CallbackExecutor Executor executor, @NonNull Callback callback) {
         Objects.requireNonNull(executor, "executor cannot be null");
@@ -477,11 +469,7 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
      */
     @SystemApi
     @RequiresBluetoothConnectPermission
-    @RequiresPermission(
-            allOf = {
-                BLUETOOTH_CONNECT,
-                BLUETOOTH_PRIVILEGED,
-            })
+    @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public void unregisterCallback(@NonNull Callback callback) {
         Objects.requireNonNull(callback, "callback cannot be null");
         if (DBG) log("unregisterCallback");
@@ -518,11 +506,7 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
     @Deprecated
     @SystemApi
     @RequiresBluetoothConnectPermission
-    @RequiresPermission(
-            allOf = {
-                BLUETOOTH_CONNECT,
-                BLUETOOTH_PRIVILEGED,
-            })
+    @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public void setVolumeOffset(
             @NonNull BluetoothDevice device, @IntRange(from = -255, to = 255) int volumeOffset) {
         final int defaultInstanceId = 1;
@@ -544,11 +528,7 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
      */
     @SystemApi
     @RequiresBluetoothConnectPermission
-    @RequiresPermission(
-            allOf = {
-                BLUETOOTH_CONNECT,
-                BLUETOOTH_PRIVILEGED,
-            })
+    @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public void setVolumeOffset(
             @NonNull BluetoothDevice device,
             @IntRange(from = 1, to = 255) int instanceId,
@@ -610,11 +590,7 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
      */
     @SystemApi
     @RequiresBluetoothConnectPermission
-    @RequiresPermission(
-            allOf = {
-                BLUETOOTH_CONNECT,
-                BLUETOOTH_PRIVILEGED,
-            })
+    @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public boolean isVolumeOffsetAvailable(@NonNull BluetoothDevice device) {
         if (DBG) log("isVolumeOffsetAvailable(" + device + ")");
         final IBluetoothVolumeControl service = getService();
@@ -646,11 +622,7 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
      */
     @SystemApi
     @RequiresBluetoothConnectPermission
-    @RequiresPermission(
-            allOf = {
-                BLUETOOTH_CONNECT,
-                BLUETOOTH_PRIVILEGED,
-            })
+    @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public int getNumberOfVolumeOffsetInstances(@NonNull BluetoothDevice device) {
         if (DBG) log("getNumberOfVolumeOffsetInstances(" + device + ")");
         final IBluetoothVolumeControl service = getService();
@@ -688,11 +660,7 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
      */
     @SystemApi
     @RequiresBluetoothConnectPermission
-    @RequiresPermission(
-            allOf = {
-                BLUETOOTH_CONNECT,
-                BLUETOOTH_PRIVILEGED,
-            })
+    @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public boolean setConnectionPolicy(
             @NonNull BluetoothDevice device, @ConnectionPolicy int connectionPolicy) {
         if (DBG) log("setConnectionPolicy(" + device + ", " + connectionPolicy + ")");
@@ -725,11 +693,7 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
      */
     @SystemApi
     @RequiresBluetoothConnectPermission
-    @RequiresPermission(
-            allOf = {
-                BLUETOOTH_CONNECT,
-                BLUETOOTH_PRIVILEGED,
-            })
+    @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public @ConnectionPolicy int getConnectionPolicy(@NonNull BluetoothDevice device) {
         if (VDBG) log("getConnectionPolicy(" + device + ")");
         final IBluetoothVolumeControl service = getService();
@@ -767,11 +731,7 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
     @FlaggedApi(Flags.FLAG_LEAUDIO_BROADCAST_VOLUME_CONTROL_FOR_CONNECTED_DEVICES)
     @SystemApi
     @RequiresBluetoothConnectPermission
-    @RequiresPermission(
-            allOf = {
-                BLUETOOTH_CONNECT,
-                BLUETOOTH_PRIVILEGED,
-            })
+    @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public void setDeviceVolume(
             @NonNull BluetoothDevice device,
             @IntRange(from = 0, to = 255) int volume,
