@@ -1201,6 +1201,11 @@ public class AdapterService extends Service {
     }
 
     void updateAdapterName(String name) {
+        // TODO: b/372775662 - remove post once caller is on correct thread
+        mHandler.post(() -> updateAdapterNameInternal(name));
+    }
+
+    private void updateAdapterNameInternal(String name) {
         int n = mRemoteCallbacks.beginBroadcast();
         Log.d(TAG, "updateAdapterName(" + name + ")");
         for (int i = 0; i < n; i++) {
@@ -1214,6 +1219,11 @@ public class AdapterService extends Service {
     }
 
     void updateAdapterAddress(String address) {
+        // TODO: b/372775662 - remove post once caller is on correct thread
+        mHandler.post(() -> updateAdapterAddressInternal(address));
+    }
+
+    private void updateAdapterAddressInternal(String address) {
         int n = mRemoteCallbacks.beginBroadcast();
         Log.d(TAG, "updateAdapterAddress(" + BluetoothUtils.toAnonymizedAddress(address) + ")");
         for (int i = 0; i < n; i++) {
