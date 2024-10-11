@@ -631,7 +631,7 @@ public class AdapterService extends Service {
         }
         // OnCreate must perform the minimum of infaillible and mandatory initialization
         mRemoteDevices = new RemoteDevices(this, mLooper);
-        mAdapterProperties = new AdapterProperties(this);
+        mAdapterProperties = new AdapterProperties(this, mRemoteDevices, mLooper);
         mAdapterStateMachine = new AdapterState(this, mLooper);
         mBinder = new AdapterServiceBinder(this);
         mUserManager = getNonNullSystemService(UserManager.class);
@@ -666,7 +666,7 @@ public class AdapterService extends Service {
         mAdapter = BluetoothAdapter.getDefaultAdapter();
         if (!Flags.fastBindToApp()) {
             // Moved to OnCreate
-            mAdapterProperties = new AdapterProperties(this);
+            mAdapterProperties = new AdapterProperties(this, mRemoteDevices, mLooper);
             mAdapterStateMachine = new AdapterState(this, mLooper);
         }
         boolean isCommonCriteriaMode =
@@ -1001,7 +1001,7 @@ public class AdapterService extends Service {
         // calling cleanup but this may not be necessary at all
         // We should figure out why this is needed later
         mRemoteDevices.reset();
-        mAdapterProperties.init(mRemoteDevices);
+        mAdapterProperties.init();
 
         Log.d(TAG, "bleOnProcessStart() - Make Bond State Machine");
         mBondStateMachine = BondStateMachine.make(this, mAdapterProperties, mRemoteDevices);
@@ -1200,8 +1200,11 @@ public class AdapterService extends Service {
     }
 
     void updateAdapterName(String name) {
-        // TODO: b/372775662 - remove post once caller is on correct thread
-        mHandler.post(() -> updateAdapterNameInternal(name));
+        if (Flags.adapterPropertiesLooper()) {
+            updateAdapterNameInternal(name);
+        } else {
+            mHandler.post(() -> updateAdapterNameInternal(name));
+        }
     }
 
     private void updateAdapterNameInternal(String name) {
@@ -1218,8 +1221,11 @@ public class AdapterService extends Service {
     }
 
     void updateAdapterAddress(String address) {
-        // TODO: b/372775662 - remove post once caller is on correct thread
-        mHandler.post(() -> updateAdapterAddressInternal(address));
+        if (Flags.adapterPropertiesLooper()) {
+            updateAdapterAddressInternal(address);
+        } else {
+            mHandler.post(() -> updateAdapterAddressInternal(address));
+        }
     }
 
     private void updateAdapterAddressInternal(String address) {

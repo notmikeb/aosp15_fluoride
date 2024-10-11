@@ -34,6 +34,7 @@ import android.bluetooth.BluetoothHearingAid;
 import android.bluetooth.BluetoothHidDevice;
 import android.bluetooth.BluetoothHidHost;
 import android.bluetooth.BluetoothLeAudio;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothMap;
 import android.bluetooth.BluetoothMapClient;
 import android.bluetooth.BluetoothPan;
@@ -48,6 +49,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelUuid;
 import android.os.SystemProperties;
 import android.os.UserHandle;
@@ -72,7 +75,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 class AdapterProperties {
-    private static final String TAG = "AdapterProperties";
+    private static final String TAG = AdapterProperties.class.getSimpleName();
 
     private static final String MAX_CONNECTED_AUDIO_DEVICES_PROPERTY =
             "persist.bluetooth.maxconnectedaudiodevices";
@@ -95,8 +98,7 @@ class AdapterProperties {
     private volatile int mDiscoverableTimeout;
     private volatile ParcelUuid[] mUuids;
 
-    private CopyOnWriteArrayList<BluetoothDevice> mBondedDevices =
-            new CopyOnWriteArrayList<BluetoothDevice>();
+    private CopyOnWriteArrayList<BluetoothDevice> mBondedDevices = new CopyOnWriteArrayList<>();
 
     private int mProfilesConnecting, mProfilesConnected, mProfilesDisconnecting;
     private final HashMap<Integer, Pair<Integer, Integer>> mProfileConnectionState =
@@ -111,10 +113,12 @@ class AdapterProperties {
     private boolean mA2dpOffloadEnabled = false;
 
     private final AdapterService mService;
+    private final BluetoothAdapter mAdapter;
+    private final RemoteDevices mRemoteDevices;
+    private final Handler mHandler;
+
     private boolean mDiscovering;
     private long mDiscoveryEndMs; // < Time (ms since epoch) that discovery ended or will end.
-    private RemoteDevices mRemoteDevices;
-    private BluetoothAdapter mAdapter;
     // TODO - all hw capabilities to be exposed as a class
     private int mNumOfAdvertisementInstancesSupported;
     private boolean mRpaOffloadSupported;
@@ -212,15 +216,16 @@ class AdapterProperties {
     // can be added here.
     private final Object mObject = new Object();
 
-    AdapterProperties(AdapterService service) {
+    AdapterProperties(AdapterService service, RemoteDevices remoteDevices, Looper looper) {
+        mAdapter = ((Context) service).getSystemService(BluetoothManager.class).getAdapter();
+        mRemoteDevices = remoteDevices;
         mService = service;
-        mAdapter = BluetoothAdapter.getDefaultAdapter();
+        mHandler = new Handler(looper);
         invalidateBluetoothCaches();
     }
 
-    public void init(RemoteDevices remoteDevices) {
+    public void init() {
         mProfileConnectionState.clear();
-        mRemoteDevices = remoteDevices;
 
         // Get default max connected audio devices from config.xml
         int configDefaultMaxConnectedAudioDevices =
@@ -275,7 +280,6 @@ class AdapterProperties {
     }
 
     public void cleanup() {
-        mRemoteDevices = null;
         mProfileConnectionState.clear();
 
         if (mReceiverRegistered) {
@@ -959,6 +963,14 @@ class AdapterProperties {
     }
 
     void adapterPropertyChangedCallback(int[] types, byte[][] values) {
+        if (Flags.adapterPropertiesLooper()) {
+            mHandler.post(() -> adapterPropertyChangedCallbackInternal(types, values));
+        } else {
+            adapterPropertyChangedCallbackInternal(types, values);
+        }
+    }
+
+    private void adapterPropertyChangedCallbackInternal(int[] types, byte[][] values) {
         Intent intent;
         int type;
         byte[] val;

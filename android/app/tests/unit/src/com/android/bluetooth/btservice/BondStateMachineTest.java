@@ -99,8 +99,9 @@ public class BondStateMachineTest {
         mRemoteDevices = new RemoteDevices(mAdapterService, mHandlerThread.getLooper());
         mRemoteDevices.reset();
         when(mAdapterService.getResources()).thenReturn(mTargetContext.getResources());
-        mAdapterProperties = new AdapterProperties(mAdapterService);
-        mAdapterProperties.init(mRemoteDevices);
+        mAdapterProperties =
+                new AdapterProperties(mAdapterService, mRemoteDevices, mHandlerThread.getLooper());
+        mAdapterProperties.init();
         mBondStateMachine =
                 BondStateMachine.make(mAdapterService, mAdapterProperties, mRemoteDevices);
     }

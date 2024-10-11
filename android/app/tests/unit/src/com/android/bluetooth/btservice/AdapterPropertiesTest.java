@@ -93,8 +93,9 @@ public class AdapterPropertiesTest {
                 .thenReturn(InstrumentationRegistry.getTargetContext().getResources());
 
         // Must be called to initialize services
-        mAdapterProperties = new AdapterProperties(mAdapterService);
-        mAdapterProperties.init(mRemoteDevices);
+        mAdapterProperties =
+                new AdapterProperties(mAdapterService, mRemoteDevices, mHandlerThread.getLooper());
+        mAdapterProperties.init();
     }
 
     @Test
