@@ -1884,6 +1884,11 @@ uint8_t l2cu_process_peer_cfg_req(tL2C_CCB* p_ccb, tL2CAP_CFG_INFO* p_cfg) {
     p_cfg->fcr.mode = L2CAP_FCR_BASIC_MODE;
   }
 
+  if (com::android::bluetooth::flags::l2cap_fcs_option_fix() && p_cfg->fcs_present) {
+    p_ccb->peer_cfg.fcs_present = 1;
+    p_ccb->peer_cfg.fcs = p_cfg->fcs;
+  }
+
   if (!p_cfg->mtu_present && required_remote_mtu > L2CAP_DEFAULT_MTU) {
     // We reject if we have a MTU requirement higher than default MTU
     p_cfg->mtu = required_remote_mtu;
