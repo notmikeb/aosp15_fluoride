@@ -1849,6 +1849,30 @@ tL2C_RCB* l2cu_find_ble_rcb_by_psm(uint16_t psm) {
   return NULL;
 }
 
+/*************************************************************************************
+ *
+ * Function         l2cu_get_fcs_len
+ *
+ * Description      This function is called to determine FCS len in S/I Frames.
+ *
+ *
+ * Returns          0 or L2CAP_FCS_LEN: 0 is returned when both sides configure `No FCS`
+ *
+ **************************************************************************************/
+uint8_t l2cu_get_fcs_len(tL2C_CCB* p_ccb) {
+  log::verbose("our.fcs_present: {} our.fcs: {},  peer.fcs_present: {} peer.fcs: {}",
+               p_ccb->our_cfg.fcs_present, p_ccb->our_cfg.fcs, p_ccb->peer_cfg.fcs_present,
+               p_ccb->peer_cfg.fcs);
+
+  if (com::android::bluetooth::flags::l2cap_fcs_option_fix() &&
+      (p_ccb->peer_cfg.fcs_present && p_ccb->peer_cfg.fcs == 0x00) &&
+      (p_ccb->our_cfg.fcs_present && p_ccb->our_cfg.fcs == 0x00)) {
+    return 0;
+  }
+
+  return L2CAP_FCS_LEN;
+}
+
 /*******************************************************************************
  *
  * Function         l2cu_process_peer_cfg_req
