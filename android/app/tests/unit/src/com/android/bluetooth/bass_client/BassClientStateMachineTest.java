@@ -2702,7 +2702,7 @@ public class BassClientStateMachineTest {
 
     @SafeVarargs
     private void verifyIntentSent(int timeout_ms, Matcher<Intent>... matchers) {
-        verify(mBassClientService, timeout(timeout_ms).times(1))
+        verify(mBassClientService, timeout(timeout_ms))
                 .sendBroadcast(
                         MockitoHamcrest.argThat(AllOf.allOf(matchers)),
                         eq(BLUETOOTH_CONNECT),
