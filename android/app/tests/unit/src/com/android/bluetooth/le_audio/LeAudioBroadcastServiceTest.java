@@ -216,7 +216,6 @@ public class LeAudioBroadcastServiceTest {
         doReturn(mActiveDeviceManager).when(mAdapterService).getActiveDeviceManager();
 
         mAdapter = BluetoothAdapter.getDefaultAdapter();
-        MetricsLogger.getInstance();
         MetricsLogger.setInstanceForTesting(mMetricsLogger);
 
         LeAudioBroadcasterNativeInterface.setInstance(mLeAudioBroadcasterNativeInterface);
@@ -353,7 +352,7 @@ public class LeAudioBroadcastServiceTest {
         TestUtils.waitForLooperToFinishScheduledTask(mService.getMainLooper());
 
         // Verify broadcast audio session is logged when session stopped
-        verify(mMetricsLogger, times(1))
+        verify(mMetricsLogger)
                 .logLeAudioBroadcastAudioSession(
                         eq(broadcastId),
                         eq(new int[] {0x2}), // STATS_SESSION_AUDIO_QUALITY_HIGH
@@ -444,7 +443,7 @@ public class LeAudioBroadcastServiceTest {
         TestUtils.waitForLooperToFinishScheduledTask(mService.getMainLooper());
 
         // Verify broadcast audio session is logged when session failed to create
-        verify(mMetricsLogger, times(1))
+        verify(mMetricsLogger)
                 .logLeAudioBroadcastAudioSession(
                         eq(INVALID_BROADCAST_ID),
                         eq(new int[] {0x2}), // STATS_SESSION_AUDIO_QUALITY_HIGH
@@ -522,7 +521,7 @@ public class LeAudioBroadcastServiceTest {
         mService.messageFromNative(state_event);
 
         // Verify broadcast audio session is logged when session failed to stream
-        verify(mMetricsLogger, times(1))
+        verify(mMetricsLogger)
                 .logLeAudioBroadcastAudioSession(
                         eq(broadcastId),
                         eq(new int[] {0x2}), // STATS_SESSION_AUDIO_QUALITY_HIGH
