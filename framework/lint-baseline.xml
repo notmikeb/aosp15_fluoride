@@ -267,56 +267,12 @@
 
     <issue
         id="WrongConstant"
-        message="Must be one of: BluetoothStatusCodes.SUCCESS, BluetoothStatusCodes.ERROR_TIMEOUT, BluetoothStatusCodes.RFCOMM_LISTENER_START_FAILED_UUID_IN_USE, BluetoothStatusCodes.RFCOMM_LISTENER_OPERATION_FAILED_NO_MATCHING_SERVICE_RECORD, BluetoothStatusCodes.RFCOMM_LISTENER_OPERATION_FAILED_DIFFERENT_APP, BluetoothStatusCodes.RFCOMM_LISTENER_FAILED_TO_CREATE_SERVER_SOCKET, BluetoothStatusCodes.RFCOMM_LISTENER_FAILED_TO_CLOSE_SERVER_SOCKET, BluetoothStatusCodes.RFCOMM_LISTENER_NO_SOCKET_AVAILABLE"
-        errorLine1="        return BluetoothStatusCodes.ERROR_PROFILE_SERVICE_NOT_BOUND;"
-        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="packages/modules/Bluetooth/framework/java/android/bluetooth/BluetoothAdapter.java"
-            line="3267"
-            column="16"/>
-    </issue>
-
-    <issue
-        id="WrongConstant"
-        message="Must be one of: BluetoothStatusCodes.SUCCESS, BluetoothStatusCodes.ERROR_TIMEOUT, BluetoothStatusCodes.RFCOMM_LISTENER_START_FAILED_UUID_IN_USE, BluetoothStatusCodes.RFCOMM_LISTENER_OPERATION_FAILED_NO_MATCHING_SERVICE_RECORD, BluetoothStatusCodes.RFCOMM_LISTENER_OPERATION_FAILED_DIFFERENT_APP, BluetoothStatusCodes.RFCOMM_LISTENER_FAILED_TO_CREATE_SERVER_SOCKET, BluetoothStatusCodes.RFCOMM_LISTENER_FAILED_TO_CLOSE_SERVER_SOCKET, BluetoothStatusCodes.RFCOMM_LISTENER_NO_SOCKET_AVAILABLE"
-        errorLine1="        return BluetoothStatusCodes.ERROR_PROFILE_SERVICE_NOT_BOUND;"
-        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="packages/modules/Bluetooth/framework/java/android/bluetooth/BluetoothAdapter.java"
-            line="3298"
-            column="16"/>
-    </issue>
-
-    <issue
-        id="WrongConstant"
-        message="Must be one of: BluetoothCodecConfig.CODEC_PRIORITY_DISABLED, BluetoothCodecConfig.CODEC_PRIORITY_DEFAULT, BluetoothCodecConfig.CODEC_PRIORITY_HIGHEST"
-        errorLine1="                        0,"
-        errorLine2="                        ~">
-        <location
-            file="packages/modules/Bluetooth/framework/java/android/bluetooth/BluetoothCodecConfig.java"
-            line="783"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="WrongConstant"
-        message="Must be one of: BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE, BluetoothGattCharacteristic.WRITE_TYPE_SIGNED"
-        errorLine1="                            characteristic.getWriteType())"
-        errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="packages/modules/Bluetooth/framework/java/android/bluetooth/BluetoothGatt.java"
-            line="1518"
-            column="29"/>
-    </issue>
-
-    <issue
-        id="WrongConstant"
         message="Flag not allowed here"
         errorLine1="            return (mCapability >> 1) &amp; 1;"
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="packages/modules/Bluetooth/framework/java/android/bluetooth/BluetoothHearingAid.java"
-            line="106"
+            line="105"
             column="20"/>
     </issue>
 
@@ -327,30 +283,19 @@
         errorLine2="                   ~~~~~~~~~~~~~~~">
         <location
             file="packages/modules/Bluetooth/framework/java/android/bluetooth/BluetoothHearingAid.java"
-            line="123"
+            line="121"
             column="20"/>
     </issue>
 
     <issue
         id="WrongConstant"
-        message="Must be one of: BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR, BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO, BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY, BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY, BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL"
-        errorLine1="        return mBqrCommon.getQualityReportId();"
-        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        message="Flag not allowed here"
+        errorLine1="            mQualityReportId = bqrBuf.get() &amp; 0xFF;"
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~~">
         <location
             file="packages/modules/Bluetooth/framework/java/android/bluetooth/BluetoothQualityReport.java"
-            line="300"
-            column="16"/>
-    </issue>
-
-    <issue
-        id="WrongConstant"
-        message="Must be one of: BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR, BluetoothQualityReport.QUALITY_REPORT_ID_APPROACH_LSTO, BluetoothQualityReport.QUALITY_REPORT_ID_A2DP_CHOPPY, BluetoothQualityReport.QUALITY_REPORT_ID_SCO_CHOPPY, BluetoothQualityReport.QUALITY_REPORT_ID_CONN_FAIL"
-        errorLine1="                            + qualityReportIdToString(getQualityReportId())"
-        errorLine2="                                                      ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="packages/modules/Bluetooth/framework/java/android/bluetooth/BluetoothQualityReport.java"
-            line="1103"
-            column="55"/>
+            line="694"
+            column="32"/>
     </issue>
 
     <issue
@@ -360,19 +305,8 @@
         errorLine2="                        ~~">
         <location
             file="packages/modules/Bluetooth/framework/java/android/bluetooth/OobData.java"
-            line="784"
+            line="783"
             column="25"/>
-    </issue>
-
-    <issue
-        id="WrongConstant"
-        message="Must be one of: ScanRecord.DATA_TYPE_FLAGS, ScanRecord.DATA_TYPE_SERVICE_UUIDS_16_BIT_PARTIAL, ScanRecord.DATA_TYPE_SERVICE_UUIDS_16_BIT_COMPLETE, ScanRecord.DATA_TYPE_SERVICE_UUIDS_32_BIT_PARTIAL, ScanRecord.DATA_TYPE_SERVICE_UUIDS_32_BIT_COMPLETE, ScanRecord.DATA_TYPE_SERVICE_UUIDS_128_BIT_PARTIAL, ScanRecord.DATA_TYPE_SERVICE_UUIDS_128_BIT_COMPLETE, ScanRecord.DATA_TYPE_LOCAL_NAME_SHORT, ScanRecord.DATA_TYPE_LOCAL_NAME_COMPLETE, ScanRecord.DATA_TYPE_TX_POWER_LEVEL, ScanRecord.DATA_TYPE_CLASS_OF_DEVICE, ScanRecord.DATA_TYPE_SIMPLE_PAIRING_HASH_C, ScanRecord.DATA_TYPE_SIMPLE_PAIRING_RANDOMIZER_R, ScanRecord.DATA_TYPE_DEVICE_ID, ScanRecord.DATA_TYPE_SECURITY_MANAGER_OUT_OF_BAND_FLAGS, ScanRecord.DATA_TYPE_SLAVE_CONNECTION_INTERVAL_RANGE, ScanRecord.DATA_TYPE_SERVICE_SOLICITATION_UUIDS_16_BIT, ScanRecord.DATA_TYPE_SERVICE_SOLICITATION_UUIDS_128_BIT, ScanRecord.DATA_TYPE_SERVICE_DATA_16_BIT, ScanRecord.DATA_TYPE_PUBLIC_TARGET_ADDRESS, ScanRecord.DATA_TYPE_RANDOM_TARGET_ADDRESS, ScanRecord.DATA_TYPE_APPEARANCE, ScanRecord.DATA_TYPE_ADVERTISING_INTERVAL, ScanRecord.DATA_TYPE_LE_BLUETOOTH_DEVICE_ADDRESS, ScanRecord.DATA_TYPE_LE_ROLE, ScanRecord.DATA_TYPE_SIMPLE_PAIRING_HASH_C_256, ScanRecord.DATA_TYPE_SIMPLE_PAIRING_RANDOMIZER_R_256, ScanRecord.DATA_TYPE_SERVICE_SOLICITATION_UUIDS_32_BIT, ScanRecord.DATA_TYPE_SERVICE_DATA_32_BIT, ScanRecord.DATA_TYPE_SERVICE_DATA_128_BIT, ScanRecord.DATA_TYPE_LE_SECURE_CONNECTIONS_CONFIRMATION_VALUE, ScanRecord.DATA_TYPE_LE_SECURE_CONNECTIONS_RANDOM_VALUE, ScanRecord.DATA_TYPE_URI, ScanRecord.DATA_TYPE_INDOOR_POSITIONING, ScanRecord.DATA_TYPE_TRANSPORT_DISCOVERY_DATA, ScanRecord.DATA_TYPE_LE_SUPPORTED_FEATURES, ScanRecord.DATA_TYPE_CHANNEL_MAP_UPDATE_INDICATION, ScanRecord.DATA_TYPE_PB_ADV, ScanRecord.DATA_TYPE_MESH_MESSAGE, ScanRecord.DATA_TYPE_MESH_BEACON, ScanRecord.DATA_TYPE_BIG_INFO, ScanRecord.DATA_TYPE_BROADCAST_CODE, ScanRecord.DATA_TYPE_RESOLVABLE_SET_IDENTIFIER, ScanRecord.DATA_TYPE_ADVERTISING_INTERVAL_LONG, ScanRecord.DATA_TYPE_3D_INFORMATION_DATA, ScanRecord.DATA_TYPE_MANUFACTURER_SPECIFIC_DATA"
-        errorLine1="        return mAdvertisingDataType;"
-        errorLine2="               ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="packages/modules/Bluetooth/framework/java/android/bluetooth/le/ScanFilter.java"
-            line="423"
-            column="16"/>
     </issue>
 
 </issues>
