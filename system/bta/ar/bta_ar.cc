@@ -27,8 +27,8 @@
 
 #include <cstdint>
 
-#include "bta/include/bta_ar_api.h"
 #include "bta/ar/bta_ar_int.h"
+#include "bta/include/bta_ar_api.h"
 #include "bta/sys/bta_sys.h"
 #include "profile/avrcp/avrcp_sdp_service.h"
 #include "stack/include/avct_api.h"
