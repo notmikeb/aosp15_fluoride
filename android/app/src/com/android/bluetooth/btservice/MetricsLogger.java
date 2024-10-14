@@ -188,12 +188,12 @@ public class MetricsLogger {
         }
         IntentFilter filter = new IntentFilter();
         filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
+        filter.addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED);
+        filter.addAction(BluetoothA2dpSink.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothAvrcpController.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothHeadsetClient.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothHearingAid.ACTION_CONNECTION_STATE_CHANGED);
-        filter.addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED);
-        filter.addAction(BluetoothA2dpSink.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothHidDevice.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothHidHost.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothLeAudio.ACTION_LE_AUDIO_CONNECTION_STATE_CHANGED);
@@ -215,11 +215,17 @@ public class MetricsLogger {
                         return;
                     }
                     switch (action) {
-                        case BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED:
-                            logConnectionStateChanges(BluetoothProfile.HEADSET, intent);
-                            break;
                         case BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED:
                             logConnectionStateChanges(BluetoothProfile.A2DP, intent);
+                            break;
+                        case BluetoothA2dpSink.ACTION_CONNECTION_STATE_CHANGED:
+                            logConnectionStateChanges(BluetoothProfile.A2DP_SINK, intent);
+                            break;
+                        case BluetoothAvrcpController.ACTION_CONNECTION_STATE_CHANGED:
+                            logConnectionStateChanges(BluetoothProfile.AVRCP_CONTROLLER, intent);
+                            break;
+                        case BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED:
+                            logConnectionStateChanges(BluetoothProfile.HEADSET, intent);
                             break;
                         case BluetoothHeadsetClient.ACTION_CONNECTION_STATE_CHANGED:
                             logConnectionStateChanges(BluetoothProfile.HEADSET_CLIENT, intent);
@@ -227,20 +233,14 @@ public class MetricsLogger {
                         case BluetoothHearingAid.ACTION_CONNECTION_STATE_CHANGED:
                             logConnectionStateChanges(BluetoothProfile.HEARING_AID, intent);
                             break;
-                        case BluetoothA2dpSink.ACTION_CONNECTION_STATE_CHANGED:
-                            logConnectionStateChanges(BluetoothProfile.A2DP_SINK, intent);
-                            break;
                         case BluetoothHidDevice.ACTION_CONNECTION_STATE_CHANGED:
                             logConnectionStateChanges(BluetoothProfile.HID_DEVICE, intent);
                             break;
                         case BluetoothHidHost.ACTION_CONNECTION_STATE_CHANGED:
                             logConnectionStateChanges(BluetoothProfile.HID_HOST, intent);
                             break;
-                        case BluetoothAvrcpController.ACTION_CONNECTION_STATE_CHANGED:
-                            logConnectionStateChanges(BluetoothProfile.AVRCP_CONTROLLER, intent);
-                            break;
-                        case BluetoothPan.ACTION_CONNECTION_STATE_CHANGED:
-                            logConnectionStateChanges(BluetoothProfile.PAN, intent);
+                        case BluetoothLeAudio.ACTION_LE_AUDIO_CONNECTION_STATE_CHANGED:
+                            logConnectionStateChanges(BluetoothProfile.LE_AUDIO, intent);
                             break;
                         case BluetoothMap.ACTION_CONNECTION_STATE_CHANGED:
                             logConnectionStateChanges(BluetoothProfile.MAP, intent);
@@ -248,17 +248,17 @@ public class MetricsLogger {
                         case BluetoothMapClient.ACTION_CONNECTION_STATE_CHANGED:
                             logConnectionStateChanges(BluetoothProfile.MAP_CLIENT, intent);
                             break;
-                        case BluetoothSap.ACTION_CONNECTION_STATE_CHANGED:
-                            logConnectionStateChanges(BluetoothProfile.SAP, intent);
-                            break;
-                        case BluetoothPbapClient.ACTION_CONNECTION_STATE_CHANGED:
-                            logConnectionStateChanges(BluetoothProfile.PBAP_CLIENT, intent);
+                        case BluetoothPan.ACTION_CONNECTION_STATE_CHANGED:
+                            logConnectionStateChanges(BluetoothProfile.PAN, intent);
                             break;
                         case BluetoothPbap.ACTION_CONNECTION_STATE_CHANGED:
                             logConnectionStateChanges(BluetoothProfile.PBAP, intent);
                             break;
-                        case BluetoothLeAudio.ACTION_LE_AUDIO_CONNECTION_STATE_CHANGED:
-                            logConnectionStateChanges(BluetoothProfile.LE_AUDIO, intent);
+                        case BluetoothPbapClient.ACTION_CONNECTION_STATE_CHANGED:
+                            logConnectionStateChanges(BluetoothProfile.PBAP_CLIENT, intent);
+                            break;
+                        case BluetoothSap.ACTION_CONNECTION_STATE_CHANGED:
+                            logConnectionStateChanges(BluetoothProfile.SAP, intent);
                             break;
                         default:
                             Log.w(TAG, "Received unknown intent " + intent);
