@@ -1930,12 +1930,12 @@ public class LeAudioService extends ProfileService {
                 mAdapterService
                         .getBluetoothScanController()
                         .getTransitionalScanHelper()
-                        .registerScannerInternal(this, null);
+                        .registerScannerInternal(this, getAttributionSource(), null);
             } else {
                 mAdapterService
                         .getBluetoothGattService()
                         .getTransitionalScanHelper()
-                        .registerScannerInternal(this, null);
+                        .registerScannerInternal(this, getAttributionSource(), null);
             }
         }
 
