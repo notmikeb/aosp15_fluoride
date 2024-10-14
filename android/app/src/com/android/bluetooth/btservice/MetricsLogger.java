@@ -200,6 +200,7 @@ public class MetricsLogger {
         filter.addAction(BluetoothMap.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothMapClient.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothPan.ACTION_CONNECTION_STATE_CHANGED);
+        filter.addAction(BluetoothPbap.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothPbapClient.ACTION_CONNECTION_STATE_CHANGED);
         filter.addAction(BluetoothSap.ACTION_CONNECTION_STATE_CHANGED);
         mAdapterService.registerReceiver(mReceiver, filter);
