@@ -98,6 +98,9 @@ public class PairingTest {
     private static final ParcelUuid BATTERY_UUID =
             ParcelUuid.fromString("0000180F-0000-1000-8000-00805F9B34FB");
 
+    private static final ParcelUuid HOGP_UUID =
+            ParcelUuid.fromString("00001812-0000-1000-8000-00805F9B34FB");
+
     private static final Context sTargetContext =
             InstrumentationRegistry.getInstrumentation().getTargetContext();
     private static final BluetoothAdapter sAdapter =
@@ -424,6 +427,14 @@ public class PairingTest {
         testStep_restartBt();
 
         assertThat(sAdapter.getBondedDevices()).contains(mBumbleDevice);
+        mBumble.gattBlocking()
+                .registerService(
+                        GattProto.RegisterServiceRequest.newBuilder()
+                                .setService(
+                                        GattProto.GattServiceParams.newBuilder()
+                                                .setUuid(HOGP_UUID.toString())
+                                                .build())
+                                .build());
 
         mBumble.hostBlocking()
                 .advertise(
@@ -454,6 +465,14 @@ public class PairingTest {
                                 .setService(
                                         GattProto.GattServiceParams.newBuilder()
                                                 .setUuid(BATTERY_UUID.toString())
+                                                .build())
+                                .build());
+        mBumble.gattBlocking()
+                .registerService(
+                        GattProto.RegisterServiceRequest.newBuilder()
+                                .setService(
+                                        GattProto.GattServiceParams.newBuilder()
+                                                .setUuid(HOGP_UUID.toString())
                                                 .build())
                                 .build());
 
