@@ -64,6 +64,7 @@ static_library("bta") {
     "gatt/database.cc",
     "gatt/database_builder.cc",
     "groups/groups.cc",
+    "gmap/gmap_client.cc",
     "has/has_client.cc",
     "has/has_ctp.cc",
     "has/has_preset.cc",
