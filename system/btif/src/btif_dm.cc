@@ -2207,8 +2207,9 @@ void btif_dm_acl_evt(tBTA_DM_ACL_EVT event, tBTA_DM_ACL* p_data) {
 
     case BTA_DM_LINK_UP_FAILED_EVT:
       GetInterfaceToProfiles()->events->invoke_acl_state_changed_cb(
-              BT_STATUS_FAIL, p_data->link_up_failed.bd_addr, BT_ACL_STATE_DISCONNECTED,
-              p_data->link_up_failed.transport_link_type, p_data->link_up_failed.status,
+              hci_error_to_bt_status(p_data->link_up_failed.status), p_data->link_up_failed.bd_addr,
+              BT_ACL_STATE_DISCONNECTED, p_data->link_up_failed.transport_link_type,
+              p_data->link_up_failed.status,
               btm_is_acl_locally_initiated() ? bt_conn_direction_t::BT_CONN_DIRECTION_OUTGOING
                                              : bt_conn_direction_t::BT_CONN_DIRECTION_INCOMING,
               INVALID_ACL_HANDLE);
