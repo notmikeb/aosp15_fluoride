@@ -619,6 +619,13 @@ static void bta_hh_le_open_cmpl(tBTA_HH_DEV_CB* p_cb) {
     bta_hh_le_register_input_notif(p_cb, p_cb->mode, true);
     bta_hh_sm_execute(p_cb, BTA_HH_OPEN_CMPL_EVT, NULL);
 
+    // Some HOGP devices requires MTU exchange be part of the initial setup to function. The size of
+    // the requested MTU does not matter as long as the procedure is triggered.
+    if (interop_match_vendor_product_ids(INTEROP_HOGP_FORCE_MTU_EXCHANGE, p_cb->dscp_info.vendor_id,
+                                         p_cb->dscp_info.product_id)) {
+      BTA_GATTC_ConfigureMTU(p_cb->conn_id, GATT_MAX_MTU_SIZE);
+    }
+
     if (!com::android::bluetooth::flags::prevent_hogp_reconnect_when_connected()) {
       if (kBTA_HH_LE_RECONN && p_cb->status == BTA_HH_OK) {
         bta_hh_le_add_dev_bg_conn(p_cb);
