@@ -1118,12 +1118,8 @@ static int set_dynamic_audio_buffer_size(int codec, int size) {
 
 static bool allow_low_latency_audio(bool allowed, const RawAddress& /* address */) {
   log::info("{}", allowed);
-  if (com::android::bluetooth::flags::a2dp_async_allow_low_latency()) {
-    do_in_main_thread(
-            base::BindOnce(bluetooth::audio::a2dp::set_audio_low_latency_mode_allowed, allowed));
-  } else {
-    bluetooth::audio::a2dp::set_audio_low_latency_mode_allowed(allowed);
-  }
+  do_in_main_thread(
+          base::BindOnce(bluetooth::audio::a2dp::set_audio_low_latency_mode_allowed, allowed));
   return true;
 }
 
