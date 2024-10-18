@@ -20,6 +20,8 @@ package com.android.bluetooth.vc;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 
+import static java.util.Objects.requireNonNull;
+
 import android.annotation.RequiresPermission;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
@@ -60,7 +62,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -128,22 +129,10 @@ public class VolumeControlService extends ProfileService {
 
         // Get AdapterService, VolumeControlNativeInterface, DatabaseManager, AudioManager.
         // None of them can be null.
-        mAdapterService =
-                Objects.requireNonNull(
-                        AdapterService.getAdapterService(),
-                        "AdapterService cannot be null when VolumeControlService starts");
-        mDatabaseManager =
-                Objects.requireNonNull(
-                        mAdapterService.getDatabase(),
-                        "DatabaseManager cannot be null when VolumeControlService starts");
-        mVolumeControlNativeInterface =
-                Objects.requireNonNull(
-                        VolumeControlNativeInterface.getInstance(),
-                        "VolumeControlNativeInterface cannot be null when VolumeControlService"
-                                + " starts");
-        mAudioManager = getSystemService(AudioManager.class);
-        Objects.requireNonNull(
-                mAudioManager, "AudioManager cannot be null when VolumeControlService starts");
+        mAdapterService = requireNonNull(AdapterService.getAdapterService());
+        mDatabaseManager = requireNonNull(mAdapterService.getDatabase());
+        mVolumeControlNativeInterface = requireNonNull(VolumeControlNativeInterface.getInstance());
+        mAudioManager = requireNonNull(getSystemService(AudioManager.class));
 
         // Start handler thread for state machines
         mHandler = new Handler(Looper.getMainLooper());
@@ -1232,7 +1221,7 @@ public class VolumeControlService extends ProfileService {
             return;
         }
 
-        Objects.requireNonNull(stackEvent.device);
+        requireNonNull(stackEvent.device);
 
         BluetoothDevice device = stackEvent.device;
         if (stackEvent.type == VolumeControlStackEvent.EVENT_TYPE_DEVICE_AVAILABLE) {
@@ -1528,6 +1517,8 @@ public class VolumeControlService extends ProfileService {
 
         @RequiresPermission(BLUETOOTH_CONNECT)
         private VolumeControlService getService(AttributionSource source) {
+            requireNonNull(source);
+
             // Cache mService because it can change while getService is called
             VolumeControlService service = mService;
 
@@ -1546,8 +1537,6 @@ public class VolumeControlService extends ProfileService {
 
         @Override
         public List<BluetoothDevice> getConnectedDevices(AttributionSource source) {
-            Objects.requireNonNull(source, "source cannot be null");
-
             VolumeControlService service = getService(source);
             if (service == null) {
                 return Collections.emptyList();
@@ -1561,8 +1550,6 @@ public class VolumeControlService extends ProfileService {
         @Override
         public List<BluetoothDevice> getDevicesMatchingConnectionStates(
                 int[] states, AttributionSource source) {
-            Objects.requireNonNull(source, "source cannot be null");
-
             VolumeControlService service = getService(source);
             if (service == null) {
                 return Collections.emptyList();
@@ -1575,8 +1562,7 @@ public class VolumeControlService extends ProfileService {
 
         @Override
         public int getConnectionState(BluetoothDevice device, AttributionSource source) {
-            Objects.requireNonNull(device, "device cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(device);
 
             VolumeControlService service = getService(source);
             if (service == null) {
@@ -1589,8 +1575,7 @@ public class VolumeControlService extends ProfileService {
         @Override
         public boolean setConnectionPolicy(
                 BluetoothDevice device, int connectionPolicy, AttributionSource source) {
-            Objects.requireNonNull(device, "device cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(device);
 
             VolumeControlService service = getService(source);
             if (service == null) {
@@ -1603,8 +1588,7 @@ public class VolumeControlService extends ProfileService {
 
         @Override
         public int getConnectionPolicy(BluetoothDevice device, AttributionSource source) {
-            Objects.requireNonNull(device, "device cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(device);
 
             VolumeControlService service = getService(source);
             if (service == null) {
@@ -1617,8 +1601,7 @@ public class VolumeControlService extends ProfileService {
 
         @Override
         public boolean isVolumeOffsetAvailable(BluetoothDevice device, AttributionSource source) {
-            Objects.requireNonNull(device, "device cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(device);
 
             VolumeControlService service = getService(source);
             if (service == null) {
@@ -1632,8 +1615,7 @@ public class VolumeControlService extends ProfileService {
         @Override
         public int getNumberOfVolumeOffsetInstances(
                 BluetoothDevice device, AttributionSource source) {
-            Objects.requireNonNull(device, "device cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(device);
 
             VolumeControlService service = getService(source);
             if (service == null) {
@@ -1650,8 +1632,7 @@ public class VolumeControlService extends ProfileService {
                 int instanceId,
                 int volumeOffset,
                 AttributionSource source) {
-            Objects.requireNonNull(device, "device cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(device);
 
             VolumeControlService service = getService(source);
             if (service == null) {
@@ -1665,8 +1646,7 @@ public class VolumeControlService extends ProfileService {
         @Override
         public void setDeviceVolume(
                 BluetoothDevice device, int volume, boolean isGroupOp, AttributionSource source) {
-            Objects.requireNonNull(device, "device cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(device);
 
             VolumeControlService service = getService(source);
             if (service == null) {
@@ -1679,8 +1659,6 @@ public class VolumeControlService extends ProfileService {
 
         @Override
         public void setGroupVolume(int groupId, int volume, AttributionSource source) {
-            Objects.requireNonNull(source, "source cannot be null");
-
             VolumeControlService service = getService(source);
             if (service == null) {
                 return;
@@ -1691,8 +1669,6 @@ public class VolumeControlService extends ProfileService {
 
         @Override
         public int getGroupVolume(int groupId, AttributionSource source) {
-            Objects.requireNonNull(source, "source cannot be null");
-
             VolumeControlService service = getService(source);
             if (service == null) {
                 return 0;
@@ -1703,8 +1679,6 @@ public class VolumeControlService extends ProfileService {
 
         @Override
         public void setGroupActive(int groupId, boolean active, AttributionSource source) {
-            Objects.requireNonNull(source, "source cannot be null");
-
             VolumeControlService service = getService(source);
             if (service == null) {
                 return;
@@ -1715,8 +1689,7 @@ public class VolumeControlService extends ProfileService {
 
         @Override
         public void mute(BluetoothDevice device, AttributionSource source) {
-            Objects.requireNonNull(device, "device cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(device);
 
             VolumeControlService service = getService(source);
             if (service == null) {
@@ -1728,8 +1701,6 @@ public class VolumeControlService extends ProfileService {
 
         @Override
         public void muteGroup(int groupId, AttributionSource source) {
-            Objects.requireNonNull(source, "source cannot be null");
-
             VolumeControlService service = getService(source);
             if (service == null) {
                 return;
@@ -1740,8 +1711,7 @@ public class VolumeControlService extends ProfileService {
 
         @Override
         public void unmute(BluetoothDevice device, AttributionSource source) {
-            Objects.requireNonNull(device, "device cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(device);
 
             VolumeControlService service = getService(source);
             if (service == null) {
@@ -1753,8 +1723,6 @@ public class VolumeControlService extends ProfileService {
 
         @Override
         public void unmuteGroup(int groupId, AttributionSource source) {
-            Objects.requireNonNull(source, "source cannot be null");
-
             VolumeControlService service = getService(source);
             if (service == null) {
                 return;
@@ -1779,8 +1747,7 @@ public class VolumeControlService extends ProfileService {
         @Override
         public void registerCallback(
                 IBluetoothVolumeControlCallback callback, AttributionSource source) {
-            Objects.requireNonNull(callback, "callback cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(callback);
 
             VolumeControlService service = getService(source);
             if (service == null) {
@@ -1794,8 +1761,7 @@ public class VolumeControlService extends ProfileService {
         @Override
         public void notifyNewRegisteredCallback(
                 IBluetoothVolumeControlCallback callback, AttributionSource source) {
-            Objects.requireNonNull(callback, "callback cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(callback);
 
             VolumeControlService service = getService(source);
             if (service == null) {
@@ -1809,8 +1775,7 @@ public class VolumeControlService extends ProfileService {
         @Override
         public void unregisterCallback(
                 IBluetoothVolumeControlCallback callback, AttributionSource source) {
-            Objects.requireNonNull(callback, "callback cannot be null");
-            Objects.requireNonNull(source, "source cannot be null");
+            requireNonNull(callback);
 
             VolumeControlService service = getService(source);
             if (service == null) {
