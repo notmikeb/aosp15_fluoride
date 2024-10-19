@@ -1022,7 +1022,7 @@ public class VolumeControlService extends ProfileService {
     }
 
     void handleDeviceExtInputStateChanged(
-            BluetoothDevice device, int id, int gainValue, int gainMode, boolean mute) {
+            BluetoothDevice device, int id, int gainValue, int gainMode, int mute) {
         String logInfo =
                 "handleDeviceExtInputStateChanged("
                         + ("device:" + device)
@@ -1177,7 +1177,7 @@ public class VolumeControlService extends ProfileService {
                     stackEvent.valueInt1,
                     stackEvent.valueInt2,
                     stackEvent.valueInt3,
-                    stackEvent.valueBool1);
+                    stackEvent.valueInt4);
             return;
         }
 

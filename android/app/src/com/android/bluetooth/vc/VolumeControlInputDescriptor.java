@@ -50,7 +50,7 @@ class VolumeControlInputDescriptor {
          */
         int mGainMode = 0;
 
-        boolean mIsMute = false;
+        int mMute = 2; // DISABLED
 
         /* See AICS 1.0
          * The Gain_Setting (mGainValue) field is a signed value for which a single increment or
@@ -113,9 +113,9 @@ class VolumeControlInputDescriptor {
         return mVolumeInputs[id].mGainValue;
     }
 
-    boolean isMuted(int id) {
-        if (!isValidId(id)) return false;
-        return mVolumeInputs[id].mIsMute;
+    int getMute(int id) {
+        if (!isValidId(id)) return 2; // MuteField.DISABLED
+        return mVolumeInputs[id].mMute;
     }
 
     void setPropSettings(int id, int gainUnit, int gainMin, int gainMax) {
@@ -126,7 +126,7 @@ class VolumeControlInputDescriptor {
         mVolumeInputs[id].mGainSettingsMaxSetting = gainMax;
     }
 
-    void setState(int id, int gainValue, int gainMode, boolean mute) {
+    void setState(int id, int gainValue, int gainMode, int mute) {
         if (!isValidId(id)) return;
 
         Descriptor desc = mVolumeInputs[id];
@@ -138,7 +138,7 @@ class VolumeControlInputDescriptor {
 
         desc.mGainValue = gainValue;
         desc.mGainMode = gainMode;
-        desc.mIsMute = mute;
+        desc.mMute = mute;
     }
 
     void dump(StringBuilder sb) {
@@ -150,7 +150,7 @@ class VolumeControlInputDescriptor {
             ProfileService.println(sb, "        status: " + desc.mStatus);
             ProfileService.println(sb, "        gainValue: " + desc.mGainValue);
             ProfileService.println(sb, "        gainMode: " + desc.mGainMode);
-            ProfileService.println(sb, "        mute: " + desc.mIsMute);
+            ProfileService.println(sb, "        mute: " + desc.mMute);
             ProfileService.println(sb, "        units:" + desc.mGainSettingsUnits);
             ProfileService.println(sb, "        minGain:" + desc.mGainSettingsMinSetting);
             ProfileService.println(sb, "        maxGain:" + desc.mGainSettingsMaxSetting);
