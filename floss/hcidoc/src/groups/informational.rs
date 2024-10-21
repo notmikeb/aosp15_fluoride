@@ -237,7 +237,7 @@ impl AclInformation {
         initiator: InitiatorType,
         ts: NaiveDateTime,
     ) {
-        let mut profile = ProfileInformation::new(profile_type);
+        let mut profile = ProfileInformation::new(profile_type, profile_id);
         profile.report_start(initiator, ts);
         let old_profile = self.active_profiles.insert(profile_id, profile);
         if let Some(profile) = old_profile {
@@ -254,7 +254,7 @@ impl AclInformation {
         let mut profile = self
             .active_profiles
             .remove(&profile_id)
-            .unwrap_or(ProfileInformation::new(profile_type));
+            .unwrap_or(ProfileInformation::new(profile_type, profile_id));
         profile.report_end(ts);
         self.inactive_profiles.push(profile);
     }
@@ -278,11 +278,12 @@ impl AclInformation {
     fn report_l2cap_conn_rsp(
         &mut self,
         status: ConnectionResponseResult,
-        host_cid: Cid,
-        peer_cid: Cid,
+        cid_info: CidInformation,
         initiator: InitiatorType,
         ts: NaiveDateTime,
     ) {
+        let host_cid = cid_info.host_cid;
+        let peer_cid = cid_info.peer_cid;
         let cid_state_option = match initiator {
             InitiatorType::Host => self.host_cids.get(&host_cid),
             InitiatorType::Peer => self.peer_cids.get(&peer_cid),
@@ -299,7 +300,7 @@ impl AclInformation {
 
         if let Some(psm) = psm_option {
             let profile_option = ProfileType::from_psm(psm);
-            let profile_id = ProfileId::L2capCid(host_cid);
+            let profile_id = ProfileId::L2capCid(cid_info);
             if status == ConnectionResponseResult::Success {
                 self.host_cids.insert(host_cid, CidState::Connected(peer_cid, psm));
                 self.peer_cids.insert(peer_cid, CidState::Connected(host_cid, psm));
@@ -319,11 +320,11 @@ impl AclInformation {
     // L2cap disconnected so report profile connection closed if we were tracking it.
     fn report_l2cap_disconn_rsp(
         &mut self,
-        host_cid: Cid,
-        peer_cid: Cid,
+        cid_info: CidInformation,
         _initiator: InitiatorType,
         ts: NaiveDateTime,
     ) {
+        let host_cid = cid_info.host_cid;
         let host_cid_state_option = self.host_cids.remove(&host_cid);
         let host_psm = match host_cid_state_option {
             Some(cid_state) => match cid_state {
@@ -334,6 +335,7 @@ impl AclInformation {
             None => None,
         };
 
+        let peer_cid = cid_info.peer_cid;
         let peer_cid_state_option = self.peer_cids.remove(&peer_cid);
         let peer_psm = match peer_cid_state_option {
             Some(cid_state) => match cid_state {
@@ -357,7 +359,7 @@ impl AclInformation {
 
         let profile_option = ProfileType::from_psm(psm);
         if let Some(profile) = profile_option {
-            let profile_id = ProfileId::L2capCid(host_cid);
+            let profile_id = ProfileId::L2capCid(cid_info);
             self.report_profile_end(profile, profile_id, ts)
         }
     }
@@ -430,12 +432,31 @@ impl ProfileType {
     }
 }
 
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+struct CidInformation {
+    host_cid: Cid,
+    peer_cid: Cid,
+}
+
 // Use to distinguish between the same profiles within one ACL connection.
 // Later we can add RFCOMM's DLCI, for example.
+// This is used as the key of the map of active profiles in AclInformation.
 #[derive(Clone, Copy, Eq, Hash, PartialEq)]
 enum ProfileId {
     OnePerConnection(ProfileType),
-    L2capCid(Cid),
+    L2capCid(CidInformation),
+}
+
+impl fmt::Display for ProfileId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let str = match self {
+            ProfileId::OnePerConnection(_) => "".to_string(),
+            ProfileId::L2capCid(cid_info) => {
+                format!("(CID: host={}, peer={})", cid_info.host_cid, cid_info.peer_cid)
+            }
+        };
+        write!(f, "{}", str)
+    }
 }
 
 struct ProfileInformation {
@@ -443,15 +464,17 @@ struct ProfileInformation {
     end_time: NaiveDateTime,
     profile_type: ProfileType,
     initiator: InitiatorType,
+    profile_id: ProfileId,
 }
 
 impl ProfileInformation {
-    pub fn new(profile_type: ProfileType) -> Self {
+    pub fn new(profile_type: ProfileType, profile_id: ProfileId) -> Self {
         ProfileInformation {
             start_time: INVALID_TS,
             end_time: INVALID_TS,
             profile_type: profile_type,
             initiator: InitiatorType::Unknown,
+            profile_id: profile_id,
         }
     }
 
@@ -469,10 +492,11 @@ impl fmt::Display for ProfileInformation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
-            "    {profile}, {initiator}, {timestamp_info}",
+            "    {profile}, {initiator}, {timestamp_info} {profile_id}",
             profile = self.profile_type,
             initiator = self.initiator,
-            timestamp_info = print_start_end_timestamps(self.start_time, self.end_time)
+            timestamp_info = print_start_end_timestamps(self.start_time, self.end_time),
+            profile_id = self.profile_id,
         )
     }
 }
@@ -681,7 +705,8 @@ impl InformationalRule {
             return;
         }
         let conn = self.get_or_allocate_connection(&handle);
-        conn.report_l2cap_conn_rsp(status, host_cid, peer_cid, initiator, ts);
+        let cid_info = CidInformation { host_cid, peer_cid };
+        conn.report_l2cap_conn_rsp(status, cid_info, initiator, ts);
     }
 
     fn report_l2cap_disconn_rsp(
@@ -693,7 +718,8 @@ impl InformationalRule {
         ts: NaiveDateTime,
     ) {
         let conn = self.get_or_allocate_connection(&handle);
-        conn.report_l2cap_disconn_rsp(host_cid, peer_cid, initiator, ts);
+        let cid_info = CidInformation { host_cid, peer_cid };
+        conn.report_l2cap_disconn_rsp(cid_info, initiator, ts);
     }
 }
 
