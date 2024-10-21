@@ -23,18 +23,27 @@ type Cid = u16;
 
 const INVALID_TS: NaiveDateTime = NaiveDateTime::MAX;
 
-fn print_start_end_timestamps(start: NaiveDateTime, end: NaiveDateTime) -> String {
-    fn print_time(ts: NaiveDateTime) -> String {
+fn print_timestamps_and_initiator(
+    start: NaiveDateTime,
+    start_initiator: InitiatorType,
+    end: NaiveDateTime,
+    end_initiator: InitiatorType,
+) -> String {
+    fn print_time_initiator(ts: NaiveDateTime, initiator: InitiatorType) -> String {
         if ts == INVALID_TS {
             return "N/A".to_owned();
         }
-        return format!("{}", ts.time());
+        return format!("{} ({})", ts.time(), initiator);
     }
 
     if start == end && start != INVALID_TS {
-        return format!("{} - Failed", start.time());
+        return format!("{} ({}) - Failed", start.time(), start_initiator);
     }
-    return format!("{} to {}", print_time(start), print_time(end));
+    return format!(
+        "{} to {}",
+        print_time_initiator(start, start_initiator),
+        print_time_initiator(end, end_initiator)
+    );
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, PartialOrd, Ord)]
@@ -74,7 +83,7 @@ impl AddressType {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 enum InitiatorType {
     Unknown,
     Host,
@@ -84,9 +93,9 @@ enum InitiatorType {
 impl fmt::Display for InitiatorType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let str = match self {
-            InitiatorType::Unknown => "Unknown initiator",
-            InitiatorType::Host => "Host initiated",
-            InitiatorType::Peer => "Peer initiated",
+            InitiatorType::Unknown => "by ??",
+            InitiatorType::Host => "by host",
+            InitiatorType::Peer => "by peer",
         };
         write!(f, "{}", str)
     }
@@ -100,8 +109,8 @@ enum AclState {
     Connected,
 }
 
-impl Into<InitiatorType> for AclState {
-    fn into(self) -> InitiatorType {
+impl AclState {
+    fn get_connection_initiator(&self) -> InitiatorType {
         match self {
             AclState::Initiating => InitiatorType::Host,
             AclState::Accepting => InitiatorType::Peer,
@@ -145,15 +154,20 @@ impl DeviceInformation {
 
     fn report_connection_start(&mut self, handle: ConnectionHandle, ts: NaiveDateTime) {
         let mut acl = AclInformation::new(handle);
-        let initiator = self.acl_state.into();
+        let initiator = self.acl_state.get_connection_initiator();
         acl.report_start(initiator, ts);
         self.acls.push(acl);
         self.acl_state = AclState::Connected;
     }
 
-    fn report_connection_end(&mut self, handle: ConnectionHandle, ts: NaiveDateTime) {
+    fn report_connection_end(
+        &mut self,
+        handle: ConnectionHandle,
+        initiator: InitiatorType,
+        ts: NaiveDateTime,
+    ) {
         let acl = self.get_or_allocate_connection(&handle);
-        acl.report_end(ts);
+        acl.report_end(initiator, ts);
         self.acl_state = AclState::None;
     }
 
@@ -195,7 +209,8 @@ struct AclInformation {
     start_time: NaiveDateTime,
     end_time: NaiveDateTime,
     handle: ConnectionHandle,
-    initiator: InitiatorType,
+    start_initiator: InitiatorType,
+    end_initiator: InitiatorType,
     active_profiles: HashMap<ProfileId, ProfileInformation>,
     inactive_profiles: Vec<ProfileInformation>,
     host_cids: HashMap<Cid, CidState>,
@@ -208,7 +223,8 @@ impl AclInformation {
             start_time: INVALID_TS,
             end_time: INVALID_TS,
             handle: handle,
-            initiator: InitiatorType::Unknown,
+            start_initiator: InitiatorType::Unknown,
+            end_initiator: InitiatorType::Unknown,
             active_profiles: HashMap::new(),
             inactive_profiles: vec![],
             host_cids: HashMap::new(),
@@ -217,16 +233,17 @@ impl AclInformation {
     }
 
     fn report_start(&mut self, initiator: InitiatorType, ts: NaiveDateTime) {
-        self.initiator = initiator;
+        self.start_initiator = initiator;
         self.start_time = ts;
     }
 
-    fn report_end(&mut self, ts: NaiveDateTime) {
+    fn report_end(&mut self, initiator: InitiatorType, ts: NaiveDateTime) {
         // disconnect the active profiles
         for (_, mut profile) in self.active_profiles.drain() {
-            profile.report_end(ts);
+            profile.report_end(initiator, ts);
             self.inactive_profiles.push(profile);
         }
+        self.end_initiator = initiator;
         self.end_time = ts;
     }
 
@@ -249,13 +266,14 @@ impl AclInformation {
         &mut self,
         profile_type: ProfileType,
         profile_id: ProfileId,
+        initiator: InitiatorType,
         ts: NaiveDateTime,
     ) {
         let mut profile = self
             .active_profiles
             .remove(&profile_id)
             .unwrap_or(ProfileInformation::new(profile_type, profile_id));
-        profile.report_end(ts);
+        profile.report_end(initiator, ts);
         self.inactive_profiles.push(profile);
     }
 
@@ -311,7 +329,7 @@ impl AclInformation {
                 // On failure, report start and end on the same time.
                 if let Some(profile) = profile_option {
                     self.report_profile_start(profile, profile_id, initiator, ts);
-                    self.report_profile_end(profile, profile_id, ts);
+                    self.report_profile_end(profile, profile_id, initiator, ts);
                 }
             }
         } // TODO: debug on the else case.
@@ -321,7 +339,7 @@ impl AclInformation {
     fn report_l2cap_disconn_rsp(
         &mut self,
         cid_info: CidInformation,
-        _initiator: InitiatorType,
+        initiator: InitiatorType,
         ts: NaiveDateTime,
     ) {
         let host_cid = cid_info.host_cid;
@@ -360,7 +378,7 @@ impl AclInformation {
         let profile_option = ProfileType::from_psm(psm);
         if let Some(profile) = profile_option {
             let profile_id = ProfileId::L2capCid(cid_info);
-            self.report_profile_end(profile, profile_id, ts)
+            self.report_profile_end(profile, profile_id, initiator, ts)
         }
     }
 }
@@ -369,10 +387,14 @@ impl fmt::Display for AclInformation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let _ = writeln!(
             f,
-            "  Handle: {handle}, {initiator}, {timestamp_info}",
+            "  Handle: {handle}, {timestamp_initiator_info}",
             handle = self.handle,
-            initiator = self.initiator,
-            timestamp_info = print_start_end_timestamps(self.start_time, self.end_time)
+            timestamp_initiator_info = print_timestamps_and_initiator(
+                self.start_time,
+                self.start_initiator,
+                self.end_time,
+                self.end_initiator
+            ),
         );
 
         for profile in self.inactive_profiles.iter() {
@@ -463,7 +485,8 @@ struct ProfileInformation {
     start_time: NaiveDateTime,
     end_time: NaiveDateTime,
     profile_type: ProfileType,
-    initiator: InitiatorType,
+    start_initiator: InitiatorType,
+    end_initiator: InitiatorType,
     profile_id: ProfileId,
 }
 
@@ -473,17 +496,19 @@ impl ProfileInformation {
             start_time: INVALID_TS,
             end_time: INVALID_TS,
             profile_type: profile_type,
-            initiator: InitiatorType::Unknown,
+            start_initiator: InitiatorType::Unknown,
+            end_initiator: InitiatorType::Unknown,
             profile_id: profile_id,
         }
     }
 
     fn report_start(&mut self, initiator: InitiatorType, ts: NaiveDateTime) {
-        self.initiator = initiator;
+        self.start_initiator = initiator;
         self.start_time = ts;
     }
 
-    fn report_end(&mut self, ts: NaiveDateTime) {
+    fn report_end(&mut self, initiator: InitiatorType, ts: NaiveDateTime) {
+        self.end_initiator = initiator;
         self.end_time = ts;
     }
 }
@@ -492,10 +517,14 @@ impl fmt::Display for ProfileInformation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
-            "    {profile}, {initiator}, {timestamp_info} {profile_id}",
+            "    {profile}, {timestamp_initiator_info} {profile_id}",
             profile = self.profile_type,
-            initiator = self.initiator,
-            timestamp_info = print_start_end_timestamps(self.start_time, self.end_time),
+            timestamp_initiator_info = print_timestamps_and_initiator(
+                self.start_time,
+                self.start_initiator,
+                self.end_time,
+                self.end_initiator
+            ),
             profile_id = self.profile_id,
         )
     }
@@ -508,9 +537,13 @@ struct InformationalRule {
     sco_handles: HashMap<ConnectionHandle, ConnectionHandle>,
     /// unknownConnections store connections which is initiated before btsnoop starts.
     unknown_connections: HashMap<ConnectionHandle, AclInformation>,
-    /// When powering off, the controller might or might not reply disconnection request. Therefore
-    /// make this a special case.
-    pending_disconnect_due_to_host_power_off: HashSet<ConnectionHandle>,
+    /// Store the pending disconnection so we can retrieve who initiates it upon report.
+    /// This needs its own map instead of reusing the AclState, because that requires us to have the
+    /// address of the peer device, but on disconnection we are given only the handle - the address
+    /// might be unknown, or clash in case of a SCO connection.
+    /// Also, when powering off, the controller might or might not reply the disconnection request.
+    /// Therefore also store this information so we can correctly handle both scenario.
+    pending_disconnections: HashMap<ConnectionHandle, bool>, // is powering off?
 }
 
 impl InformationalRule {
@@ -520,7 +553,7 @@ impl InformationalRule {
             handles: HashMap::new(),
             sco_handles: HashMap::new(),
             unknown_connections: HashMap::new(),
-            pending_disconnect_due_to_host_power_off: HashSet::new(),
+            pending_disconnections: HashMap::new(),
         }
     }
 
@@ -576,7 +609,7 @@ impl InformationalRule {
         let device = self.get_or_allocate_device(address);
         device.report_connection_start(handle, ts);
         self.handles.insert(handle, *address);
-        self.pending_disconnect_due_to_host_power_off.remove(&handle);
+        self.pending_disconnections.remove(&handle);
     }
 
     fn report_sco_connection_start(
@@ -613,13 +646,21 @@ impl InformationalRule {
     }
 
     fn report_connection_end(&mut self, handle: ConnectionHandle, ts: NaiveDateTime) {
+        let initiator = match self.pending_disconnections.contains_key(&handle) {
+            true => InitiatorType::Host,
+            false => InitiatorType::Peer,
+        };
+
         // This might be a SCO disconnection event, so check that first
         if self.sco_handles.contains_key(&handle) {
             let acl_handle = self.sco_handles[&handle];
             let conn = self.get_or_allocate_connection(&acl_handle);
+            // in case of HFP failure, the initiator here would be set to peer, which is incorrect,
+            // but when printing we detect by the timestamp that it was a failure anyway.
             conn.report_profile_end(
                 ProfileType::Hfp,
                 ProfileId::OnePerConnection(ProfileType::Hfp),
+                initiator,
                 ts,
             );
             return;
@@ -628,8 +669,8 @@ impl InformationalRule {
         // Not recognized as SCO, assume it's an ACL handle.
         if let Some(address) = self.handles.get(&handle) {
             // This device is known
-            let device = self.devices.get_mut(address).unwrap();
-            device.report_connection_end(handle, ts);
+            let device: &mut DeviceInformation = self.devices.get_mut(address).unwrap();
+            device.report_connection_end(handle, initiator, ts);
             self.handles.remove(&handle);
 
             // remove the associated SCO handle, if any
@@ -637,7 +678,7 @@ impl InformationalRule {
         } else {
             // Unknown device.
             let conn = self.get_or_allocate_unknown_connection(&handle);
-            conn.report_end(ts);
+            conn.report_end(initiator, ts);
         }
     }
 
@@ -648,7 +689,7 @@ impl InformationalRule {
             self.report_connection_end(handle, ts);
         }
         self.sco_handles.clear();
-        self.pending_disconnect_due_to_host_power_off.clear();
+        self.pending_disconnections.clear();
     }
 
     fn process_gap_data(&mut self, address: &Address, data: &GapData) {
@@ -755,12 +796,11 @@ impl Rule for InformationalRule {
                 EventChild::DisconnectionComplete(ev) => {
                     // If disconnected because host is powering off, the event has been processed.
                     // We can't just query the reason here because it's different across vendors.
-                    if !self
-                        .pending_disconnect_due_to_host_power_off
-                        .remove(&ev.get_connection_handle())
-                    {
-                        self.report_connection_end(ev.get_connection_handle(), packet.ts);
+                    let handle = ev.get_connection_handle();
+                    if !self.pending_disconnections.get(&handle).unwrap_or(&false) {
+                        self.report_connection_end(handle, packet.ts);
                     }
+                    self.pending_disconnections.remove(&handle);
                 }
 
                 EventChild::ExtendedInquiryResult(ev) => {
@@ -858,12 +898,12 @@ impl Rule for InformationalRule {
 
                     AclCommandChild::Disconnect(cmd) => {
                         // If reason is power off, the host might not wait for connection complete event
-                        if cmd.get_reason()
-                            == DisconnectReason::RemoteDeviceTerminatedConnectionPowerOff
-                        {
-                            self.pending_disconnect_due_to_host_power_off
-                                .insert(cmd.get_connection_handle());
-                            self.report_connection_end(cmd.get_connection_handle(), packet.ts);
+                        let is_power_off = cmd.get_reason()
+                            == DisconnectReason::RemoteDeviceTerminatedConnectionPowerOff;
+                        let handle = cmd.get_connection_handle();
+                        self.pending_disconnections.insert(handle, is_power_off);
+                        if is_power_off {
+                            self.report_connection_end(handle, packet.ts);
                         }
                     }
 
