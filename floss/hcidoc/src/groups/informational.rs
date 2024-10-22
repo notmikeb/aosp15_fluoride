@@ -10,8 +10,8 @@ use std::io::Write;
 use crate::engine::{Rule, RuleGroup, Signal};
 use crate::parser::{get_acl_content, AclContent, Packet, PacketChild};
 use hcidoc_packets::hci::{
-    AclCommandChild, Address, CommandChild, ConnectionManagementCommandChild, DisconnectReason,
-    ErrorCode, EventChild, GapData, GapDataType, LeMetaEventChild,
+    Address, CommandChild, DisconnectReason, ErrorCode, EventChild, GapData, GapDataType,
+    LeMetaEventChild,
 };
 use hcidoc_packets::l2cap::{ConnectionResponseResult, ControlChild};
 
@@ -706,18 +706,20 @@ impl InformationalRule {
     fn process_raw_gap_data(&mut self, address: &Address, data: &[u8]) {
         let mut offset = 0;
         while offset < data.len() {
-            let chunk_size = usize::from(data[offset]);
-            let chunk_end = offset + chunk_size + 1;
-
-            // Prevent out-of-bounds index
-            if chunk_end > data.len() {
-                return;
+            match GapData::parse(&data[offset..]) {
+                Ok(gap_data) => {
+                    self.process_gap_data(&address, &gap_data);
+                    // advance data len + 2 (size = 1, type = 1)
+                    offset += gap_data.data.len() + 2;
+                }
+                Err(err) => {
+                    eprintln!("[{}] GAP data is not parsed correctly: {}", address, err);
+                    break;
+                }
             }
-            match GapData::parse(&data[offset..chunk_end]) {
-                Ok(gap_data) => self.process_gap_data(&address, &gap_data),
-                Err(_err) => {}
+            if offset >= data.len() {
+                break;
             }
-            offset = chunk_end;
         }
     }
 
@@ -804,9 +806,10 @@ impl Rule for InformationalRule {
                 }
 
                 EventChild::ExtendedInquiryResult(ev) => {
-                    for data in ev.get_extended_inquiry_response() {
-                        self.process_gap_data(&ev.get_address(), data);
-                    }
+                    self.process_raw_gap_data(
+                        &ev.get_address(),
+                        ev.get_extended_inquiry_response(),
+                    );
                     self.report_address_type(&ev.get_address(), AddressType::BREDR);
                 }
 
@@ -851,16 +854,14 @@ impl Rule for InformationalRule {
                         self.report_address_type(&ev.get_peer_address(), AddressType::LE);
                     }
 
-                    // Use the Raw version because somehow LeAdvertisingReport doesn't work
-                    LeMetaEventChild::LeAdvertisingReportRaw(ev) => {
+                    LeMetaEventChild::LeAdvertisingReport(ev) => {
                         for resp in ev.get_responses() {
                             self.process_raw_gap_data(&resp.address, &resp.advertising_data);
                             self.report_address_type(&resp.address, AddressType::LE);
                         }
                     }
 
-                    // Use the Raw version because somehow LeExtendedAdvertisingReport doesn't work
-                    LeMetaEventChild::LeExtendedAdvertisingReportRaw(ev) => {
+                    LeMetaEventChild::LeExtendedAdvertisingReport(ev) => {
                         for resp in ev.get_responses() {
                             self.process_raw_gap_data(&resp.address, &resp.advertising_data);
                             self.report_address_type(&resp.address, AddressType::LE);
@@ -879,37 +880,24 @@ impl Rule for InformationalRule {
                 CommandChild::Reset(_cmd) => {
                     self.report_reset(packet.ts);
                 }
-
-                CommandChild::AclCommand(cmd) => match cmd.specialize() {
-                    AclCommandChild::ConnectionManagementCommand(cmd) => match cmd.specialize() {
-                        ConnectionManagementCommandChild::CreateConnection(cmd) => {
-                            self.report_acl_state(&cmd.get_bd_addr(), AclState::Initiating);
-                            self.report_address_type(&cmd.get_bd_addr(), AddressType::BREDR);
-                        }
-
-                        ConnectionManagementCommandChild::AcceptConnectionRequest(cmd) => {
-                            self.report_acl_state(&cmd.get_bd_addr(), AclState::Accepting);
-                            self.report_address_type(&cmd.get_bd_addr(), AddressType::BREDR);
-                        }
-
-                        // AclCommandChild::ConnectionManagementCommand(cmd).specialize()
-                        _ => {}
-                    },
-
-                    AclCommandChild::Disconnect(cmd) => {
-                        // If reason is power off, the host might not wait for connection complete event
-                        let is_power_off = cmd.get_reason()
-                            == DisconnectReason::RemoteDeviceTerminatedConnectionPowerOff;
-                        let handle = cmd.get_connection_handle();
-                        self.pending_disconnections.insert(handle, is_power_off);
-                        if is_power_off {
-                            self.report_connection_end(handle, packet.ts);
-                        }
+                CommandChild::CreateConnection(cmd) => {
+                    self.report_acl_state(&cmd.get_bd_addr(), AclState::Initiating);
+                    self.report_address_type(&cmd.get_bd_addr(), AddressType::BREDR);
+                }
+                CommandChild::AcceptConnectionRequest(cmd) => {
+                    self.report_acl_state(&cmd.get_bd_addr(), AclState::Accepting);
+                    self.report_address_type(&cmd.get_bd_addr(), AddressType::BREDR);
+                }
+                CommandChild::Disconnect(cmd) => {
+                    // If reason is power off, the host might not wait for connection complete event
+                    let is_power_off = cmd.get_reason()
+                        == DisconnectReason::RemoteDeviceTerminatedConnectionPowerOff;
+                    let handle = cmd.get_connection_handle();
+                    self.pending_disconnections.insert(handle, is_power_off);
+                    if is_power_off {
+                        self.report_connection_end(handle, packet.ts);
                     }
-
-                    // CommandChild::AclCommand(cmd).specialize()
-                    _ => {}
-                },
+                }
 
                 // PacketChild::HciCommand(cmd).specialize()
                 _ => {}
