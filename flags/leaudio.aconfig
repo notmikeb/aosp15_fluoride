@@ -409,3 +409,11 @@ flag {
     description: "API to get broadcast assistant local metadata"
     bug: "375423982"
 }
+
+flag {
+    name: "leaudio_broadcast_api_manage_primary_group"
+    is_exported: true
+    namespace: "bluetooth"
+    description: "API to manage broadcast primary group"
+    bug: "375422410"
+}
