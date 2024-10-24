@@ -31,6 +31,7 @@
 #include "avct_int.h"
 #include "bta/include/bta_sec_api.h"
 #include "internal_include/bt_target.h"
+#include "main/shim/dumpsys.h"
 #include "osi/include/allocator.h"
 #include "stack/include/bt_hdr.h"
 #include "stack/include/bt_psm_types.h"
@@ -434,3 +435,37 @@ uint16_t AVCT_MsgReq(uint8_t handle, uint8_t label, uint8_t cr, BT_HDR* p_msg) {
   }
   return result;
 }
+
+#define DUMPSYS_TAG "stack::avct"
+
+void AVCT_Dumpsys(int fd) {
+  LOG_DUMPSYS_TITLE(fd, DUMPSYS_TAG);
+  for (int i = 0; i < AVCT_NUM_CONN; i++) {
+    const tAVCT_CCB& ccb = avct_cb.ccb[i];
+    if (!ccb.allocated) {
+      continue;
+    }
+    LOG_DUMPSYS(fd, " Id:%2u profile_uuid:0x%04x role:%s control:0x%2x", i, ccb.cc.pid,
+                avct_role_text(ccb.cc.role).c_str(), ccb.cc.control);
+    if (ccb.p_lcb) {  // tAVCT_LCB
+      LOG_DUMPSYS(fd,
+                  "  Link  : peer:%s lcid:0x%04x sm_state:%-24s ch_state:%s conflict_lcid:0x%04x",
+                  fmt::format("{}", ccb.p_lcb->peer_addr).c_str(), ccb.p_lcb->ch_lcid,
+                  avct_sm_state_text(ccb.p_lcb->state).c_str(),
+                  avct_ch_state_text(ccb.p_lcb->ch_state).c_str(), ccb.p_lcb->conflict_lcid);
+    } else {
+      LOG_DUMPSYS(fd, "  Link  : No link channel");
+    }
+
+    if (ccb.p_bcb) {  // tAVCT_BCB
+      LOG_DUMPSYS(fd,
+                  "  Browse: peer:%s lcid:0x%04x sm_state:%-24s ch_state:%s conflict_lcid:0x%04x",
+                  fmt::format("{}", ccb.p_bcb->peer_addr).c_str(), ccb.p_bcb->ch_lcid,
+                  avct_sm_state_text(ccb.p_bcb->state).c_str(),
+                  avct_ch_state_text(ccb.p_bcb->ch_state).c_str(), ccb.p_bcb->conflict_lcid);
+    } else {
+      LOG_DUMPSYS(fd, "  Browse: No browse channel");
+    }
+  }
+}
+#undef DUMPSYS_TAG
