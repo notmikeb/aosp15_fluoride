@@ -401,3 +401,11 @@ flag {
         purpose: PURPOSE_BUGFIX
     }
 }
+
+flag {
+    name: "leaudio_broadcast_api_get_local_metadata"
+    is_exported: true
+    namespace: "bluetooth"
+    description: "API to get broadcast assistant local metadata"
+    bug: "375423982"
+}
