@@ -18,6 +18,12 @@ package bluetooth.constants.aics;
 
 /**
  * See Audio Input Control Service 1.0 - 2.2.1.3. Gain_Mode field
+ * The Gain_Mode field shall be set to a value that reflects whether gain modes are manual
+ * or automatic.
+ * - Manual Only, the server allows only manual gain.
+ * - Automatic Only, the server allows only automatic gain.
+ *
+ * For all other Gain_Mode field values, the server allows switchable automatic/manual gain.
  * {@hide}
  */
 @JavaDerive(toString = true)
