@@ -4556,7 +4556,7 @@ public final class BluetoothAdapter {
             @NonNull BluetoothDevice device,
             @NonNull Executor executor,
             @NonNull OnMetadataChangedListener listener) {
-        if (DBG) Log.d(TAG, "addOnMetadataChangedListener()");
+        if (DBG) Log.d(TAG, "addOnMetadataChangedListener(" + device + ", " + listener + ")");
         requireNonNull(device);
         requireNonNull(executor);
         requireNonNull(listener);
@@ -4631,7 +4631,7 @@ public final class BluetoothAdapter {
     @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
     public boolean removeOnMetadataChangedListener(
             @NonNull BluetoothDevice device, @NonNull OnMetadataChangedListener listener) {
-        if (DBG) Log.d(TAG, "removeOnMetadataChangedListener()");
+        if (DBG) Log.d(TAG, "removeOnMetadataChangedListener(" + device + ", " + listener + ")");
         requireNonNull(device);
         requireNonNull(listener);
 
