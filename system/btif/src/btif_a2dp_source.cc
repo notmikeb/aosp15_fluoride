@@ -886,29 +886,26 @@ static void btif_a2dp_source_audio_tx_stop_event(void) {
 }
 
 static void btif_a2dp_source_audio_handle_timer(void) {
-  if (btif_av_is_a2dp_offload_running()) {
-    return;
-  }
-
   uint64_t timestamp_us = bluetooth::common::time_get_audio_server_tick_us();
   uint64_t stats_timestamp_us = bluetooth::common::time_get_os_boottime_us();
 
   log_tstamps_us("A2DP Source tx scheduling timer", timestamp_us);
 
-  if (!btif_a2dp_source_is_streaming()) {
-    log::error("ERROR Media task Scheduled after Suspend");
-    return;
-  }
   log::assert_that(btif_a2dp_source_cb.encoder_interface != nullptr,
                    "assert failed: btif_a2dp_source_cb.encoder_interface != nullptr");
+
   size_t transmit_queue_length = fixed_queue_length(btif_a2dp_source_cb.tx_audio_queue);
+
 #ifdef __ANDROID__
   ATRACE_INT("btif TX queue", transmit_queue_length);
 #endif
+
   if (btif_a2dp_source_cb.encoder_interface->set_transmit_queue_length != nullptr) {
     btif_a2dp_source_cb.encoder_interface->set_transmit_queue_length(transmit_queue_length);
   }
+
   btif_a2dp_source_cb.encoder_interface->send_frames(timestamp_us);
+
   bta_av_ci_src_data_ready(BTA_AV_CHNL_AUDIO);
   update_scheduling_stats(&btif_a2dp_source_cb.stats.tx_queue_enqueue_stats, stats_timestamp_us,
                           btif_a2dp_source_cb.encoder_interval_ms * 1000);
@@ -934,17 +931,13 @@ static uint32_t btif_a2dp_source_read_callback(uint8_t* p_buf, uint32_t len) {
   return bytes_read;
 }
 
+/// Callback invoked by the encoder for sending encoded audio frames to the
+/// remote Bluetooth device. Runs on the source worker thread.
 static bool btif_a2dp_source_enqueue_callback(BT_HDR* p_buf, size_t frames_n,
                                               uint32_t /*bytes_read*/) {
   uint64_t now_us = bluetooth::common::time_get_os_boottime_us();
 
-  /* Check if timer was stopped (media task stopped) */
-  if (!btif_a2dp_source_is_streaming()) {
-    osi_free(p_buf);
-    return false;
-  }
-
-  /* Check if the transmission queue has been flushed */
+  // Check if the transmission queue has been flushed.
   if (btif_a2dp_source_cb.tx_flush) {
     log::verbose("tx suspended, discarded frame");
 
@@ -1007,12 +1000,10 @@ static bool btif_a2dp_source_enqueue_callback(BT_HDR* p_buf, size_t frames_n,
     }
   }
 
-  /* Update the statistics */
+  // Update the statistics.
   btif_a2dp_source_cb.stats.tx_queue_total_frames += frames_n;
   btif_a2dp_source_cb.stats.tx_queue_max_frames_per_packet =
           std::max(frames_n, btif_a2dp_source_cb.stats.tx_queue_max_frames_per_packet);
-  log::assert_that(btif_a2dp_source_cb.encoder_interface != nullptr,
-                   "assert failed: btif_a2dp_source_cb.encoder_interface != nullptr");
 
   fixed_queue_enqueue(btif_a2dp_source_cb.tx_audio_queue, p_buf);
 
