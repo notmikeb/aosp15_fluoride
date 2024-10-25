@@ -142,7 +142,7 @@ class BluetoothManagerService {
     // Delay for the addProxy function in msec
     private static final int ADD_PROXY_DELAY_MS = 100 * HW_MULTIPLIER;
     // Delay for retrying enable and disable in msec
-    private static final int ENABLE_DISABLE_DELAY_MS = 300 * HW_MULTIPLIER;
+    @VisibleForTesting static final int ENABLE_DISABLE_DELAY_MS = 300 * HW_MULTIPLIER;
 
     @VisibleForTesting static final int MESSAGE_ENABLE = 1;
     @VisibleForTesting static final int MESSAGE_DISABLE = 2;
@@ -182,7 +182,7 @@ class BluetoothManagerService {
     private final RemoteCallbackList<IBluetoothManagerCallback> mCallbacks =
             new RemoteCallbackList<>();
     private final BluetoothServiceBinder mBinder;
-    private final BluetoothHandler mHandler;
+    @VisibleForTesting final BluetoothHandler mHandler;
     private final ContentResolver mContentResolver;
     private final Context mContext;
     private final Looper mLooper;
@@ -469,7 +469,8 @@ class BluetoothManagerService {
 
         if (isAirplaneModeOn) {
             forceToOffFromModeChange(currentState, ENABLE_DISABLE_REASON_AIRPLANE_MODE);
-        } else if (mEnableExternal) {
+        } else if (mEnableExternal && currentState != STATE_ON && isPersistStateOn) {
+            // isPersistStateOn is checked to prevent race with RESTORE_USER_SETTING
             sendEnableMsg(mQuietEnableExternal, ENABLE_DISABLE_REASON_AIRPLANE_MODE);
         } else if (currentState != STATE_ON) {
             autoOnSetupTimer();
