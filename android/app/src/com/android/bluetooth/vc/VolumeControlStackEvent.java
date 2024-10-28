@@ -29,7 +29,6 @@ public class VolumeControlStackEvent {
     public static final int EVENT_TYPE_EXT_AUDIO_OUT_VOL_OFFSET_CHANGED = 4;
     public static final int EVENT_TYPE_EXT_AUDIO_OUT_LOCATION_CHANGED = 5;
     public static final int EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED = 6;
-    public static final int EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED = 10;
     public static final int EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED = 11;
 
     public int type;
@@ -81,8 +80,6 @@ public class VolumeControlStackEvent {
                 return "EVENT_TYPE_EXT_AUDIO_OUT_LOCATION_CHANGED";
             case EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED:
                 return "EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED";
-            case EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED:
-                return "EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED";
             case EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED:
                 return "EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED";
             default:
@@ -102,7 +99,6 @@ public class VolumeControlStackEvent {
             case EVENT_TYPE_EXT_AUDIO_OUT_LOCATION_CHANGED:
             case EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED:
                 return "{ext output id:" + value + "}";
-            case EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED:
             case EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED:
                 return "{ext input id:" + value + "}";
             default:
@@ -168,7 +164,6 @@ public class VolumeControlStackEvent {
     private static String eventTypeString1ToString(int type, String value) {
         switch (type) {
             case EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED:
-            case EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED:
                 return "{description:" + value + "}";
             default:
                 break;
