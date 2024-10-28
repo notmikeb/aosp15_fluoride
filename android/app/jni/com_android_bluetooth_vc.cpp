@@ -62,6 +62,8 @@ static std::shared_timed_mutex interface_mutex;
 static jobject mCallbacksObj = nullptr;
 static std::shared_timed_mutex callbacks_mutex;
 
+static jfieldID sCallbacksField;
+
 class VolumeControlCallbacksImpl : public VolumeControlCallbacks {
 public:
   ~VolumeControlCallbacksImpl() = default;
@@ -362,7 +364,8 @@ static void initNative(JNIEnv* env, jobject object) {
     mCallbacksObj = nullptr;
   }
 
-  if ((mCallbacksObj = env->NewGlobalRef(object)) == nullptr) {
+  if ((mCallbacksObj = env->NewGlobalRef(env->GetObjectField(object, sCallbacksField))) ==
+      nullptr) {
     log::error("Failed to allocate Global Ref for Volume control Callbacks");
     return;
   }
@@ -888,6 +891,12 @@ int register_com_android_bluetooth_vc(JNIEnv* env) {
     return result;
   }
 
+  jclass jniVolumeControlNativeInterfaceClass =
+          env->FindClass("com/android/bluetooth/vc/VolumeControlNativeInterface");
+  sCallbacksField = env->GetFieldID(jniVolumeControlNativeInterfaceClass, "mNativeCallback",
+                                    "Lcom/android/bluetooth/vc/VolumeControlNativeCallback;");
+  env->DeleteLocalRef(jniVolumeControlNativeInterfaceClass);
+
   const JNIJavaMethod javaMethods[] = {
           {"onConnectionStateChanged", "(I[B)V", &method_onConnectionStateChanged},
           {"onVolumeStateChanged", "(IZI[BZ)V", &method_onVolumeStateChanged},
@@ -904,7 +913,7 @@ int register_com_android_bluetooth_vc(JNIEnv* env) {
           {"onExtAudioInDescriptionChanged", "(ILjava/lang/String;[B)V",
            &method_onExtAudioInDescriptionChanged},
   };
-  GET_JAVA_METHODS(env, "com/android/bluetooth/vc/VolumeControlNativeInterface", javaMethods);
+  GET_JAVA_METHODS(env, "com/android/bluetooth/vc/VolumeControlNativeCallback", javaMethods);
 
   return 0;
 }
