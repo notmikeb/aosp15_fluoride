@@ -20,7 +20,6 @@ import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_CONNEC
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_DEVICE_AVAILABLE;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED;
-import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_STATUS_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_TYPE_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED;
@@ -28,6 +27,9 @@ import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AU
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_OUT_VOL_OFFSET_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_VOLUME_STATE_CHANGED;
 
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 
 import android.bluetooth.BluetoothProfile;
@@ -61,6 +63,8 @@ public class VolumeControlNativeCallbackTest {
 
     @Before
     public void setUp() throws Exception {
+        doReturn(true).when(mService).isAvailable();
+
         mNativeCallback = new VolumeControlNativeCallback(mAdapterService, mService);
     }
 
@@ -158,16 +162,14 @@ public class VolumeControlNativeCallbackTest {
 
     @Test
     public void onExtAudioInStateChanged() {
-        int externalInputId = 2;
+        int id = 2;
         int gainSetting = 1;
         int gainMode = 0;
         int mute = 0;
 
-        mNativeCallback.onExtAudioInStateChanged(externalInputId, gainSetting, mute, gainMode, null);
-        verify(mService).messageFromNative(mEvent.capture());
-        VolumeControlStackEvent event = mEvent.getValue();
-
-        expect.that(event.type).isEqualTo(EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED);
+        mNativeCallback.onExtAudioInStateChanged(id, gainSetting, mute, gainMode, null);
+        verify(mService)
+                .onExtAudioInStateChanged(any(), eq(id), eq(gainSetting), eq(mute), eq(gainMode));
     }
 
     @Test

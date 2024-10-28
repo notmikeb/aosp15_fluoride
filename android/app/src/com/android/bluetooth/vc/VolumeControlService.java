@@ -1030,10 +1030,10 @@ public class VolumeControlService extends ProfileService {
         }
     }
 
-    void handleDeviceExtInputStateChanged(
+    void onExtAudioInStateChanged(
             BluetoothDevice device, int id, int gainSetting, int mute, int gainMode) {
         String logInfo =
-                "handleDeviceExtInputStateChanged("
+                "onExtAudioInStateChanged("
                         + ("device:" + device)
                         + (", id" + id)
                         + (" gainSetting: " + gainSetting)
@@ -1181,16 +1181,6 @@ public class VolumeControlService extends ProfileService {
                 == VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED) {
             handleDeviceExtAudioDescriptionChanged(
                     device, stackEvent.valueInt1, stackEvent.valueString1);
-            return;
-        }
-
-        if (stackEvent.type == VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED) {
-            handleDeviceExtInputStateChanged(
-                    device,
-                    stackEvent.valueInt1,
-                    stackEvent.valueInt2,
-                    stackEvent.valueInt4,
-                    stackEvent.valueInt3);
             return;
         }
 

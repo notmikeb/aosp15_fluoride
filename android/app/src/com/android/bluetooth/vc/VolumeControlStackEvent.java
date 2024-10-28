@@ -29,7 +29,6 @@ public class VolumeControlStackEvent {
     public static final int EVENT_TYPE_EXT_AUDIO_OUT_VOL_OFFSET_CHANGED = 4;
     public static final int EVENT_TYPE_EXT_AUDIO_OUT_LOCATION_CHANGED = 5;
     public static final int EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED = 6;
-    public static final int EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED = 7;
     public static final int EVENT_TYPE_EXT_AUDIO_IN_STATUS_CHANGED = 8;
     public static final int EVENT_TYPE_EXT_AUDIO_IN_TYPE_CHANGED = 9;
     public static final int EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED = 10;
@@ -84,8 +83,6 @@ public class VolumeControlStackEvent {
                 return "EVENT_TYPE_EXT_AUDIO_OUT_LOCATION_CHANGED";
             case EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED:
                 return "EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED";
-            case EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED:
-                return "EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED";
             case EVENT_TYPE_EXT_AUDIO_IN_STATUS_CHANGED:
                 return "EVENT_TYPE_EXT_AUDIO_IN_STATUS_CHANGED";
             case EVENT_TYPE_EXT_AUDIO_IN_TYPE_CHANGED:
@@ -111,7 +108,6 @@ public class VolumeControlStackEvent {
             case EVENT_TYPE_EXT_AUDIO_OUT_LOCATION_CHANGED:
             case EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED:
                 return "{ext output id:" + value + "}";
-            case EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED:
             case EVENT_TYPE_EXT_AUDIO_IN_STATUS_CHANGED:
             case EVENT_TYPE_EXT_AUDIO_IN_TYPE_CHANGED:
             case EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED:
@@ -131,8 +127,6 @@ public class VolumeControlStackEvent {
                 return "{volume:" + value + "}";
             case EVENT_TYPE_DEVICE_AVAILABLE:
                 return "{num_ext_inputs:" + value + "}";
-            case EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED:
-                return "{ext gain val:" + value + "}";
             case EVENT_TYPE_EXT_AUDIO_IN_STATUS_CHANGED:
                 return "{status:" + value + "}";
             case EVENT_TYPE_EXT_AUDIO_IN_TYPE_CHANGED:
@@ -145,8 +139,6 @@ public class VolumeControlStackEvent {
 
     private static String eventTypeValue3ToString(int type, int value) {
         switch (type) {
-            case EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED:
-                return "{ext gain mode:" + value + "}";
             case EVENT_TYPE_VOLUME_STATE_CHANGED:
                 return "{flags:" + value + "}";
             default:
@@ -159,8 +151,6 @@ public class VolumeControlStackEvent {
         switch (type) {
             case EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED:
                 return "{gain set max:" + value + "}";
-            case EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED:
-                return "{mute:" + value + "}";
             default:
                 break;
         }

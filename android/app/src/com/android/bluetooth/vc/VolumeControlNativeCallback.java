@@ -20,7 +20,6 @@ import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_CONNEC
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_DEVICE_AVAILABLE;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED;
-import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_STATUS_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_TYPE_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED;
@@ -36,6 +35,9 @@ import android.util.Log;
 import com.android.bluetooth.btservice.AdapterService;
 import com.android.internal.annotations.VisibleForTesting;
 
+import java.util.Arrays;
+import java.util.function.Consumer;
+
 class VolumeControlNativeCallback {
     private static final String TAG = VolumeControlNativeCallback.class.getSimpleName();
 
@@ -50,6 +52,18 @@ class VolumeControlNativeCallback {
 
     private BluetoothDevice getDevice(byte[] address) {
         return mAdapterService.getDeviceFromByte(address);
+    }
+
+    private void sendMessageToService(Consumer<VolumeControlService> action) {
+        if (!mVolumeControlService.isAvailable()) {
+            StringBuilder sb = new StringBuilder();
+            Arrays.stream(new Throwable().getStackTrace())
+                    .skip(1) // skip the inlineStackTrace method in the outputted stack trace
+                    .forEach(trace -> sb.append(" [at ").append(trace).append("]"));
+            Log.e(TAG, "Action ignored, service not available: " + sb.toString());
+            return;
+        }
+        action.accept(mVolumeControlService);
     }
 
     @VisibleForTesting
@@ -141,18 +155,11 @@ class VolumeControlNativeCallback {
     }
 
     @VisibleForTesting
-    void onExtAudioInStateChanged(
-            int externalInputId, int gainSetting, int mute, int gainMode, byte[] address) {
-        VolumeControlStackEvent event =
-                new VolumeControlStackEvent(EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED);
-        event.device = getDevice(address);
-        event.valueInt1 = externalInputId;
-        event.valueInt2 = gainSetting;
-        event.valueInt3 = gainMode;
-        event.valueInt4 = mute;
-
-        Log.d(TAG, "onExtAudioInStateChanged: " + event);
-        mVolumeControlService.messageFromNative(event);
+    void onExtAudioInStateChanged(int id, int gainSetting, int gainMode, int mute, byte[] address) {
+        sendMessageToService(
+                s ->
+                        s.onExtAudioInStateChanged(
+                                getDevice(address), id, gainSetting, mute, gainMode));
     }
 
     @VisibleForTesting
