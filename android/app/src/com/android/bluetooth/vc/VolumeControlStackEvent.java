@@ -29,7 +29,6 @@ public class VolumeControlStackEvent {
     public static final int EVENT_TYPE_EXT_AUDIO_OUT_VOL_OFFSET_CHANGED = 4;
     public static final int EVENT_TYPE_EXT_AUDIO_OUT_LOCATION_CHANGED = 5;
     public static final int EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED = 6;
-    public static final int EVENT_TYPE_EXT_AUDIO_IN_TYPE_CHANGED = 9;
     public static final int EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED = 10;
     public static final int EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED = 11;
 
@@ -82,8 +81,6 @@ public class VolumeControlStackEvent {
                 return "EVENT_TYPE_EXT_AUDIO_OUT_LOCATION_CHANGED";
             case EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED:
                 return "EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED";
-            case EVENT_TYPE_EXT_AUDIO_IN_TYPE_CHANGED:
-                return "EVENT_TYPE_EXT_AUDIO_IN_TYPE_CHANGED";
             case EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED:
                 return "EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED";
             case EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED:
@@ -105,7 +102,6 @@ public class VolumeControlStackEvent {
             case EVENT_TYPE_EXT_AUDIO_OUT_LOCATION_CHANGED:
             case EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED:
                 return "{ext output id:" + value + "}";
-            case EVENT_TYPE_EXT_AUDIO_IN_TYPE_CHANGED:
             case EVENT_TYPE_EXT_AUDIO_IN_DESCR_CHANGED:
             case EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED:
                 return "{ext input id:" + value + "}";
@@ -123,8 +119,6 @@ public class VolumeControlStackEvent {
                 return "{volume:" + value + "}";
             case EVENT_TYPE_DEVICE_AVAILABLE:
                 return "{num_ext_inputs:" + value + "}";
-            case EVENT_TYPE_EXT_AUDIO_IN_TYPE_CHANGED:
-                return "{type:" + value + "}";
             default:
                 break;
         }
