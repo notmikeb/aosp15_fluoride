@@ -18,7 +18,6 @@ package com.android.bluetooth.vc;
 
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_CONNECTION_STATE_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_DEVICE_AVAILABLE;
-import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_OUT_LOCATION_CHANGED;
 import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_OUT_VOL_OFFSET_CHANGED;
@@ -175,17 +174,8 @@ class VolumeControlNativeCallback {
     }
 
     @VisibleForTesting
-    void onExtAudioInGainPropsChanged(
-            int externalInputId, int unit, int min, int max, byte[] address) {
-        VolumeControlStackEvent event =
-                new VolumeControlStackEvent(EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED);
-        event.device = getDevice(address);
-        event.valueInt1 = externalInputId;
-        event.valueInt2 = unit;
-        event.valueInt3 = min;
-        event.valueInt4 = max;
-
-        Log.d(TAG, "onExtAudioInGainPropsChanged: " + event);
-        mVolumeControlService.messageFromNative(event);
+    void onExtAudioInGainPropsChanged(int id, int unit, int min, int max, byte[] address) {
+        sendMessageToService(
+                s -> s.onExtAudioInGainPropsChanged(getDevice(address), id, unit, min, max));
     }
 }

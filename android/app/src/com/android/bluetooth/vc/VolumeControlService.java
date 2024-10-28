@@ -1120,10 +1120,9 @@ public class VolumeControlService extends ProfileService {
         input.setDescription(id, description);
     }
 
-    void handleDeviceExtInputGainPropsChanged(
-            BluetoothDevice device, int id, int unit, int min, int max) {
+    void onExtAudioInGainPropsChanged(BluetoothDevice device, int id, int unit, int min, int max) {
         String logInfo =
-                "handleDeviceExtInputGainPropsChanged("
+                "onExtAudioInGainPropsChanged("
                         + ("device:" + device)
                         + (", id" + id)
                         + (" unit: " + unit + " min" + min + " max:" + max)
@@ -1180,16 +1179,6 @@ public class VolumeControlService extends ProfileService {
                 == VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_OUT_DESCRIPTION_CHANGED) {
             handleDeviceExtAudioDescriptionChanged(
                     device, stackEvent.valueInt1, stackEvent.valueString1);
-            return;
-        }
-
-        if (stackEvent.type == VolumeControlStackEvent.EVENT_TYPE_EXT_AUDIO_IN_GAIN_PROPS_CHANGED) {
-            handleDeviceExtInputGainPropsChanged(
-                    device,
-                    stackEvent.valueInt1,
-                    stackEvent.valueInt2,
-                    stackEvent.valueInt3,
-                    stackEvent.valueInt4);
             return;
         }
 
