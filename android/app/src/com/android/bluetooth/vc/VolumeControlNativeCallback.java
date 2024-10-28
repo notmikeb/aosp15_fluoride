@@ -142,12 +142,12 @@ class VolumeControlNativeCallback {
 
     @VisibleForTesting
     void onExtAudioInStateChanged(
-            int externalInputId, int gainValue, int gainMode, int mute, byte[] address) {
+            int externalInputId, int gainSetting, int mute, int gainMode, byte[] address) {
         VolumeControlStackEvent event =
                 new VolumeControlStackEvent(EVENT_TYPE_EXT_AUDIO_IN_STATE_CHANGED);
         event.device = getDevice(address);
         event.valueInt1 = externalInputId;
-        event.valueInt2 = gainValue;
+        event.valueInt2 = gainSetting;
         event.valueInt3 = gainMode;
         event.valueInt4 = mute;
 

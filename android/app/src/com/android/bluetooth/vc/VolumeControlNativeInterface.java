@@ -134,8 +134,8 @@ public class VolumeControlNativeInterface {
         return setExtAudioInDescriptionNative(getByteAddress(device), externalInputId, descr);
     }
 
-    boolean setExtAudioInGainValue(BluetoothDevice device, int externalInputId, int value) {
-        return setExtAudioInGainValueNative(getByteAddress(device), externalInputId, value);
+    boolean setExtAudioInGainSetting(BluetoothDevice device, int externalInputId, int gainSetting) {
+        return setExtAudioInGainSettingNative(getByteAddress(device), externalInputId, gainSetting);
     }
 
     boolean setExtAudioInGainMode(BluetoothDevice device, int externalInputId, boolean autoMode) {
@@ -196,8 +196,8 @@ public class VolumeControlNativeInterface {
     private native boolean setExtAudioInDescriptionNative(
             byte[] address, int externalInputId, String descr);
 
-    private native boolean setExtAudioInGainValueNative(
-            byte[] address, int externalInputId, int gainValue);
+    private native boolean setExtAudioInGainSettingNative(
+            byte[] address, int externalInputId, int gainSetting);
 
     private native boolean setExtAudioInGainModeNative(
             byte[] address, int externalInputId, boolean modeAuto);
