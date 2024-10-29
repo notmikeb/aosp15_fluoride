@@ -154,7 +154,7 @@ private:
         builder.AddCharacteristic(0x0031, 0x0032, kVolumeAudioInputStateUuid,
                                   GATT_CHAR_PROP_BIT_READ);
         builder.AddDescriptor(0x0033, Uuid::From16Bit(GATT_UUID_CHAR_CLIENT_CONFIG));
-        builder.AddCharacteristic(0x0034, 0x0035, kVolumeAudioInputGainSettingUuid,
+        builder.AddCharacteristic(0x0034, 0x0035, kVolumeAudioInputGainSettingPropertiesUuid,
                                   GATT_CHAR_PROP_BIT_READ);
         builder.AddCharacteristic(0x0036, 0x0037, kVolumeAudioInputTypeUuid,
                                   GATT_CHAR_PROP_BIT_READ);
@@ -173,7 +173,7 @@ private:
                                   GATT_CHAR_PROP_BIT_READ | GATT_CHAR_PROP_BIT_NOTIFY);
         builder.AddDescriptor(0x0053, Uuid::From16Bit(GATT_UUID_CHAR_CLIENT_CONFIG));
         if (!aics_broken) {
-          builder.AddCharacteristic(0x0054, 0x0055, kVolumeAudioInputGainSettingUuid,
+          builder.AddCharacteristic(0x0054, 0x0055, kVolumeAudioInputGainSettingPropertiesUuid,
                                     GATT_CHAR_PROP_BIT_READ);
         }
         builder.AddCharacteristic(0x0056, 0x0057, kVolumeAudioInputTypeUuid,
@@ -1335,12 +1335,12 @@ TEST_F(VolumeControlCallbackTest, test_volume_state_changed_malformed) {
 
 TEST_F(VolumeControlCallbackTest, test_audio_input_state_changed) {
   std::vector<uint8_t> value({0x03, 0x01, 0x02, 0x04});
-  EXPECT_CALL(callbacks, OnExtAudioInStateChanged(test_address, 1, 0x03, 0x02, true));
+  EXPECT_CALL(callbacks, OnExtAudioInStateChanged(test_address, _, 0x03, 0x02, true));
   GetNotificationEvent(0x0032, value);
 }
 
 TEST_F(VolumeControlCallbackTest, test_audio_input_state_changed_malformed) {
-  EXPECT_CALL(callbacks, OnExtAudioInStateChanged(test_address, 1, _, _, _)).Times(0);
+  EXPECT_CALL(callbacks, OnExtAudioInStateChanged(test_address, _, _, _, _)).Times(0);
   std::vector<uint8_t> too_short({0x03, 0x01, 0x02});
   GetNotificationEvent(0x0032, too_short);
   std::vector<uint8_t> too_long({0x03, 0x01, 0x02, 0x04, 0x05});
@@ -1349,12 +1349,12 @@ TEST_F(VolumeControlCallbackTest, test_audio_input_state_changed_malformed) {
 
 TEST_F(VolumeControlCallbackTest, test_audio_gain_props_changed) {
   std::vector<uint8_t> value({0x03, 0x01, 0x02});
-  EXPECT_CALL(callbacks, OnExtAudioInGainPropsChanged(test_address, 2, 0x03, 0x01, 0x02));
+  EXPECT_CALL(callbacks, OnExtAudioInGainPropsChanged(test_address, _, 0x03, 0x01, 0x02));
   GetNotificationEvent(0x0055, value);
 }
 
 TEST_F(VolumeControlCallbackTest, test_audio_gain_props_changed_malformed) {
-  EXPECT_CALL(callbacks, OnExtAudioInGainPropsChanged(test_address, 2, _, _, _)).Times(0);
+  EXPECT_CALL(callbacks, OnExtAudioInGainPropsChanged(test_address, _, _, _, _)).Times(0);
   std::vector<uint8_t> too_short({0x03, 0x01});
   GetNotificationEvent(0x0055, too_short);
   std::vector<uint8_t> too_long({0x03, 0x01, 0x02, 0x03});
@@ -1363,13 +1363,13 @@ TEST_F(VolumeControlCallbackTest, test_audio_gain_props_changed_malformed) {
 
 TEST_F(VolumeControlCallbackTest, test_audio_input_status_changed) {
   std::vector<uint8_t> value({static_cast<uint8_t>(bluetooth::vc::VolumeInputStatus::Inactive)});
-  EXPECT_CALL(callbacks, OnExtAudioInStatusChanged(test_address, 1,
+  EXPECT_CALL(callbacks, OnExtAudioInStatusChanged(test_address, _,
                                                    bluetooth::vc::VolumeInputStatus::Inactive));
   GetNotificationEvent(0x0039, value);
 }
 
 TEST_F(VolumeControlCallbackTest, test_audio_input_status_changed_malformed) {
-  EXPECT_CALL(callbacks, OnExtAudioInStatusChanged(test_address, 1, _)).Times(0);
+  EXPECT_CALL(callbacks, OnExtAudioInStatusChanged(test_address, _, _)).Times(0);
   std::vector<uint8_t> too_short(0);
   GetNotificationEvent(0x0039, too_short);
   std::vector<uint8_t> too_long({0x03, 0x01});
@@ -1379,7 +1379,7 @@ TEST_F(VolumeControlCallbackTest, test_audio_input_status_changed_malformed) {
 TEST_F(VolumeControlCallbackTest, test_audio_input_description_changed) {
   std::string descr = "SPDIF";
   std::vector<uint8_t> value(descr.begin(), descr.end());
-  EXPECT_CALL(callbacks, OnExtAudioInDescriptionChanged(test_address, 2, descr));
+  EXPECT_CALL(callbacks, OnExtAudioInDescriptionChanged(test_address, _, descr));
   GetNotificationEvent(0x005e, value);
 }
 
@@ -1480,19 +1480,19 @@ TEST_F(VolumeControlValueGetTest, test_get_ext_audio_in_state) {
 }
 
 TEST_F(VolumeControlValueGetTest, test_get_ext_audio_in_status) {
-  VolumeControl::Get()->GetExtAudioInStatus(test_address, 2);
+  VolumeControl::Get()->GetExtAudioInStatus(test_address, 0);
   EXPECT_TRUE(cb);
   std::vector<uint8_t> value({static_cast<uint8_t>(bluetooth::vc::VolumeInputStatus::Active)});
   EXPECT_CALL(callbacks,
-              OnExtAudioInStatusChanged(test_address, 2, bluetooth::vc::VolumeInputStatus::Active));
+              OnExtAudioInStatusChanged(test_address, 0, bluetooth::vc::VolumeInputStatus::Active));
   cb(conn_id, GATT_SUCCESS, handle, (uint16_t)value.size(), value.data(), cb_data);
 }
 
 TEST_F(VolumeControlValueGetTest, test_get_ext_audio_in_gain_props) {
-  VolumeControl::Get()->GetExtAudioInGainProps(test_address, 2);
+  VolumeControl::Get()->GetExtAudioInGainProps(test_address, 0);
   EXPECT_TRUE(cb);
   std::vector<uint8_t> value({0x01, 0x02, 0x03});
-  EXPECT_CALL(callbacks, OnExtAudioInGainPropsChanged(test_address, 2, 0x01, 0x02, 0x03));
+  EXPECT_CALL(callbacks, OnExtAudioInGainPropsChanged(test_address, 0, 0x01, 0x02, 0x03));
   cb(conn_id, GATT_SUCCESS, handle, (uint16_t)value.size(), value.data(), cb_data);
 }
 
@@ -1836,38 +1836,38 @@ TEST_F(VolumeControlValueSetTest, test_set_ext_audio_in_description) {
   std::vector<uint8_t> expected_data(descr.begin(), descr.end());
   EXPECT_CALL(gatt_queue,
               WriteCharacteristic(conn_id, 0x005e, expected_data, GATT_WRITE_NO_RSP, _, _));
-  VolumeControl::Get()->SetExtAudioInDescription(test_address, 2, descr);
+  VolumeControl::Get()->SetExtAudioInDescription(test_address, 1, descr);
 }
 
 TEST_F(VolumeControlValueSetTest, test_set_ext_audio_in_description_non_writable) {
   std::string descr = "AUX";
   std::vector<uint8_t> expected_data(descr.begin(), descr.end());
   EXPECT_CALL(gatt_queue, WriteCharacteristic(_, _, _, _, _, _)).Times(0);
-  VolumeControl::Get()->SetExtAudioInDescription(test_address, 1, descr);
+  VolumeControl::Get()->SetExtAudioInDescription(test_address, 0, descr);
 }
 
 TEST_F(VolumeControlValueSetTest, test_set_ext_audio_in_gain_value) {
   std::vector<uint8_t> expected_data({0x01, 0x00, 0x34});
   EXPECT_CALL(gatt_queue, WriteCharacteristic(conn_id, 0x005c, expected_data, GATT_WRITE, _, _));
-  VolumeControl::Get()->SetExtAudioInGainValue(test_address, 2, 0x34);
+  VolumeControl::Get()->SetExtAudioInGainValue(test_address, 1, 0x34);
 }
 
 TEST_F(VolumeControlValueSetTest, test_set_ext_audio_in_gain_mode) {
   std::vector<uint8_t> mode_manual({0x04, 0x00});
   EXPECT_CALL(gatt_queue, WriteCharacteristic(conn_id, 0x005c, mode_manual, GATT_WRITE, _, _));
-  VolumeControl::Get()->SetExtAudioInGainMode(test_address, 2, false);
+  VolumeControl::Get()->SetExtAudioInGainMode(test_address, 1, false);
   std::vector<uint8_t> mode_automatic({0x05, 0x00});
   EXPECT_CALL(gatt_queue, WriteCharacteristic(conn_id, 0x005c, mode_automatic, GATT_WRITE, _, _));
-  VolumeControl::Get()->SetExtAudioInGainMode(test_address, 2, true);
+  VolumeControl::Get()->SetExtAudioInGainMode(test_address, 1, true);
 }
 
 TEST_F(VolumeControlValueSetTest, test_set_ext_audio_in_gain_mute) {
   std::vector<uint8_t> mute({0x03, 0x00});
   EXPECT_CALL(gatt_queue, WriteCharacteristic(conn_id, 0x005c, mute, GATT_WRITE, _, _));
-  VolumeControl::Get()->SetExtAudioInGainMute(test_address, 2, true);
+  VolumeControl::Get()->SetExtAudioInGainMute(test_address, 1, true);
   std::vector<uint8_t> unmute({0x02, 0x00});
   EXPECT_CALL(gatt_queue, WriteCharacteristic(conn_id, 0x005c, unmute, GATT_WRITE, _, _));
-  VolumeControl::Get()->SetExtAudioInGainMute(test_address, 2, false);
+  VolumeControl::Get()->SetExtAudioInGainMute(test_address, 1, false);
 }
 
 class VolumeControlCsis : public VolumeControlTest {

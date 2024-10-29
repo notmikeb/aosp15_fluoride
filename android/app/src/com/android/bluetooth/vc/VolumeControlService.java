@@ -947,9 +947,8 @@ public class VolumeControlService extends ProfileService {
             inputs.clear();
         }
 
-        /* Stack delivers us number of audio inputs.
-         * Offset ids a countinous from 1 to numberOfExternalInputs*/
-        for (int i = 1; i <= numberOfExternalInputs; i++) {
+        // Stack delivers us number of audio inputs. ids are countinous from [0;n[
+        for (int i = 0; i < numberOfExternalInputs; i++) {
             inputs.add(i);
         }
     }
