@@ -57,7 +57,7 @@ public class PbapClientService extends ProfileService {
 
     /** The component names for the owned authenticator service */
     private static final String AUTHENTICATOR_SERVICE =
-            AuthenticationService.class.getCanonicalName();
+            PbapClientAccountAuthenticatorService.class.getCanonicalName();
 
     // MAXIMUM_DEVICES set to 10 to prevent an excessive number of simultaneous devices.
     private static final int MAXIMUM_DEVICES = 10;
@@ -218,7 +218,8 @@ public class PbapClientService extends ProfileService {
      * available to all system apps instead of throwing a runtime SecurityException.
      */
     protected boolean isAuthenticationServiceReady() {
-        Account account = new Account("00:00:00:00:00:00", getString(R.string.pbap_account_type));
+        Account account =
+                new Account("00:00:00:00:00:00", getString(R.string.pbap_client_account_type));
         AccountManager accountManager = AccountManager.get(this);
         int visibility = accountManager.getAccountVisibility(account, getPackageName());
         Log.d(TAG, "Checking visibility, visibility=" + visibility);
@@ -235,7 +236,7 @@ public class PbapClientService extends ProfileService {
         // Find all accounts that match the type "pbap" and delete them.
         AccountManager accountManager = AccountManager.get(this);
         Account[] accounts =
-                accountManager.getAccountsByType(getString(R.string.pbap_account_type));
+                accountManager.getAccountsByType(getString(R.string.pbap_client_account_type));
         Log.v(TAG, "Found " + accounts.length + " unclean accounts");
         for (Account acc : accounts) {
             Log.w(TAG, "Deleting " + acc);

@@ -37,10 +37,10 @@ import org.mockito.Mock;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class AuthenticatorTest {
+public class PbapClientAccountAuthenticatorTest {
 
     private Context mTargetContext;
-    private Authenticator mAuthenticator;
+    private PbapClientAccountAuthenticator mAuthenticator;
 
     @Mock AccountAuthenticatorResponse mResponse;
 
@@ -49,7 +49,7 @@ public class AuthenticatorTest {
     @Before
     public void setUp() throws Exception {
         mTargetContext = InstrumentationRegistry.getTargetContext();
-        mAuthenticator = new Authenticator(mTargetContext);
+        mAuthenticator = new PbapClientAccountAuthenticator(mTargetContext);
     }
 
     @Test
