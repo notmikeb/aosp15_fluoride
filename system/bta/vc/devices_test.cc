@@ -44,6 +44,7 @@ using ::testing::_;
 using ::testing::DoAll;
 using ::testing::Invoke;
 using ::testing::Mock;
+using ::testing::NiceMock;
 using ::testing::Return;
 using ::testing::SaveArg;
 using ::testing::SetArgPointee;
@@ -74,8 +75,8 @@ protected:
   }
 
   VolumeControlDevices* devices_ = nullptr;
-  gatt::MockBtaGattInterface gatt_interface;
-  gatt::MockBtaGattQueue gatt_queue;
+  NiceMock<gatt::MockBtaGattInterface> gatt_interface;
+  NiceMock<gatt::MockBtaGattQueue> gatt_queue;
 };
 
 TEST_F(VolumeControlDevicesTest, test_add) {
@@ -361,9 +362,9 @@ protected:
   }
 
   VolumeControlDevice* device = nullptr;
-  gatt::MockBtaGattInterface gatt_interface;
-  gatt::MockBtaGattQueue gatt_queue;
-  bluetooth::manager::MockBtmInterface btm_interface;
+  NiceMock<gatt::MockBtaGattInterface> gatt_interface;
+  NiceMock<gatt::MockBtaGattQueue> gatt_queue;
+  NiceMock<bluetooth::manager::MockBtmInterface> btm_interface;
   std::list<gatt::Service> services;
 };
 
