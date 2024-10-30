@@ -29,13 +29,13 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class BluetoothPbapObexAuthenticatorTest {
+public class PbapClientObexAuthenticatorTest {
 
-    private BluetoothPbapObexAuthenticator mAuthenticator;
+    private PbapClientObexAuthenticator mAuthenticator;
 
     @Before
     public void setUp() throws Exception {
-        mAuthenticator = new BluetoothPbapObexAuthenticator();
+        mAuthenticator = new PbapClientObexAuthenticator();
     }
 
     @Test

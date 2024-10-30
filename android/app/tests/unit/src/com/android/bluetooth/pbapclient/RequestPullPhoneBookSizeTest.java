@@ -30,15 +30,13 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class BluetoothPbapRequestPullPhoneBookSizeTest {
+public class RequestPullPhoneBookSizeTest {
 
-    BluetoothPbapRequestPullPhoneBookSize mRequest;
+    RequestPullPhoneBookSize mRequest;
 
     @Before
     public void setUp() {
-        mRequest =
-                new BluetoothPbapRequestPullPhoneBookSize(
-                        /* pbName= */ "phonebook", /* filter= */ 1);
+        mRequest = new RequestPullPhoneBookSize(/* pbName= */ "phonebook", /* filter= */ 1);
     }
 
     @Test

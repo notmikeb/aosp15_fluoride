@@ -35,8 +35,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-class BluetoothPbapVcardList {
-    private static final String TAG = BluetoothPbapVcardList.class.getSimpleName();
+class PbapClientVcardList {
+    private static final String TAG = PbapClientVcardList.class.getSimpleName();
     // {@link BufferedInputStream#DEFAULT_BUFFER_SIZE} is not public
     private static final int BIS_DEFAULT_BUFFER_SIZE = 8192;
 
@@ -56,7 +56,7 @@ class BluetoothPbapVcardList {
         public void onEnd() {}
     }
 
-    BluetoothPbapVcardList(Account account, InputStream in, byte format) throws IOException {
+    PbapClientVcardList(Account account, InputStream in, byte format) throws IOException {
         if (format != PbapClientConnectionHandler.VCARD_TYPE_21
                 && format != PbapClientConnectionHandler.VCARD_TYPE_30) {
             throw new IllegalArgumentException("Unsupported vCard version.");

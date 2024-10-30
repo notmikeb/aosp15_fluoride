@@ -41,7 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 public class CallLogPullRequest extends PullRequest {
-    private static final String TAG = "CallLogPullRequest";
+    private static final String TAG = CallLogPullRequest.class.getSimpleName();
 
     @VisibleForTesting static final String TIMESTAMP_PROPERTY = "X-IRMC-CALL-DATETIME";
     private static final String TIMESTAMP_FORMAT = "yyyyMMdd'T'HHmmss";

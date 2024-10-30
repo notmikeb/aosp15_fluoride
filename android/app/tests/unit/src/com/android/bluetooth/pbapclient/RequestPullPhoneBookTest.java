@@ -37,7 +37,7 @@ import java.io.InputStream;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class BluetoothPbapRequestPullPhoneBookTest {
+public class RequestPullPhoneBookTest {
 
     private static final String PB_NAME = "phonebook";
     private static final Account ACCOUNT = mock(Account.class);
@@ -53,7 +53,7 @@ public class BluetoothPbapRequestPullPhoneBookTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
-                        new BluetoothPbapRequestPullPhoneBook(
+                        new RequestPullPhoneBook(
                                 PB_NAME,
                                 ACCOUNT,
                                 filter,
@@ -73,7 +73,7 @@ public class BluetoothPbapRequestPullPhoneBookTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
-                        new BluetoothPbapRequestPullPhoneBook(
+                        new RequestPullPhoneBook(
                                 PB_NAME,
                                 ACCOUNT,
                                 filter,
@@ -88,8 +88,8 @@ public class BluetoothPbapRequestPullPhoneBookTest {
         final byte format = 0; // Will be properly handled as VCARD_TYPE_21.
         final int maxListCount = 0; // Will be specially handled as 65535.
         final int listStartOffset = 10;
-        BluetoothPbapRequestPullPhoneBook request =
-                new BluetoothPbapRequestPullPhoneBook(
+        RequestPullPhoneBook request =
+                new RequestPullPhoneBook(
                         PB_NAME, ACCOUNT, filter, format, maxListCount, listStartOffset);
 
         final InputStream is =
@@ -119,8 +119,8 @@ public class BluetoothPbapRequestPullPhoneBookTest {
         final byte format = 0; // Will be properly handled as VCARD_TYPE_21.
         final int maxListCount = 0; // Will be specially handled as 65535.
         final int listStartOffset = 10;
-        BluetoothPbapRequestPullPhoneBook request =
-                new BluetoothPbapRequestPullPhoneBook(
+        RequestPullPhoneBook request =
+                new RequestPullPhoneBook(
                         PB_NAME, ACCOUNT, filter, format, maxListCount, listStartOffset);
 
         try {
