@@ -369,17 +369,6 @@ public class AdapterService extends Service {
         }
     };
 
-    static {
-        if (!Flags.avoidStaticLoadingOfNative()) {
-            Log.d(TAG, "Loading JNI Library");
-            if (Utils.isInstrumentationTestMode()) {
-                Log.w(TAG, "App is instrumented. Skip loading the native");
-            } else {
-                System.loadLibrary("bluetooth_jni");
-            }
-        }
-    }
-
     // Keep a constructor for ActivityThread.handleCreateService
     AdapterService() {
         this(Looper.getMainLooper());
@@ -669,13 +658,11 @@ public class AdapterService extends Service {
                 getApplicationContext()
                         .getPackageManager()
                         .hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY);
-        if (Flags.avoidStaticLoadingOfNative()) {
-            if (Utils.isInstrumentationTestMode()) {
-                Log.w(TAG, "This Bluetooth App is instrumented. ** Skip loading the native **");
-            } else {
-                Log.d(TAG, "Loading JNI Library");
-                System.loadLibrary("bluetooth_jni");
-            }
+        if (Utils.isInstrumentationTestMode()) {
+            Log.w(TAG, "This Bluetooth App is instrumented. ** Skip loading the native **");
+        } else {
+            Log.d(TAG, "Loading JNI Library");
+            System.loadLibrary("bluetooth_jni");
         }
         mNativeInterface.init(
                 this,
