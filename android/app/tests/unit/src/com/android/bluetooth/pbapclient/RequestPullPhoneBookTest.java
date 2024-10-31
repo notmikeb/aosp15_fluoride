@@ -16,9 +16,6 @@
 
 package com.android.bluetooth.pbapclient;
 
-import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
-
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 
@@ -26,8 +23,6 @@ import android.accounts.Account;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
-
-import com.android.obex.HeaderSet;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,7 +40,7 @@ public class RequestPullPhoneBookTest {
     @Test
     public void constructor_wrongMaxListCount_throwsIAE() {
         final long filter = 0;
-        final byte format = PbapClientConnectionHandler.VCARD_TYPE_30;
+        final byte format = PbapPhonebook.FORMAT_VCARD_30;
         final int listStartOffset = 10;
 
         final int wrongMaxListCount = -1;
@@ -55,17 +50,17 @@ public class RequestPullPhoneBookTest {
                 () ->
                         new RequestPullPhoneBook(
                                 PB_NAME,
-                                ACCOUNT,
                                 filter,
                                 format,
                                 wrongMaxListCount,
-                                listStartOffset));
+                                listStartOffset,
+                                ACCOUNT));
     }
 
     @Test
     public void constructor_wrongListStartOffset_throwsIAE() {
         final long filter = 0;
-        final byte format = PbapClientConnectionHandler.VCARD_TYPE_30;
+        final byte format = PbapPhonebook.FORMAT_VCARD_30;
         final int maxListCount = 100;
 
         final int wrongListStartOffset = -1;
@@ -75,11 +70,11 @@ public class RequestPullPhoneBookTest {
                 () ->
                         new RequestPullPhoneBook(
                                 PB_NAME,
-                                ACCOUNT,
                                 filter,
                                 format,
                                 maxListCount,
-                                wrongListStartOffset));
+                                wrongListStartOffset,
+                                ACCOUNT));
     }
 
     @Test
@@ -90,7 +85,7 @@ public class RequestPullPhoneBookTest {
         final int listStartOffset = 10;
         RequestPullPhoneBook request =
                 new RequestPullPhoneBook(
-                        PB_NAME, ACCOUNT, filter, format, maxListCount, listStartOffset);
+                        PB_NAME, filter, format, maxListCount, listStartOffset, ACCOUNT);
 
         final InputStream is =
                 new InputStream() {
@@ -111,24 +106,5 @@ public class RequestPullPhoneBookTest {
                 };
 
         assertThrows(IOException.class, () -> request.readResponse(is));
-    }
-
-    @Test
-    public void readResponseHeaders() {
-        final long filter = 1;
-        final byte format = 0; // Will be properly handled as VCARD_TYPE_21.
-        final int maxListCount = 0; // Will be specially handled as 65535.
-        final int listStartOffset = 10;
-        RequestPullPhoneBook request =
-                new RequestPullPhoneBook(
-                        PB_NAME, ACCOUNT, filter, format, maxListCount, listStartOffset);
-
-        try {
-            HeaderSet headerSet = new HeaderSet();
-            request.readResponseHeaders(headerSet);
-            assertThat(request.getNewMissedCalls()).isEqualTo(-1);
-        } catch (Exception e) {
-            assertWithMessage("Exception should not happen.").fail();
-        }
     }
 }

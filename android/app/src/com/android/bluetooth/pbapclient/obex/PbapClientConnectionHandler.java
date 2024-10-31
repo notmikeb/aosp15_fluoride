@@ -113,24 +113,12 @@ class PbapClientConnectionHandler extends Handler {
 
     @VisibleForTesting static final int L2CAP_INVALID_PSM = -1;
 
-    public static final String PB_PATH = "telecom/pb.vcf";
-    public static final String FAV_PATH = "telecom/fav.vcf";
-    public static final String MCH_PATH = "telecom/mch.vcf";
-    public static final String ICH_PATH = "telecom/ich.vcf";
-    public static final String OCH_PATH = "telecom/och.vcf";
-    public static final String SIM_PB_PATH = "SIM1/telecom/pb.vcf";
-    public static final String SIM_MCH_PATH = "SIM1/telecom/mch.vcf";
-    public static final String SIM_ICH_PATH = "SIM1/telecom/ich.vcf";
-    public static final String SIM_OCH_PATH = "SIM1/telecom/och.vcf";
-
     // PBAP v1.2.3 Sec. 7.1.2
     private static final int SUPPORTED_REPOSITORIES_LOCALPHONEBOOK = 1 << 0;
     private static final int SUPPORTED_REPOSITORIES_SIMCARD = 1 << 1;
     private static final int SUPPORTED_REPOSITORIES_FAVORITES = 1 << 3;
 
     public static final int PBAP_V1_2 = 0x0102;
-    public static final byte VCARD_TYPE_21 = 0;
-    public static final byte VCARD_TYPE_30 = 1;
 
     private Account mAccount;
     private AccountManager mAccountManager;
@@ -250,19 +238,19 @@ class PbapClientConnectionHandler extends Handler {
                     return;
                 }
                 if (isRepositorySupported(SUPPORTED_REPOSITORIES_FAVORITES)) {
-                    downloadContacts(FAV_PATH);
+                    downloadContacts(PbapPhonebook.FAVORITES_PATH);
                 }
                 if (isRepositorySupported(SUPPORTED_REPOSITORIES_LOCALPHONEBOOK)) {
-                    downloadContacts(PB_PATH);
+                    downloadContacts(PbapPhonebook.LOCAL_PHONEBOOK_PATH);
                 }
                 if (isRepositorySupported(SUPPORTED_REPOSITORIES_SIMCARD)) {
-                    downloadContacts(SIM_PB_PATH);
+                    downloadContacts(PbapPhonebook.SIM_PHONEBOOK_PATH);
                 }
 
                 Map<String, Integer> callCounter = new HashMap<>();
-                downloadCallLog(MCH_PATH, callCounter);
-                downloadCallLog(ICH_PATH, callCounter);
-                downloadCallLog(OCH_PATH, callCounter);
+                downloadCallLog(PbapPhonebook.MCH_PATH, callCounter);
+                downloadCallLog(PbapPhonebook.ICH_PATH, callCounter);
+                downloadCallLog(PbapPhonebook.OCH_PATH, callCounter);
                 break;
 
             default:
@@ -388,7 +376,7 @@ class PbapClientConnectionHandler extends Handler {
 
             int numberOfContactsRemaining = requestPbSize.getSize();
             int startOffset = 0;
-            if (PB_PATH.equals(path)) {
+            if (PbapPhonebook.LOCAL_PHONEBOOK_PATH.equals(path)) {
                 // PBAP v1.2.3, Sec 3.1.5. The first contact in pb is owner card 0.vcf, which we
                 // do not want to download. The other phonebook objects (e.g., fav) don't have an
                 // owner card, so they don't need an offset.
@@ -405,14 +393,14 @@ class PbapClientConnectionHandler extends Handler {
                 RequestPullPhoneBook request =
                         new RequestPullPhoneBook(
                                 path,
-                                mAccount,
                                 PBAP_REQUESTED_FIELDS,
-                                VCARD_TYPE_30,
+                                PbapPhonebook.FORMAT_VCARD_30,
                                 numberOfContactsToDownload,
-                                startOffset);
+                                startOffset,
+                                mAccount);
                 request.execute(mObexSession);
                 List<VCardEntry> vcards = request.getList();
-                if (FAV_PATH.equals(path)) {
+                if (PbapPhonebook.FAVORITES_PATH.equals(path)) {
                     // mark each vcard as a favorite
                     for (VCardEntry v : vcards) {
                         v.setStarred(true);
@@ -438,7 +426,8 @@ class PbapClientConnectionHandler extends Handler {
     void downloadCallLog(String path, Map<String, Integer> callCounter) {
         try {
             RequestPullPhoneBook request =
-                    new RequestPullPhoneBook(path, mAccount, 0, VCARD_TYPE_30, 0, 0);
+                    new RequestPullPhoneBook(
+                            path, 0, PbapPhonebook.FORMAT_VCARD_30, 0, 0, mAccount);
             request.execute(mObexSession);
             CallLogPullRequest processor =
                     new CallLogPullRequest(

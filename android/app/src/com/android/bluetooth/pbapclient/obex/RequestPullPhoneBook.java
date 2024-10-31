@@ -32,22 +32,26 @@ final class RequestPullPhoneBook extends PbapClientRequest {
 
     private static final String TYPE = "x-bt/phonebook";
 
-    private PbapClientVcardList mResponse;
-
+    private final String mPhonebook;
+    private final byte mFormat;
+    private final int mMaxListCount;
+    private final int mListStartOffset;
     private Account mAccount;
 
-    private int mNewMissedCalls = -1;
-
-    private final byte mFormat;
+    private PbapPhonebook mResponse;
 
     RequestPullPhoneBook(
-            String pbName,
-            Account account,
-            long filter,
+            String phonebook,
+            long propertySelector,
             byte format,
             int maxListCount,
-            int listStartOffset) {
-        mAccount = account;
+            int listStartOffset,
+            Account account) {
+
+        if (format != PbapPhonebook.FORMAT_VCARD_21 && format != PbapPhonebook.FORMAT_VCARD_30) {
+            throw new IllegalArgumentException("Format should be v2.1 or v3.0");
+        }
+
         if (maxListCount < 0 || maxListCount > 65535) {
             throw new IllegalArgumentException("maxListCount should be [0..65535]");
         }
@@ -56,67 +60,56 @@ final class RequestPullPhoneBook extends PbapClientRequest {
             throw new IllegalArgumentException("listStartOffset should be [0..65535]");
         }
 
-        mHeaderSet.setHeader(HeaderSet.NAME, pbName);
+        mPhonebook = phonebook;
+        mFormat = format;
+        mMaxListCount = maxListCount;
+        mListStartOffset = listStartOffset;
+        mAccount = account;
 
+        mHeaderSet.setHeader(HeaderSet.NAME, phonebook);
         mHeaderSet.setHeader(HeaderSet.TYPE, TYPE);
 
         ObexAppParameters oap = new ObexAppParameters();
 
-        /* make sure format is one of allowed values */
-        if (format != PbapClientConnectionHandler.VCARD_TYPE_21
-                && format != PbapClientConnectionHandler.VCARD_TYPE_30) {
-            format = PbapClientConnectionHandler.VCARD_TYPE_21;
-        }
-
-        if (filter != 0) {
-            oap.add(OAP_TAGID_FILTER, filter);
-        }
-
         oap.add(OAP_TAGID_FORMAT, format);
 
-        /*
-         * maxListCount == 0 is a special case which is handled in
-         * RequestPullPhoneBookSize
-         */
-        if (maxListCount > 0) {
-            oap.add(OAP_TAGID_MAX_LIST_COUNT, (short) maxListCount);
-        } else {
-            oap.add(OAP_TAGID_MAX_LIST_COUNT, (short) 65535);
+        if (propertySelector != 0) {
+            oap.add(OAP_TAGID_PROPERTY_SELECTOR, propertySelector);
         }
 
         if (listStartOffset > 0) {
             oap.add(OAP_TAGID_LIST_START_OFFSET, (short) listStartOffset);
         }
 
-        oap.addToHeaderSet(mHeaderSet);
+        // maxListCount == 0 indicates to fetch all, in which case we set it to the upper bound
+        // Note that Java has no unsigned types. To capture an unsigned value in the range [0, 2^16)
+        // we need to use an int and cast to a short (2 bytes). This packs the bits we want.
+        if (mMaxListCount > 0) {
+            oap.add(OAP_TAGID_MAX_LIST_COUNT, (short) mMaxListCount);
+        } else {
+            oap.add(OAP_TAGID_MAX_LIST_COUNT, (short) 65535);
+        }
 
-        mFormat = format;
+        oap.addToHeaderSet(mHeaderSet);
     }
 
     @Override
     protected void readResponse(InputStream stream) throws IOException {
         Log.v(TAG, "readResponse");
 
-        mResponse = new PbapClientVcardList(mAccount, stream, mFormat);
+        mResponse = new PbapPhonebook(mPhonebook, mFormat, mListStartOffset, mAccount, stream);
         Log.d(TAG, "Read " + mResponse.getCount() + " entries");
     }
 
-    @Override
-    protected void readResponseHeaders(HeaderSet headerset) {
-        Log.v(TAG, "readResponseHeaders");
-
-        ObexAppParameters oap = ObexAppParameters.fromHeaderSet(headerset);
-
-        if (oap.exists(OAP_TAGID_NEW_MISSED_CALLS)) {
-            mNewMissedCalls = oap.getByte(OAP_TAGID_NEW_MISSED_CALLS);
-        }
+    public String getPhonebook() {
+        return mPhonebook;
     }
 
     public List<VCardEntry> getList() {
         return mResponse.getList();
     }
 
-    public int getNewMissedCalls() {
-        return mNewMissedCalls;
+    public PbapPhonebook getContacts() {
+        return mResponse;
     }
 }

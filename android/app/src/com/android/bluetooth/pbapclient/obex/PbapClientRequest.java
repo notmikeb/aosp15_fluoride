@@ -34,7 +34,7 @@ abstract class PbapClientRequest {
     protected static final byte OAP_TAGID_SEARCH_ATTRIBUTE = 0x03;
     protected static final byte OAP_TAGID_MAX_LIST_COUNT = 0x04;
     protected static final byte OAP_TAGID_LIST_START_OFFSET = 0x05;
-    protected static final byte OAP_TAGID_FILTER = 0x06;
+    protected static final byte OAP_TAGID_PROPERTY_SELECTOR = 0x06;
     protected static final byte OAP_TAGID_FORMAT = 0x07;
     protected static final byte OAP_TAGID_PHONEBOOK_SIZE = 0x08;
     protected static final byte OAP_TAGID_NEW_MISSED_CALLS = 0x09;

@@ -40,7 +40,7 @@ final class RequestPullPhoneBookSize extends PbapClientRequest {
         // See PBAP v1.2.3, Sec. 5.1.4.5.
         oap.add(OAP_TAGID_MAX_LIST_COUNT, (short) 0);
         if (filter != 0) {
-            oap.add(OAP_TAGID_FILTER, filter);
+            oap.add(OAP_TAGID_PROPERTY_SELECTOR, filter);
         }
         oap.addToHeaderSet(mHeaderSet);
     }
