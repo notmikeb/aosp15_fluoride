@@ -16,8 +16,6 @@
 
 package com.android.bluetooth.pbapclient;
 
-import android.util.Log;
-
 import com.android.bluetooth.ObexAppParameters;
 import com.android.obex.HeaderSet;
 
@@ -26,33 +24,32 @@ final class RequestPullPhoneBookSize extends PbapClientRequest {
 
     private static final String TYPE = "x-bt/phonebook";
 
-    private int mSize;
+    private int mSize = -1;
 
-    RequestPullPhoneBookSize(String pbName, long filter) {
-        mHeaderSet.setHeader(HeaderSet.NAME, pbName);
-
+    RequestPullPhoneBookSize(String phonebook, PbapApplicationParameters params) {
+        mHeaderSet.setHeader(HeaderSet.NAME, phonebook);
         mHeaderSet.setHeader(HeaderSet.TYPE, TYPE);
 
-        ObexAppParameters oap = new ObexAppParameters();
         // Set MaxListCount in the request to 0 to get PhonebookSize in the response.
         // If a vCardSelector is present in the request, then the result shall
         // contain the number of items that satisfy the selector’s criteria.
         // See PBAP v1.2.3, Sec. 5.1.4.5.
-        oap.add(OAP_TAGID_MAX_LIST_COUNT, (short) 0);
-        if (filter != 0) {
-            oap.add(OAP_TAGID_PROPERTY_SELECTOR, filter);
+        ObexAppParameters oap = new ObexAppParameters();
+        oap.add(PbapApplicationParameters.OAP_MAX_LIST_COUNT, (short) 0);
+
+        // Otherwise, listen to the property selector criteria passed in and ignore the rest
+        long properties = params.getPropertySelectorMask();
+        if (properties != PbapApplicationParameters.PROPERTIES_ALL) {
+            oap.add(PbapApplicationParameters.OAP_PROPERTY_SELECTOR, properties);
         }
         oap.addToHeaderSet(mHeaderSet);
     }
 
     @Override
     protected void readResponseHeaders(HeaderSet headerset) {
-        Log.v(TAG, "readResponseHeaders");
-
         ObexAppParameters oap = ObexAppParameters.fromHeaderSet(headerset);
-
-        if (oap.exists(OAP_TAGID_PHONEBOOK_SIZE)) {
-            mSize = oap.getShort(OAP_TAGID_PHONEBOOK_SIZE);
+        if (oap.exists(PbapApplicationParameters.OAP_PHONEBOOK_SIZE)) {
+            mSize = oap.getShort(PbapApplicationParameters.OAP_PHONEBOOK_SIZE);
         }
     }
 

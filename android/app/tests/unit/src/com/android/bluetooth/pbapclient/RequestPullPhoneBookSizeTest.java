@@ -36,7 +36,13 @@ public class RequestPullPhoneBookSizeTest {
 
     @Before
     public void setUp() {
-        mRequest = new RequestPullPhoneBookSize(/* pbName= */ "phonebook", /* filter= */ 1);
+        PbapApplicationParameters params =
+                new PbapApplicationParameters(
+                        PbapApplicationParameters.PROPERTIES_ALL,
+                        PbapPhonebook.FORMAT_VCARD_30,
+                        PbapApplicationParameters.MAX_PHONEBOOK_SIZE,
+                        /* startOffset= */ 0);
+        mRequest = new RequestPullPhoneBookSize(/* pbName= */ "phonebook", /* params= */ params);
     }
 
     @Test
@@ -44,7 +50,7 @@ public class RequestPullPhoneBookSizeTest {
         try {
             HeaderSet headerSet = new HeaderSet();
             mRequest.readResponseHeaders(headerSet);
-            assertThat(mRequest.getSize()).isEqualTo(0);
+            assertThat(mRequest.getSize()).isEqualTo(-1);
         } catch (Exception e) {
             assertWithMessage("Exception should not happen.").fail();
         }

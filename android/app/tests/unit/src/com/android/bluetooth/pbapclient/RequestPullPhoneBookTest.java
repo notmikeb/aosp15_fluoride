@@ -38,54 +38,15 @@ public class RequestPullPhoneBookTest {
     private static final Account ACCOUNT = mock(Account.class);
 
     @Test
-    public void constructor_wrongMaxListCount_throwsIAE() {
-        final long filter = 0;
-        final byte format = PbapPhonebook.FORMAT_VCARD_30;
-        final int listStartOffset = 10;
-
-        final int wrongMaxListCount = -1;
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () ->
-                        new RequestPullPhoneBook(
-                                PB_NAME,
-                                filter,
-                                format,
-                                wrongMaxListCount,
-                                listStartOffset,
-                                ACCOUNT));
-    }
-
-    @Test
-    public void constructor_wrongListStartOffset_throwsIAE() {
-        final long filter = 0;
-        final byte format = PbapPhonebook.FORMAT_VCARD_30;
-        final int maxListCount = 100;
-
-        final int wrongListStartOffset = -1;
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () ->
-                        new RequestPullPhoneBook(
-                                PB_NAME,
-                                filter,
-                                format,
-                                maxListCount,
-                                wrongListStartOffset,
-                                ACCOUNT));
-    }
-
-    @Test
     public void readResponse_failWithInputStreamThatThrowsIOEWhenRead() {
-        final long filter = 1;
-        final byte format = 0; // Will be properly handled as VCARD_TYPE_21.
-        final int maxListCount = 0; // Will be specially handled as 65535.
-        final int listStartOffset = 10;
-        RequestPullPhoneBook request =
-                new RequestPullPhoneBook(
-                        PB_NAME, filter, format, maxListCount, listStartOffset, ACCOUNT);
+        PbapApplicationParameters params =
+                new PbapApplicationParameters(
+                        PbapApplicationParameters.PROPERTY_VERSION,
+                        PbapPhonebook.FORMAT_VCARD_21,
+                        PbapApplicationParameters.RETURN_SIZE_ONLY,
+                        /* startOffset= */ 10);
+
+        RequestPullPhoneBook request = new RequestPullPhoneBook(PB_NAME, params, ACCOUNT);
 
         final InputStream is =
                 new InputStream() {

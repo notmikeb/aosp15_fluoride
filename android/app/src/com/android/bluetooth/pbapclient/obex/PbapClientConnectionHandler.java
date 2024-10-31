@@ -57,10 +57,6 @@ class PbapClientConnectionHandler extends Handler {
     // progress when Bluetooth stack is torn down.
     private static final int DEFAULT_BATCH_SIZE = 250;
 
-    // Upper limit on the indices of the vcf cards/entries, inclusive,
-    // i.e., valid indices are [0, 1, ... , UPPER_LIMIT]
-    private static final int UPPER_LIMIT = 65535;
-
     static final int MSG_CONNECT = 1;
     static final int MSG_DISCONNECT = 2;
     static final int MSG_DOWNLOAD = 3;
@@ -90,26 +86,8 @@ class PbapClientConnectionHandler extends Handler {
     private static final int PBAP_FEATURE_DEFAULT_IMAGE_FORMAT = 0x00000200;
     private static final int PBAP_FEATURE_DOWNLOADING = 0x00000001;
 
-    private static final long PBAP_FILTER_VERSION = 1 << 0;
-    private static final long PBAP_FILTER_FN = 1 << 1;
-    private static final long PBAP_FILTER_N = 1 << 2;
-    private static final long PBAP_FILTER_PHOTO = 1 << 3;
-    private static final long PBAP_FILTER_ADR = 1 << 5;
-    private static final long PBAP_FILTER_TEL = 1 << 7;
-    private static final long PBAP_FILTER_EMAIL = 1 << 8;
-    private static final long PBAP_FILTER_NICKNAME = 1 << 23;
-
     private static final int PBAP_SUPPORTED_FEATURE =
             PBAP_FEATURE_DEFAULT_IMAGE_FORMAT | PBAP_FEATURE_DOWNLOADING;
-    private static final long PBAP_REQUESTED_FIELDS =
-            PBAP_FILTER_VERSION
-                    | PBAP_FILTER_FN
-                    | PBAP_FILTER_N
-                    | PBAP_FILTER_PHOTO
-                    | PBAP_FILTER_ADR
-                    | PBAP_FILTER_EMAIL
-                    | PBAP_FILTER_TEL
-                    | PBAP_FILTER_NICKNAME;
 
     @VisibleForTesting static final int L2CAP_INVALID_PSM = -1;
 
@@ -322,7 +300,7 @@ class PbapClientConnectionHandler extends Handler {
 
                 if (mPseRec.getProfileVersion() >= PBAP_V1_2) {
                     oap.add(
-                            PbapClientRequest.OAP_TAGID_PBAP_SUPPORTED_FEATURES,
+                            PbapApplicationParameters.OAP_PBAP_SUPPORTED_FEATURES,
                             PBAP_SUPPORTED_FEATURE);
                 }
 
@@ -369,9 +347,15 @@ class PbapClientConnectionHandler extends Handler {
             PhonebookPullRequest processor =
                     new PhonebookPullRequest(mPbapClientStateMachine.getContext());
 
+            PbapApplicationParameters params =
+                    new PbapApplicationParameters(
+                            PbapApplicationParameters.PROPERTIES_ALL,
+                            /* format, unused */ (byte) 0,
+                            PbapApplicationParameters.RETURN_SIZE_ONLY,
+                            /* list start offeset, start from beginning */ 0);
+
             // Download contacts in batches of size DEFAULT_BATCH_SIZE
-            RequestPullPhoneBookSize requestPbSize =
-                    new RequestPullPhoneBookSize(path, PBAP_REQUESTED_FIELDS);
+            RequestPullPhoneBookSize requestPbSize = new RequestPullPhoneBookSize(path, params);
             requestPbSize.execute(mObexSession);
 
             int numberOfContactsRemaining = requestPbSize.getSize();
@@ -385,19 +369,21 @@ class PbapClientConnectionHandler extends Handler {
                 numberOfContactsRemaining -= 1;
             }
 
-            while ((numberOfContactsRemaining > 0) && (startOffset <= UPPER_LIMIT)) {
+            while ((numberOfContactsRemaining > 0)
+                    && (startOffset <= PbapApplicationParameters.MAX_PHONEBOOK_SIZE)) {
                 int numberOfContactsToDownload =
                         Math.min(
                                 Math.min(DEFAULT_BATCH_SIZE, numberOfContactsRemaining),
-                                UPPER_LIMIT - startOffset + 1);
-                RequestPullPhoneBook request =
-                        new RequestPullPhoneBook(
-                                path,
-                                PBAP_REQUESTED_FIELDS,
+                                PbapApplicationParameters.MAX_PHONEBOOK_SIZE - startOffset + 1);
+
+                params =
+                        new PbapApplicationParameters(
+                                PbapApplicationParameters.PROPERTIES_ALL,
                                 PbapPhonebook.FORMAT_VCARD_30,
                                 numberOfContactsToDownload,
-                                startOffset,
-                                mAccount);
+                                startOffset);
+
+                RequestPullPhoneBook request = new RequestPullPhoneBook(path, params, mAccount);
                 request.execute(mObexSession);
                 List<VCardEntry> vcards = request.getList();
                 if (PbapPhonebook.FAVORITES_PATH.equals(path)) {
@@ -412,7 +398,8 @@ class PbapClientConnectionHandler extends Handler {
                 startOffset += numberOfContactsToDownload;
                 numberOfContactsRemaining -= numberOfContactsToDownload;
             }
-            if ((startOffset > UPPER_LIMIT) && (numberOfContactsRemaining > 0)) {
+            if ((startOffset > PbapApplicationParameters.MAX_PHONEBOOK_SIZE)
+                    && (numberOfContactsRemaining > 0)) {
                 Log.w(TAG, "Download contacts incomplete, index exceeded upper limit.");
             }
         } catch (IOException e) {
@@ -425,9 +412,14 @@ class PbapClientConnectionHandler extends Handler {
     @VisibleForTesting
     void downloadCallLog(String path, Map<String, Integer> callCounter) {
         try {
-            RequestPullPhoneBook request =
-                    new RequestPullPhoneBook(
-                            path, 0, PbapPhonebook.FORMAT_VCARD_30, 0, 0, mAccount);
+            PbapApplicationParameters params =
+                    new PbapApplicationParameters(
+                            /* properties, unused for call logs */ 0,
+                            PbapPhonebook.FORMAT_VCARD_30,
+                            0,
+                            0);
+
+            RequestPullPhoneBook request = new RequestPullPhoneBook(path, params, mAccount);
             request.execute(mObexSession);
             CallLogPullRequest processor =
                     new CallLogPullRequest(

@@ -40,54 +40,39 @@ final class RequestPullPhoneBook extends PbapClientRequest {
 
     private PbapPhonebook mResponse;
 
-    RequestPullPhoneBook(
-            String phonebook,
-            long propertySelector,
-            byte format,
-            int maxListCount,
-            int listStartOffset,
-            Account account) {
-
-        if (format != PbapPhonebook.FORMAT_VCARD_21 && format != PbapPhonebook.FORMAT_VCARD_30) {
-            throw new IllegalArgumentException("Format should be v2.1 or v3.0");
-        }
-
-        if (maxListCount < 0 || maxListCount > 65535) {
-            throw new IllegalArgumentException("maxListCount should be [0..65535]");
-        }
-
-        if (listStartOffset < 0 || listStartOffset > 65535) {
-            throw new IllegalArgumentException("listStartOffset should be [0..65535]");
-        }
-
+    RequestPullPhoneBook(String phonebook, PbapApplicationParameters params, Account account) {
         mPhonebook = phonebook;
-        mFormat = format;
-        mMaxListCount = maxListCount;
-        mListStartOffset = listStartOffset;
+        mFormat = params.getVcardFormat();
+        mMaxListCount = params.getMaxListCount();
+        mListStartOffset = params.getListStartOffset();
         mAccount = account;
+
+        long properties = params.getPropertySelectorMask();
 
         mHeaderSet.setHeader(HeaderSet.NAME, phonebook);
         mHeaderSet.setHeader(HeaderSet.TYPE, TYPE);
 
         ObexAppParameters oap = new ObexAppParameters();
 
-        oap.add(OAP_TAGID_FORMAT, format);
+        oap.add(PbapApplicationParameters.OAP_FORMAT, mFormat);
 
-        if (propertySelector != 0) {
-            oap.add(OAP_TAGID_PROPERTY_SELECTOR, propertySelector);
+        if (properties != 0) {
+            oap.add(PbapApplicationParameters.OAP_PROPERTY_SELECTOR, properties);
         }
 
-        if (listStartOffset > 0) {
-            oap.add(OAP_TAGID_LIST_START_OFFSET, (short) listStartOffset);
+        if (mListStartOffset > 0) {
+            oap.add(PbapApplicationParameters.OAP_LIST_START_OFFSET, (short) mListStartOffset);
         }
 
         // maxListCount == 0 indicates to fetch all, in which case we set it to the upper bound
         // Note that Java has no unsigned types. To capture an unsigned value in the range [0, 2^16)
         // we need to use an int and cast to a short (2 bytes). This packs the bits we want.
         if (mMaxListCount > 0) {
-            oap.add(OAP_TAGID_MAX_LIST_COUNT, (short) mMaxListCount);
+            oap.add(PbapApplicationParameters.OAP_MAX_LIST_COUNT, (short) mMaxListCount);
         } else {
-            oap.add(OAP_TAGID_MAX_LIST_COUNT, (short) 65535);
+            oap.add(
+                    PbapApplicationParameters.OAP_MAX_LIST_COUNT,
+                    (short) PbapApplicationParameters.MAX_PHONEBOOK_SIZE);
         }
 
         oap.addToHeaderSet(mHeaderSet);
