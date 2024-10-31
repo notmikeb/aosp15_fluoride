@@ -1530,9 +1530,22 @@ impl StateMachineInternal {
                 let restart_count =
                     self.get_state(hci, |a: &AdapterState| Some(a.restart_count)).unwrap_or(0);
 
-                // If we've restarted a number of times, attempt to use the reset mechanism instead
-                // of retrying a start.
-                if restart_count >= RESET_ON_RESTART_COUNT {
+                if !present {
+                    // If the index doesn't present, we have nothing to do - We can't even trigger
+                    // the hardware reset because the sysfs reset entry would disappear as well.
+                    // After the index presents, we shall try restarting.
+                    warn!(
+                        "{} stopped unexpectedly. After {} restarts, index disappeared.",
+                        hci, restart_count
+                    );
+                    self.modify_state(hci, |s: &mut AdapterState| {
+                        s.state = ProcessState::Off;
+                        s.restart_count = 0;
+                    });
+                    (ProcessState::Off, CommandTimeoutAction::CancelTimer)
+                } else if restart_count >= RESET_ON_RESTART_COUNT {
+                    // If we've restarted a number of times, attempt to use the reset mechanism
+                    // instead of retrying a start.
                     warn!(
                         "{} stopped unexpectedly. After {} restarts, trying a reset recovery.",
                         hci, restart_count
@@ -1599,12 +1612,26 @@ impl StateMachineInternal {
                 let restart_count =
                     self.get_state(hci, |a: &AdapterState| Some(a.restart_count)).unwrap_or(0);
 
-                // If we've restarted a number of times, attempt to use the reset mechanism instead
-                // of retrying a start.
-                if restart_count >= RESET_ON_RESTART_COUNT {
+                if !present {
+                    // If the index doesn't present, we have nothing to do - We can't even trigger
+                    // the hardware reset because the sysfs reset entry would disappear as well.
+                    // After the index presents, we shall try restarting.
                     warn!(
-                        "{} timed out while starting (present={}). After {} restarts, trying a reset recovery.",
-                        hci, present, restart_count
+                        "{} timed out while starting. After {} restarts, index disappeared.",
+                        hci, restart_count
+                    );
+                    self.modify_state(hci, |s: &mut AdapterState| {
+                        s.state = ProcessState::Off;
+                        s.restart_count = 0;
+                    });
+                    self.process_manager.stop(hci, self.get_real_hci_by_virtual_id(hci));
+                    StateMachineTimeoutActions::Noop
+                } else if restart_count >= RESET_ON_RESTART_COUNT {
+                    // If we've restarted a number of times, attempt to use the reset mechanism
+                    // instead of retrying a start.
+                    warn!(
+                        "{} timed out while starting. After {} restarts, trying a reset recovery.",
+                        hci, restart_count
                     );
                     // Reset the restart count since we're attempting a reset now.
                     self.modify_state(hci, |s: &mut AdapterState| {
@@ -1618,9 +1645,8 @@ impl StateMachineInternal {
                     StateMachineTimeoutActions::Noop
                 } else {
                     warn!(
-                        "{} timed out while starting (present={}), try restarting (attempt #{})",
+                        "{} timed out while starting, try restarting (attempt #{})",
                         hci,
-                        present,
                         restart_count + 1
                     );
                     self.modify_state(hci, |s: &mut AdapterState| {
@@ -1934,11 +1960,9 @@ mod tests {
             assert_eq!(state_machine.get_process_state(DEFAULT_ADAPTER), ProcessState::TurningOn);
         });
 
-        // Stopped with no presence should restart if config enabled.
+        // Stopped with no presence should not restart even if config enabled.
         tokio::runtime::Runtime::new().unwrap().block_on(async {
             let mut process_manager = MockProcessManager::new();
-            process_manager.expect_start();
-            // Expect to start again.
             process_manager.expect_start();
             let mut state_machine = make_state_machine(process_manager);
             state_machine.action_on_hci_presence_changed(DEFAULT_ADAPTER, true);
@@ -1948,9 +1972,9 @@ mod tests {
             state_machine.action_on_hci_presence_changed(DEFAULT_ADAPTER, false);
             assert_eq!(
                 state_machine.action_on_bluetooth_stopped(DEFAULT_ADAPTER),
-                (ProcessState::TurningOn, CommandTimeoutAction::ResetTimer)
+                (ProcessState::Off, CommandTimeoutAction::CancelTimer)
             );
-            assert_eq!(state_machine.get_process_state(DEFAULT_ADAPTER), ProcessState::TurningOn);
+            assert_eq!(state_machine.get_process_state(DEFAULT_ADAPTER), ProcessState::Off);
         });
 
         // If floss was disabled and we see stopped, we shouldn't restart.
@@ -2084,7 +2108,6 @@ mod tests {
             let mut process_manager = MockProcessManager::new();
             process_manager.expect_start();
             process_manager.expect_stop();
-            process_manager.expect_start();
             let mut state_machine = make_state_machine(process_manager);
             state_machine.action_on_hci_presence_changed(DEFAULT_ADAPTER, true);
             state_machine.set_config_enabled(DEFAULT_ADAPTER, true);
@@ -2093,9 +2116,9 @@ mod tests {
             state_machine.action_on_hci_presence_changed(DEFAULT_ADAPTER, false);
             assert_eq!(
                 state_machine.action_on_command_timeout(DEFAULT_ADAPTER),
-                StateMachineTimeoutActions::RetryStart
+                StateMachineTimeoutActions::Noop
             );
-            assert_eq!(state_machine.get_process_state(DEFAULT_ADAPTER), ProcessState::TurningOn);
+            assert_eq!(state_machine.get_process_state(DEFAULT_ADAPTER), ProcessState::Off);
         });
     }
 
