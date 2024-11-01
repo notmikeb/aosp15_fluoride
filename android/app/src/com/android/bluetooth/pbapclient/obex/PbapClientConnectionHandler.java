@@ -85,13 +85,11 @@ class PbapClientConnectionHandler extends Handler {
                 0x66
             };
 
-    private static final int PBAP_SUPPORTED_FEATURES =
-            PbapSdpRecord.FEATURE_DEFAULT_IMAGE_FORMAT | PbapSdpRecord.FEATURE_DOWNLOADING;
-
     private Account mAccount;
     private AccountManager mAccountManager;
     private BluetoothSocket mSocket;
     private final BluetoothDevice mDevice;
+    private final int mLocalSupportedFeatures;
     // PSE SDP Record for current device.
     private PbapSdpRecord mPseRec = null;
     private ClientSession mObexSession;
@@ -108,6 +106,7 @@ class PbapClientConnectionHandler extends Handler {
     PbapClientConnectionHandler(Builder pceHandlerbuild) {
         super(pceHandlerbuild.mLooper);
         mDevice = pceHandlerbuild.mDevice;
+        mLocalSupportedFeatures = pceHandlerbuild.mLocalSupportedFeatures;
         mContext = pceHandlerbuild.mContext;
         mPbapClientStateMachine = pceHandlerbuild.mClientStateMachine;
         mAuth = new PbapClientObexAuthenticator();
@@ -123,10 +122,16 @@ class PbapClientConnectionHandler extends Handler {
         private Looper mLooper;
         private Context mContext;
         private BluetoothDevice mDevice;
+        private int mLocalSupportedFeatures;
         private PbapClientStateMachine mClientStateMachine;
 
         public Builder setLooper(Looper loop) {
             this.mLooper = loop;
+            return this;
+        }
+
+        public Builder setLocalSupportedFeatures(int features) {
+            this.mLocalSupportedFeatures = features;
             return this;
         }
 
@@ -295,7 +300,7 @@ class PbapClientConnectionHandler extends Handler {
                 if (mPseRec.getProfileVersion() >= PbapSdpRecord.VERSION_1_2) {
                     oap.add(
                             PbapApplicationParameters.OAP_PBAP_SUPPORTED_FEATURES,
-                            PBAP_SUPPORTED_FEATURES);
+                            mLocalSupportedFeatures);
                 }
 
                 oap.addToHeaderSet(connectionRequest);
