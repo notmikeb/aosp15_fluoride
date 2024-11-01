@@ -30,9 +30,8 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class RequestPullPhoneBookMetadataTest {
-
-    RequestPullPhoneBookMetadata mRequest;
+public class RequestPullPhonebookMetadataTest {
+    RequestPullPhonebookMetadata mRequest;
 
     @Before
     public void setUp() {
@@ -43,7 +42,7 @@ public class RequestPullPhoneBookMetadataTest {
                         PbapApplicationParameters.MAX_PHONEBOOK_SIZE,
                         /* startOffset= */ 0);
         mRequest =
-                new RequestPullPhoneBookMetadata(/* pbName= */ "phonebook", /* params= */ params);
+                new RequestPullPhonebookMetadata(/* pbName= */ "phonebook", /* params= */ params);
     }
 
     @Test

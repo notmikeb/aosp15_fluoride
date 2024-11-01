@@ -32,7 +32,7 @@ import java.io.InputStream;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class RequestPullPhoneBookTest {
+public class RequestPullPhonebookTest {
 
     private static final String PB_NAME = "phonebook";
     private static final Account ACCOUNT = mock(Account.class);
@@ -46,7 +46,7 @@ public class RequestPullPhoneBookTest {
                         PbapApplicationParameters.RETURN_SIZE_ONLY,
                         /* startOffset= */ 10);
 
-        RequestPullPhoneBook request = new RequestPullPhoneBook(PB_NAME, params, ACCOUNT);
+        RequestPullPhonebook request = new RequestPullPhonebook(PB_NAME, params, ACCOUNT);
 
         final InputStream is =
                 new InputStream() {

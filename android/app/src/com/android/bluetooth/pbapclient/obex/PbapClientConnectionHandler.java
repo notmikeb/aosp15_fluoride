@@ -355,8 +355,8 @@ class PbapClientConnectionHandler extends Handler {
                             /* list start offeset, start from beginning */ 0);
 
             // Download contacts in batches of size DEFAULT_BATCH_SIZE
-            RequestPullPhoneBookMetadata requestPbSize =
-                    new RequestPullPhoneBookMetadata(path, params);
+            RequestPullPhonebookMetadata requestPbSize =
+                    new RequestPullPhonebookMetadata(path, params);
             requestPbSize.execute(mObexSession);
 
             int numberOfContactsRemaining = requestPbSize.getMetadata().getSize();
@@ -384,7 +384,7 @@ class PbapClientConnectionHandler extends Handler {
                                 numberOfContactsToDownload,
                                 startOffset);
 
-                RequestPullPhoneBook request = new RequestPullPhoneBook(path, params, mAccount);
+                RequestPullPhonebook request = new RequestPullPhonebook(path, params, mAccount);
                 request.execute(mObexSession);
                 List<VCardEntry> vcards = request.getList();
                 if (PbapPhonebook.FAVORITES_PATH.equals(path)) {
@@ -420,7 +420,7 @@ class PbapClientConnectionHandler extends Handler {
                             0,
                             0);
 
-            RequestPullPhoneBook request = new RequestPullPhoneBook(path, params, mAccount);
+            RequestPullPhonebook request = new RequestPullPhonebook(path, params, mAccount);
             request.execute(mObexSession);
             CallLogPullRequest processor =
                     new CallLogPullRequest(
