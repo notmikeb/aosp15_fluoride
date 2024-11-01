@@ -30,9 +30,9 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class RequestPullPhoneBookSizeTest {
+public class RequestPullPhoneBookMetadataTest {
 
-    RequestPullPhoneBookSize mRequest;
+    RequestPullPhoneBookMetadata mRequest;
 
     @Before
     public void setUp() {
@@ -42,7 +42,8 @@ public class RequestPullPhoneBookSizeTest {
                         PbapPhonebook.FORMAT_VCARD_30,
                         PbapApplicationParameters.MAX_PHONEBOOK_SIZE,
                         /* startOffset= */ 0);
-        mRequest = new RequestPullPhoneBookSize(/* pbName= */ "phonebook", /* params= */ params);
+        mRequest =
+                new RequestPullPhoneBookMetadata(/* pbName= */ "phonebook", /* params= */ params);
     }
 
     @Test
@@ -50,7 +51,7 @@ public class RequestPullPhoneBookSizeTest {
         try {
             HeaderSet headerSet = new HeaderSet();
             mRequest.readResponseHeaders(headerSet);
-            assertThat(mRequest.getSize()).isEqualTo(-1);
+            assertThat(mRequest.getMetadata().getSize()).isEqualTo(-1);
         } catch (Exception e) {
             assertWithMessage("Exception should not happen.").fail();
         }

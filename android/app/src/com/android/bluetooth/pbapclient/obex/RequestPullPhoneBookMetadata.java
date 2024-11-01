@@ -19,14 +19,24 @@ package com.android.bluetooth.pbapclient;
 import com.android.bluetooth.ObexAppParameters;
 import com.android.obex.HeaderSet;
 
-final class RequestPullPhoneBookSize extends PbapClientRequest {
-    private static final String TAG = RequestPullPhoneBookSize.class.getSimpleName();
+/**
+ * This implements a PullPhonebook request, with the goal of only fetching metadata for the given
+ * phonebook, but not the actual phonebook contents itself.
+ *
+ * <p>This is done by requesting the phonebook, but omitting the MaxListCount parameter, signaling
+ * that we're not interested in the contents (PBAP 1.2.3, Section 5.1, C7 of the Response Format
+ * table)
+ */
+final class RequestPullPhoneBookMetadata extends PbapClientRequest {
+    private static final String TAG = RequestPullPhoneBookMetadata.class.getSimpleName();
 
     private static final String TYPE = "x-bt/phonebook";
 
-    private int mSize = -1;
+    private final String mPhonebook;
+    private PbapPhonebookMetadata mResponse;
 
-    RequestPullPhoneBookSize(String phonebook, PbapApplicationParameters params) {
+    RequestPullPhoneBookMetadata(String phonebook, PbapApplicationParameters params) {
+        mPhonebook = phonebook;
         mHeaderSet.setHeader(HeaderSet.NAME, phonebook);
         mHeaderSet.setHeader(HeaderSet.TYPE, TYPE);
 
@@ -47,13 +57,30 @@ final class RequestPullPhoneBookSize extends PbapClientRequest {
 
     @Override
     protected void readResponseHeaders(HeaderSet headerset) {
+        int size = PbapPhonebookMetadata.INVALID_SIZE;
+        String databaseIdentifier = PbapPhonebookMetadata.INVALID_DATABASE_IDENTIFIER;
+        String primaryVersionCounter = PbapPhonebookMetadata.INVALID_VERSION_COUNTER;
+        String secondaryVersionCounter = PbapPhonebookMetadata.INVALID_VERSION_COUNTER;
+
         ObexAppParameters oap = ObexAppParameters.fromHeaderSet(headerset);
         if (oap.exists(PbapApplicationParameters.OAP_PHONEBOOK_SIZE)) {
-            mSize = oap.getShort(PbapApplicationParameters.OAP_PHONEBOOK_SIZE);
+            size = oap.getShort(PbapApplicationParameters.OAP_PHONEBOOK_SIZE);
         }
+
+        mResponse =
+                new PbapPhonebookMetadata(
+                        mPhonebook,
+                        size,
+                        databaseIdentifier,
+                        primaryVersionCounter,
+                        secondaryVersionCounter);
     }
 
-    public int getSize() {
-        return mSize;
+    public String getPhonebook() {
+        return mPhonebook;
+    }
+
+    public PbapPhonebookMetadata getMetadata() {
+        return mResponse;
     }
 }
