@@ -28,13 +28,11 @@ import androidx.room.Embedded;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-import com.android.internal.annotations.VisibleForTesting;
-
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity(tableName = "metadata")
-@VisibleForTesting
+
 public class Metadata {
     @PrimaryKey @NonNull private String address;
 
@@ -117,7 +115,6 @@ public class Metadata {
         }
     }
 
-    @VisibleForTesting
     public String getAddress() {
         return address;
     }
@@ -205,7 +202,6 @@ public class Metadata {
         }
     }
 
-    @VisibleForTesting
     public int getProfileConnectionPolicy(int profile) {
         switch (profile) {
             case BluetoothProfile.A2DP:
@@ -345,7 +341,6 @@ public class Metadata {
         }
     }
 
-    @VisibleForTesting
     public byte[] getCustomizedMeta(int key) {
         byte[] value = null;
         switch (key) {
