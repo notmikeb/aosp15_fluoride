@@ -396,6 +396,7 @@ cc_test {
         "libbluetooth_gd",
         "libbluetooth_log",
         "libchrome",
+        "libcom.android.sysprop.bluetooth.wrapped",
         "libosi",
     ],
     shared_libs: [
@@ -430,6 +431,7 @@ cc_test {
         "libbluetooth-types",
         "libbluetooth_log",
         "libchrome",
+        "libcom.android.sysprop.bluetooth.wrapped",
         "libosi",
     ],
     shared_libs: [
