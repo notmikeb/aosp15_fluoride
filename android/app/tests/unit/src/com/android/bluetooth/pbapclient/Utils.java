@@ -16,6 +16,7 @@
 
 package com.android.bluetooth.pbapclient;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 public class Utils {
@@ -140,5 +141,18 @@ public class Utils {
         sb.append("END:VCARD");
 
         return sb.toString();
+    }
+
+    public static byte[] shortToByteArray(short s) {
+        ByteBuffer ret = ByteBuffer.allocate(2);
+        ret.putShort(s);
+        return ret.array();
+    }
+
+    public static byte[] longToByteArray(long l) {
+        ByteBuffer ret = ByteBuffer.allocate(16);
+        ret.putLong(0); // Most significant bytes
+        ret.putLong(l); // Least significant bytes
+        return ret.array();
     }
 }
