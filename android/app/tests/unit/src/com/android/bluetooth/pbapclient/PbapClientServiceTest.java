@@ -169,8 +169,8 @@ public class PbapClientServiceTest {
 
     @Test
     public void onAccountsChanged_fromNulltoEmpty_tryDownloadIfConnectedCalled() {
-        PbapClientStateMachine sm = mock(PbapClientStateMachine.class);
-        mService.mPbapClientStateMachineMap.put(mRemoteDevice, sm);
+        PbapClientStateMachineOld sm = mock(PbapClientStateMachineOld.class);
+        mService.mPbapClientStateMachineOldMap.put(mRemoteDevice, sm);
 
         PbapClientService.PbapClientAccountManagerCallback callback =
                 mService.new PbapClientAccountManagerCallback();
@@ -181,8 +181,8 @@ public class PbapClientServiceTest {
 
     @Test
     public void onAccountsChanged_fromEmptyToOne_tryDownloadIfConnectedNotCalled() {
-        PbapClientStateMachine sm = mock(PbapClientStateMachine.class);
-        mService.mPbapClientStateMachineMap.put(mRemoteDevice, sm);
+        PbapClientStateMachineOld sm = mock(PbapClientStateMachineOld.class);
+        mService.mPbapClientStateMachineOldMap.put(mRemoteDevice, sm);
 
         PbapClientService.PbapClientAccountManagerCallback callback =
                 mService.new PbapClientAccountManagerCallback();
@@ -197,8 +197,8 @@ public class PbapClientServiceTest {
     @Test
     public void aclDisconnected_withLeTransport_doesNotCallDisconnect() {
         int connectionState = BluetoothProfile.STATE_CONNECTED;
-        PbapClientStateMachine sm = mock(PbapClientStateMachine.class);
-        mService.mPbapClientStateMachineMap.put(mRemoteDevice, sm);
+        PbapClientStateMachineOld sm = mock(PbapClientStateMachineOld.class);
+        mService.mPbapClientStateMachineOldMap.put(mRemoteDevice, sm);
         when(sm.getConnectionState(mRemoteDevice)).thenReturn(connectionState);
 
         mService.aclDisconnected(mRemoteDevice, BluetoothDevice.TRANSPORT_LE);
@@ -210,8 +210,8 @@ public class PbapClientServiceTest {
     @Test
     public void aclDisconnected_withBrEdrTransport_callsDisconnect() {
         int connectionState = BluetoothProfile.STATE_CONNECTED;
-        PbapClientStateMachine sm = mock(PbapClientStateMachine.class);
-        mService.mPbapClientStateMachineMap.put(mRemoteDevice, sm);
+        PbapClientStateMachineOld sm = mock(PbapClientStateMachineOld.class);
+        mService.mPbapClientStateMachineOldMap.put(mRemoteDevice, sm);
         when(sm.getConnectionState(mRemoteDevice)).thenReturn(connectionState);
 
         mService.aclDisconnected(mRemoteDevice, BluetoothDevice.TRANSPORT_BREDR);
@@ -237,12 +237,12 @@ public class PbapClientServiceTest {
 
     @Test
     public void cleanUpDevice() {
-        PbapClientStateMachine sm = mock(PbapClientStateMachine.class);
-        mService.mPbapClientStateMachineMap.put(mRemoteDevice, sm);
+        PbapClientStateMachineOld sm = mock(PbapClientStateMachineOld.class);
+        mService.mPbapClientStateMachineOldMap.put(mRemoteDevice, sm);
 
         mService.cleanupDevice(mRemoteDevice);
 
-        assertThat(mService.mPbapClientStateMachineMap).doesNotContainKey(mRemoteDevice);
+        assertThat(mService.mPbapClientStateMachineOldMap).doesNotContainKey(mRemoteDevice);
     }
 
     // *********************************************************************************************
@@ -320,8 +320,8 @@ public class PbapClientServiceTest {
 
     @Test
     public void testDisconnect_whenConnected_returnsTrue() {
-        PbapClientStateMachine sm = mock(PbapClientStateMachine.class);
-        mService.mPbapClientStateMachineMap.put(mRemoteDevice, sm);
+        PbapClientStateMachineOld sm = mock(PbapClientStateMachineOld.class);
+        mService.mPbapClientStateMachineOldMap.put(mRemoteDevice, sm);
 
         assertThat(mService.disconnect(mRemoteDevice)).isTrue();
 
@@ -340,8 +340,8 @@ public class PbapClientServiceTest {
 
     @Test
     public void dump_callsStateMachineDump() {
-        PbapClientStateMachine sm = mock(PbapClientStateMachine.class);
-        mService.mPbapClientStateMachineMap.put(mRemoteDevice, sm);
+        PbapClientStateMachineOld sm = mock(PbapClientStateMachineOld.class);
+        mService.mPbapClientStateMachineOldMap.put(mRemoteDevice, sm);
         StringBuilder builder = new StringBuilder();
 
         mService.dump(builder);

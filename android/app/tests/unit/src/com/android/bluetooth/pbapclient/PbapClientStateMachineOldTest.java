@@ -49,10 +49,10 @@ import org.mockito.junit.MockitoRule;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
-public class PbapClientStateMachineTest {
-    private static final String TAG = "PbapClientStateMachineTest";
+public class PbapClientStateMachineOldTest {
+    private static final String TAG = "PbapClientStateMachineOldTest";
 
-    private PbapClientStateMachine mPbapClientStateMachine = null;
+    private PbapClientStateMachineOld mPbapClientStateMachine = null;
 
     @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
@@ -79,7 +79,7 @@ public class PbapClientStateMachineTest {
         when(mMockPbapClientService.getSystemService(UserManager.class))
                 .thenReturn(mMockUserManager);
         mPbapClientStateMachine =
-                new PbapClientStateMachine(mMockPbapClientService, mTestDevice, mMockHandler);
+                new PbapClientStateMachineOld(mMockPbapClientService, mTestDevice, mMockHandler);
         mPbapClientStateMachine.start();
     }
 

@@ -62,6 +62,7 @@ import com.android.bluetooth.Utils;
 import com.android.bluetooth.btservice.AdapterService;
 import com.android.bluetooth.btservice.MetricsLogger;
 import com.android.bluetooth.btservice.ProfileService;
+import com.android.bluetooth.flags.Flags;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.util.IState;
 import com.android.internal.util.State;
@@ -70,8 +71,8 @@ import com.android.internal.util.StateMachine;
 import java.util.ArrayList;
 import java.util.List;
 
-class PbapClientStateMachine extends StateMachine {
-    private static final String TAG = PbapClientStateMachine.class.getSimpleName();
+class PbapClientStateMachineOld extends StateMachine {
+    private static final String TAG = PbapClientStateMachineOld.class.getSimpleName();
 
     // Messages for handling connect/disconnect requests.
     private static final int MSG_DISCONNECT = 2;
@@ -109,16 +110,20 @@ class PbapClientStateMachine extends StateMachine {
     // mMostRecentState maintains previous state for broadcasting transitions.
     private int mMostRecentState = BluetoothProfile.STATE_DISCONNECTED;
 
-    PbapClientStateMachine(PbapClientService svc, BluetoothDevice device) {
+    PbapClientStateMachineOld(PbapClientService svc, BluetoothDevice device) {
         this(svc, device, null);
     }
 
     @VisibleForTesting
-    PbapClientStateMachine(
+    PbapClientStateMachineOld(
             PbapClientService svc,
             BluetoothDevice device,
             PbapClientConnectionHandler connectionHandler) {
         super(TAG);
+
+        if (Flags.pbapClientStorageRefactor()) {
+            Log.w(TAG, "This object is no longer used in this configuration");
+        }
 
         mService = svc;
         mCurrentDevice = device;
@@ -173,7 +178,7 @@ class PbapClientStateMachine extends StateMachine {
                                 .setLooper(looper)
                                 .setLocalSupportedFeatures(LOCAL_SUPPORTED_FEATURES)
                                 .setService(mService)
-                                .setClientSM(PbapClientStateMachine.this)
+                                .setClientSM(PbapClientStateMachineOld.this)
                                 .setRemoteDevice(mCurrentDevice)
                                 .build();
             }
