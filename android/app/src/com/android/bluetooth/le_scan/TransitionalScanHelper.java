@@ -1210,7 +1210,13 @@ public class TransitionalScanHelper {
             if (cbApp != null) {
                 isCallbackScan = cbApp.mCallback != null;
             }
-            app.recordScanStart(settings, filters, isFilteredScan, isCallbackScan, scannerId);
+            app.recordScanStart(
+                    settings,
+                    filters,
+                    isFilteredScan,
+                    isCallbackScan,
+                    scannerId,
+                    cbApp == null ? null : cbApp.mAttributionTag);
         }
 
         mScanManager.startScan(scanClient);
@@ -1317,7 +1323,12 @@ public class TransitionalScanHelper {
             scanClient.stats = scanStats;
             boolean isFilteredScan = (piInfo.filters != null) && !piInfo.filters.isEmpty();
             scanStats.recordScanStart(
-                    piInfo.settings, piInfo.filters, isFilteredScan, false, scannerId);
+                    piInfo.settings,
+                    piInfo.filters,
+                    isFilteredScan,
+                    false,
+                    scannerId,
+                    app.mAttributionTag);
         }
 
         mScanManager.startScan(scanClient);
