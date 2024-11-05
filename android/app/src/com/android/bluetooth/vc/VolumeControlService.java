@@ -29,6 +29,7 @@ import static android.bluetooth.BluetoothProfile.STATE_CONNECTING;
 import static android.bluetooth.BluetoothProfile.STATE_DISCONNECTED;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElseGet;
 
 import android.annotation.RequiresPermission;
 import android.bluetooth.BluetoothDevice;
@@ -114,7 +115,7 @@ public class VolumeControlService extends ProfileService {
     @VisibleForTesting ServiceFactory mFactory = new ServiceFactory();
 
     public VolumeControlService(AdapterService adapterService) {
-        this(adapterService, null, VolumeControlNativeInterface.getInstance());
+        this(adapterService, null, null);
     }
 
     @VisibleForTesting
@@ -125,7 +126,12 @@ public class VolumeControlService extends ProfileService {
         super(requireNonNull(adapterService));
         mAdapterService = adapterService;
         mDatabaseManager = requireNonNull(mAdapterService.getDatabase());
-        mNativeInterface = requireNonNull(nativeInterface);
+        mNativeInterface =
+                requireNonNullElseGet(
+                        nativeInterface,
+                        () ->
+                                new VolumeControlNativeInterface(
+                                        new VolumeControlNativeCallback(adapterService, this)));
         mAudioManager = requireNonNull(getSystemService(AudioManager.class));
         if (looper == null) {
             mHandler = new Handler(requireNonNull(Looper.getMainLooper()));
@@ -1025,12 +1031,12 @@ public class VolumeControlService extends ProfileService {
     }
 
     void handleDeviceExtInputStateChanged(
-            BluetoothDevice device, int id, int gainValue, int gainMode, int mute) {
+            BluetoothDevice device, int id, int gainSetting, int mute, int gainMode) {
         String logInfo =
                 "handleDeviceExtInputStateChanged("
                         + ("device:" + device)
                         + (", id" + id)
-                        + (" gainValue: " + gainValue)
+                        + (" gainSetting: " + gainSetting)
                         + (" gainMode: " + gainMode)
                         + (" mute: " + mute)
                         + ")";
@@ -1042,7 +1048,7 @@ public class VolumeControlService extends ProfileService {
         }
 
         Log.d(TAG, logInfo);
-        input.setState(id, gainValue, gainMode, mute);
+        input.setState(id, gainSetting, mute, gainMode);
     }
 
     void handleDeviceExtInputStatusChanged(BluetoothDevice device, int id, int status) {
@@ -1135,6 +1141,10 @@ public class VolumeControlService extends ProfileService {
     }
 
     void messageFromNative(VolumeControlStackEvent stackEvent) {
+        if (!isAvailable()) {
+            Log.e(TAG, "Event ignored, service not available: " + stackEvent);
+            return;
+        }
         Log.d(TAG, "messageFromNative: " + stackEvent);
 
         if (stackEvent.type == VolumeControlStackEvent.EVENT_TYPE_VOLUME_STATE_CHANGED) {
@@ -1179,8 +1189,8 @@ public class VolumeControlService extends ProfileService {
                     device,
                     stackEvent.valueInt1,
                     stackEvent.valueInt2,
-                    stackEvent.valueInt3,
-                    stackEvent.valueInt4);
+                    stackEvent.valueInt4,
+                    stackEvent.valueInt3);
             return;
         }
 
