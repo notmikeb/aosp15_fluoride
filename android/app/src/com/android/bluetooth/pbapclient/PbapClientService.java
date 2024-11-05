@@ -69,6 +69,31 @@ public class PbapClientService extends ProfileService {
     private DatabaseManager mDatabaseManager;
     private Handler mHandler;
 
+    private final Map<BluetoothDevice, PbapClientStateMachine> mPbapClientStateMachineMap;
+
+    class PbapClientStateMachineCallback implements PbapClientStateMachine.Callback {
+        private final BluetoothDevice mDevice;
+
+        PbapClientStateMachineCallback(BluetoothDevice device) {
+            mDevice = device;
+        }
+
+        @Override
+        public void onConnectionStateChanged(int oldState, int newState) {
+            Log.v(
+                    TAG,
+                    "Device connection state changed, device="
+                            + mDevice
+                            + ", old="
+                            + oldState
+                            + ", new="
+                            + newState);
+            if (oldState != newState && newState == BluetoothProfile.STATE_DISCONNECTED) {
+                removeDevice(mDevice);
+            }
+        }
+    }
+
     class PbapClientAccountManagerCallback implements PbapClientAccountManager.Callback {
         @Override
         public void onAccountsChanged(List<Account> oldAccounts, List<Account> newAccounts) {
@@ -87,18 +112,28 @@ public class PbapClientService extends ProfileService {
         if (Flags.pbapClientStorageRefactor()) {
             mPbapClientContactsStorage = new PbapClientContactsStorage(context);
             mPbapClientAccountManager = null;
+            mPbapClientStateMachineMap =
+                    new ConcurrentHashMap<BluetoothDevice, PbapClientStateMachine>();
         } else {
             mPbapClientAccountManager =
                     new PbapClientAccountManager(context, new PbapClientAccountManagerCallback());
             mPbapClientContactsStorage = null;
+            mPbapClientStateMachineMap = null;
         }
     }
 
     @VisibleForTesting
-    PbapClientService(Context context, PbapClientAccountManager accountManager) {
+    PbapClientService(
+            Context context,
+            PbapClientContactsStorage storage,
+            Map<BluetoothDevice, PbapClientStateMachine> deviceMap) {
         super(context);
-        mPbapClientAccountManager = accountManager;
-        mPbapClientContactsStorage = null;
+        mPbapClientContactsStorage = storage;
+        mPbapClientStateMachineMap = deviceMap;
+
+        // For compatibility with tests while we phase the old state machine out
+        mPbapClientAccountManager =
+                new PbapClientAccountManager(context, new PbapClientAccountManagerCallback());
     }
 
     public static boolean isEnabled() {
@@ -138,20 +173,26 @@ public class PbapClientService extends ProfileService {
         setPbapClientService(null);
         cleanUpSdpRecord();
 
-        for (PbapClientStateMachineOld smOld : mPbapClientStateMachineOldMap.values()) {
-            smOld.doQuit();
-        }
-        mPbapClientStateMachineOldMap.clear();
-
-        // Unregister Handler and stop all queued messages.
+        // Unregister SDP event handler and stop all queued messages.
         if (mHandler != null) {
             mHandler.removeCallbacksAndMessages(null);
             mHandler = null;
         }
 
         if (Flags.pbapClientStorageRefactor()) {
+            // Try to bring down all the connections gracefully
+            synchronized (mPbapClientStateMachineMap) {
+                for (PbapClientStateMachine sm : mPbapClientStateMachineMap.values()) {
+                    sm.disconnect();
+                }
+                mPbapClientStateMachineMap.clear();
+            }
             mPbapClientContactsStorage.stop();
         } else {
+            for (PbapClientStateMachineOld smOld : mPbapClientStateMachineOldMap.values()) {
+                smOld.doQuit();
+            }
+            mPbapClientStateMachineOldMap.clear();
             removeUncleanAccounts();
             mPbapClientAccountManager.stop();
         }
@@ -201,13 +242,61 @@ public class PbapClientService extends ProfileService {
         }
     }
 
-    void cleanupDevice(BluetoothDevice device) {
-        Log.d(TAG, "Cleanup device: " + device);
-        synchronized (mPbapClientStateMachineOldMap) {
-            PbapClientStateMachineOld smOld = mPbapClientStateMachineOldMap.get(device);
-            if (smOld != null) {
-                mPbapClientStateMachineOldMap.remove(device);
-                smOld.doQuit();
+    private PbapClientStateMachine getDeviceStateMachine(BluetoothDevice device) {
+        synchronized (mPbapClientStateMachineMap) {
+            return mPbapClientStateMachineMap.get(device);
+        }
+    }
+
+    /**
+     * Create a state machine for a device
+     *
+     * <p>PBAP Client connections are always outgoing. This function creates a device state machine
+     * instance, which will manage the connection and data lifecycles of the device.
+     */
+    private boolean addDevice(BluetoothDevice device) {
+        Log.d(TAG, "add device, device=" + device);
+        synchronized (mPbapClientStateMachineMap) {
+            PbapClientStateMachine stateMachine = mPbapClientStateMachineMap.get(device);
+            if (stateMachine == null) {
+                if (mPbapClientStateMachineMap.size() >= MAXIMUM_DEVICES) {
+                    Log.w(TAG, "Cannot connect " + device + ", too many devices connected already");
+                    return false;
+                }
+                stateMachine =
+                        new PbapClientStateMachine(
+                                device,
+                                mPbapClientContactsStorage,
+                                this,
+                                new PbapClientStateMachineCallback(device));
+                stateMachine.start();
+                stateMachine.connect();
+                mPbapClientStateMachineMap.put(device, stateMachine);
+                return true;
+            } else {
+                Log.w(TAG, "Cannot connect " + device + ", already connecting/connected.");
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Remove a device state machine, if it exists
+     *
+     * <p>When a device disconnects, we gracefully clean up its state machine instance and drop our
+     * reference to it. State machines cannot be reused, so this must be deleted before a device can
+     * reconnect.
+     */
+    private void removeDevice(BluetoothDevice device) {
+        Log.d(TAG, "remove device, device=" + device);
+        synchronized (mPbapClientStateMachineMap) {
+            PbapClientStateMachine pbapClientStateMachine = mPbapClientStateMachineMap.get(device);
+            if (pbapClientStateMachine != null) {
+                int state = pbapClientStateMachine.getConnectionState();
+                if (state != BluetoothProfile.STATE_DISCONNECTED) {
+                    Log.w(TAG, "Removing connected device, device=" + device + ", state=" + state);
+                }
+                mPbapClientStateMachineMap.remove(device);
             }
         }
     }
@@ -272,42 +361,16 @@ public class PbapClientService extends ProfileService {
             BluetoothDevice device, int oldState, int newState) {
         if (newState == BluetoothProfile.STATE_DISCONNECTED) {
             Log.d(TAG, "Received intent to disconnect HFP with " + device);
-            // HFP client stores entries in calllog.db by BD_ADDR and component name
-            // Using the current Service as the context.
-            removeHfpCallLog(device.getAddress());
+            if (Flags.pbapClientStorageRefactor()) {
+                Account account = mPbapClientContactsStorage.getStorageAccountForDevice(device);
+                mPbapClientContactsStorage.removeCallHistory(account);
+                return;
+            } else {
+                // HFP client stores entries in calllog.db by BD_ADDR and component name
+                // Using the current Service as the context.
+                removeHfpCallLog(device.getAddress());
+            }
         }
-    }
-
-    /**
-     * Determine if our account type is available and ready to be interacted with
-     *
-     * @return True is account type is ready, false otherwise
-     */
-    public boolean isAccountTypeReady() {
-        if (Flags.pbapClientStorageRefactor()) {
-            throw new UnsupportedOperationException("This is not needed with contacts storage");
-        }
-        return mPbapClientAccountManager.isAccountTypeInitialized();
-    }
-
-    /**
-     * Add an account
-     *
-     * @param account The account you wish to add
-     * @return True if the account addition was successful, False otherwise
-     */
-    public boolean addAccount(Account account) {
-        return mPbapClientAccountManager.addAccount(account);
-    }
-
-    /**
-     * Remove an account
-     *
-     * @param account The account you wish to remove
-     * @return True if the account removal was successful, False otherwise
-     */
-    public boolean removeAccount(Account account) {
-        return mPbapClientAccountManager.removeAccount(account);
     }
 
     /**
@@ -318,13 +381,26 @@ public class PbapClientService extends ProfileService {
     @Override
     public void dump(StringBuilder sb) {
         super.dump(sb);
-        for (PbapClientStateMachineOld smOld : mPbapClientStateMachineOldMap.values()) {
-            smOld.dump(sb);
-        }
 
         if (Flags.pbapClientStorageRefactor()) {
+            synchronized (mPbapClientStateMachineMap) {
+                ProfileService.println(
+                        sb,
+                        "Devices ("
+                                + mPbapClientStateMachineMap.size()
+                                + "/ "
+                                + MAXIMUM_DEVICES
+                                + ")");
+                for (PbapClientStateMachine stateMachine : mPbapClientStateMachineMap.values()) {
+                    stateMachine.dump(sb);
+                    ProfileService.println(sb, "");
+                }
+            }
             ProfileService.println(sb, mPbapClientContactsStorage.dump());
         } else {
+            for (PbapClientStateMachineOld smOld : mPbapClientStateMachineOldMap.values()) {
+                smOld.dump(sb);
+            }
             ProfileService.println(sb, mPbapClientAccountManager.dump());
         }
     }
@@ -383,19 +459,30 @@ public class PbapClientService extends ProfileService {
                         + BluetoothUuid.PBAP_PSE.toString()
                         + ")");
         if (uuid.equals(BluetoothUuid.PBAP_PSE)) {
-            PbapClientStateMachineOld smOld = mPbapClientStateMachineOldMap.get(device);
-            if (smOld == null) {
-                Log.e(TAG, "No Statemachine found for the device=" + device.toString());
+            SdpPseRecord pseRecord = (SdpPseRecord) record;
+            if (pseRecord == null) {
+                Log.w(TAG, "Received null PSE record for device=" + device);
                 return;
             }
-            SdpPseRecord pseRecord = (SdpPseRecord) record;
-            if (pseRecord != null) {
+
+            if (Flags.pbapClientStorageRefactor()) {
+                PbapClientStateMachine stateMachine = getDeviceStateMachine(device);
+                if (stateMachine == null) {
+                    Log.e(TAG, "No Statemachine found for the device=" + device.toString());
+                    return;
+                }
+                stateMachine.onSdpResultReceived(status, new PbapSdpRecord(device, pseRecord));
+            } else {
+                PbapClientStateMachineOld smOld = mPbapClientStateMachineOldMap.get(device);
+                if (smOld == null) {
+                    Log.e(TAG, "No Statemachine found for the device=" + device.toString());
+                    return;
+                }
+
                 smOld.obtainMessage(
                                 PbapClientStateMachineOld.MSG_SDP_COMPLETE,
                                 new PbapSdpRecord(device, pseRecord))
                         .sendToTarget();
-            } else {
-                Log.w(TAG, "Received null PSE record for device=" + device);
             }
         }
     }
@@ -438,20 +525,25 @@ public class PbapClientService extends ProfileService {
         if (device == null) {
             throw new IllegalArgumentException("Null device");
         }
-        Log.d(TAG, "Received request to ConnectPBAPPhonebook " + device.getAddress());
+        Log.d(TAG, "connect(device=" + device.getAddress() + ")");
         if (getConnectionPolicy(device) <= BluetoothProfile.CONNECTION_POLICY_FORBIDDEN) {
             return false;
         }
-        synchronized (mPbapClientStateMachineOldMap) {
-            PbapClientStateMachineOld smOld = mPbapClientStateMachineOldMap.get(device);
-            if (smOld == null && mPbapClientStateMachineOldMap.size() < MAXIMUM_DEVICES) {
-                smOld = new PbapClientStateMachineOld(this, device);
-                smOld.start();
-                mPbapClientStateMachineOldMap.put(device, smOld);
-                return true;
-            } else {
-                Log.w(TAG, "Received connect request while already connecting/connected.");
-                return false;
+
+        if (Flags.pbapClientStorageRefactor()) {
+            return addDevice(device);
+        } else {
+            synchronized (mPbapClientStateMachineOldMap) {
+                PbapClientStateMachineOld smOld = mPbapClientStateMachineOldMap.get(device);
+                if (smOld == null && mPbapClientStateMachineOldMap.size() < MAXIMUM_DEVICES) {
+                    smOld = new PbapClientStateMachineOld(this, device);
+                    smOld.start();
+                    mPbapClientStateMachineOldMap.put(device, smOld);
+                    return true;
+                } else {
+                    Log.w(TAG, "Received connect request while already connecting/connected.");
+                    return false;
+                }
             }
         }
     }
@@ -466,14 +558,24 @@ public class PbapClientService extends ProfileService {
         if (device == null) {
             throw new IllegalArgumentException("Null device");
         }
-        PbapClientStateMachineOld smOld = mPbapClientStateMachineOldMap.get(device);
-        if (smOld != null) {
-            smOld.disconnect(device);
-            return true;
+
+        Log.d(TAG, "disconnect(device=" + device.getAddress() + ")");
+        if (Flags.pbapClientStorageRefactor()) {
+            PbapClientStateMachine pbapClientStateMachine = getDeviceStateMachine(device);
+            if (pbapClientStateMachine != null) {
+                pbapClientStateMachine.disconnect();
+                return true;
+            }
         } else {
-            Log.w(TAG, "disconnect() called on unconnected device.");
-            return false;
+            PbapClientStateMachineOld smOld = mPbapClientStateMachineOldMap.get(device);
+            if (smOld != null) {
+                smOld.disconnect(device);
+                return true;
+            }
         }
+
+        Log.w(TAG, "disconnect() called on unconnected device.");
+        return false;
     }
 
     /**
@@ -495,16 +597,33 @@ public class PbapClientService extends ProfileService {
      */
     public List<BluetoothDevice> getDevicesMatchingConnectionStates(int[] states) {
         List<BluetoothDevice> deviceList = new ArrayList<BluetoothDevice>(0);
-        for (Map.Entry<BluetoothDevice, PbapClientStateMachineOld> stateMachineEntryOld :
-                mPbapClientStateMachineOldMap.entrySet()) {
-            int currentDeviceState = stateMachineEntryOld.getValue().getConnectionState();
-            for (int state : states) {
-                if (currentDeviceState == state) {
-                    deviceList.add(stateMachineEntryOld.getKey());
-                    break;
+
+        if (Flags.pbapClientStorageRefactor()) {
+            synchronized (mPbapClientStateMachineMap) {
+                for (Map.Entry<BluetoothDevice, PbapClientStateMachine> stateMachineEntry :
+                        mPbapClientStateMachineMap.entrySet()) {
+                    int currentDeviceState = stateMachineEntry.getValue().getConnectionState();
+                    for (int state : states) {
+                        if (currentDeviceState == state) {
+                            deviceList.add(stateMachineEntry.getKey());
+                            break;
+                        }
+                    }
+                }
+            }
+        } else {
+            for (Map.Entry<BluetoothDevice, PbapClientStateMachineOld> stateMachineEntryOld :
+                    mPbapClientStateMachineOldMap.entrySet()) {
+                int currentDeviceState = stateMachineEntryOld.getValue().getConnectionState();
+                for (int state : states) {
+                    if (currentDeviceState == state) {
+                        deviceList.add(stateMachineEntryOld.getKey());
+                        break;
+                    }
                 }
             }
         }
+
         return deviceList;
     }
 
@@ -521,11 +640,21 @@ public class PbapClientService extends ProfileService {
         if (device == null) {
             throw new IllegalArgumentException("Null device");
         }
-        PbapClientStateMachineOld smOld = mPbapClientStateMachineOldMap.get(device);
-        if (smOld == null) {
-            return BluetoothProfile.STATE_DISCONNECTED;
+
+        if (Flags.pbapClientStorageRefactor()) {
+            PbapClientStateMachine pbapClientStateMachine = getDeviceStateMachine(device);
+            if (pbapClientStateMachine == null) {
+                return BluetoothProfile.STATE_DISCONNECTED;
+            } else {
+                return pbapClientStateMachine.getConnectionState();
+            }
         } else {
-            return smOld.getConnectionState(device);
+            PbapClientStateMachineOld smOld = mPbapClientStateMachineOldMap.get(device);
+            if (smOld == null) {
+                return BluetoothProfile.STATE_DISCONNECTED;
+            } else {
+                return smOld.getConnectionState(device);
+            }
         }
     }
 
@@ -576,5 +705,69 @@ public class PbapClientService extends ProfileService {
             throw new IllegalArgumentException("Null device");
         }
         return mDatabaseManager.getProfileConnectionPolicy(device, BluetoothProfile.PBAP_CLIENT);
+    }
+
+    // *********************************************************************************************
+    // * Pre-Refactor Methods
+    // *********************************************************************************************
+
+    @VisibleForTesting
+    PbapClientService(Context context, PbapClientAccountManager accountManager) {
+        super(context);
+
+        if (Flags.pbapClientStorageRefactor()) {
+            Log.w(TAG, "This constructor should not be used in this configuration.");
+        }
+
+        mPbapClientAccountManager = accountManager;
+        mPbapClientContactsStorage = null;
+        mPbapClientStateMachineMap = null;
+    }
+
+    void cleanupDevice(BluetoothDevice device) {
+        if (Flags.pbapClientStorageRefactor()) {
+            throw new UnsupportedOperationException("This is not needed with contacts storage");
+        }
+
+        Log.d(TAG, "Cleanup device: " + device);
+        synchronized (mPbapClientStateMachineOldMap) {
+            PbapClientStateMachineOld smOld = mPbapClientStateMachineOldMap.get(device);
+            if (smOld != null) {
+                mPbapClientStateMachineOldMap.remove(device);
+                smOld.doQuit();
+            }
+        }
+    }
+
+    /**
+     * Determine if our account type is available and ready to be interacted with
+     *
+     * @return True is account type is ready, false otherwise
+     */
+    public boolean isAccountTypeReady() {
+        if (Flags.pbapClientStorageRefactor()) {
+            throw new UnsupportedOperationException("This is not needed with contacts storage");
+        }
+        return mPbapClientAccountManager.isAccountTypeInitialized();
+    }
+
+    /**
+     * Add an account
+     *
+     * @param account The account you wish to add
+     * @return True if the account addition was successful, False otherwise
+     */
+    public boolean addAccount(Account account) {
+        return mPbapClientAccountManager.addAccount(account);
+    }
+
+    /**
+     * Remove an account
+     *
+     * @param account The account you wish to remove
+     * @return True if the account removal was successful, False otherwise
+     */
+    public boolean removeAccount(Account account) {
+        return mPbapClientAccountManager.removeAccount(account);
     }
 }
