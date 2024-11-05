@@ -28,6 +28,7 @@ import android.app.AppOpsManager;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothUtils;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.IPeriodicAdvertisingCallback;
 import android.bluetooth.le.IScannerCallback;
@@ -342,7 +343,7 @@ public class TransitionalScanHelper {
                         + ", addressType="
                         + addressType
                         + ", address="
-                        + address
+                        + BluetoothUtils.toAnonymizedAddress(address)
                         + ", primaryPhy="
                         + primaryPhy
                         + ", secondaryPhy="
