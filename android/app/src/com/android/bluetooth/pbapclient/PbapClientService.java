@@ -34,6 +34,7 @@ import android.util.Log;
 import com.android.bluetooth.btservice.AdapterService;
 import com.android.bluetooth.btservice.ProfileService;
 import com.android.bluetooth.btservice.storage.DatabaseManager;
+import com.android.bluetooth.flags.Flags;
 import com.android.bluetooth.hfpclient.HfpClientConnectionService;
 import com.android.bluetooth.sdp.SdpManagerNativeInterface;
 import com.android.internal.annotations.VisibleForTesting;
@@ -62,6 +63,7 @@ public class PbapClientService extends ProfileService {
             new ConcurrentHashMap<>();
 
     private static PbapClientService sPbapClientService;
+    private final PbapClientContactsStorage mPbapClientContactsStorage;
     private final PbapClientAccountManager mPbapClientAccountManager;
     private int mSdpHandle = -1;
     private DatabaseManager mDatabaseManager;
@@ -82,14 +84,21 @@ public class PbapClientService extends ProfileService {
 
     public PbapClientService(Context context) {
         super(context);
-        mPbapClientAccountManager =
-                new PbapClientAccountManager(context, new PbapClientAccountManagerCallback());
+        if (Flags.pbapClientStorageRefactor()) {
+            mPbapClientContactsStorage = new PbapClientContactsStorage(context);
+            mPbapClientAccountManager = null;
+        } else {
+            mPbapClientAccountManager =
+                    new PbapClientAccountManager(context, new PbapClientAccountManagerCallback());
+            mPbapClientContactsStorage = null;
+        }
     }
 
     @VisibleForTesting
     PbapClientService(Context context, PbapClientAccountManager accountManager) {
         super(context);
         mPbapClientAccountManager = accountManager;
+        mPbapClientContactsStorage = null;
     }
 
     public static boolean isEnabled() {
@@ -114,7 +123,11 @@ public class PbapClientService extends ProfileService {
 
         mHandler = new Handler(Looper.getMainLooper());
 
-        mPbapClientAccountManager.start();
+        if (Flags.pbapClientStorageRefactor()) {
+            mPbapClientContactsStorage.start();
+        } else {
+            mPbapClientAccountManager.start();
+        }
 
         registerSdpRecord();
         setPbapClientService(this);
@@ -136,8 +149,12 @@ public class PbapClientService extends ProfileService {
             mHandler = null;
         }
 
-        removeUncleanAccounts();
-        mPbapClientAccountManager.stop();
+        if (Flags.pbapClientStorageRefactor()) {
+            mPbapClientContactsStorage.stop();
+        } else {
+            removeUncleanAccounts();
+            mPbapClientAccountManager.stop();
+        }
 
         setComponentAvailable(AUTHENTICATOR_SERVICE, false);
     }
@@ -203,6 +220,11 @@ public class PbapClientService extends ProfileService {
      * separately clean up the call log data associated with a given account too.
      */
     private void removeUncleanAccounts() {
+        if (Flags.pbapClientStorageRefactor()) {
+            Log.i(TAG, "removeUncleanAccounts: this is the responsibility of contacts storage");
+            return;
+        }
+
         List<Account> accounts = mPbapClientAccountManager.getAccounts();
         Log.i(TAG, "removeUncleanAccounts: Found " + accounts.size() + " accounts");
 
@@ -262,6 +284,9 @@ public class PbapClientService extends ProfileService {
      * @return True is account type is ready, false otherwise
      */
     public boolean isAccountTypeReady() {
+        if (Flags.pbapClientStorageRefactor()) {
+            throw new UnsupportedOperationException("This is not needed with contacts storage");
+        }
         return mPbapClientAccountManager.isAccountTypeInitialized();
     }
 
@@ -296,7 +321,12 @@ public class PbapClientService extends ProfileService {
         for (PbapClientStateMachineOld smOld : mPbapClientStateMachineOldMap.values()) {
             smOld.dump(sb);
         }
-        ProfileService.println(sb, mPbapClientAccountManager.dump());
+
+        if (Flags.pbapClientStorageRefactor()) {
+            ProfileService.println(sb, mPbapClientContactsStorage.dump());
+        } else {
+            ProfileService.println(sb, mPbapClientAccountManager.dump());
+        }
     }
 
     // *********************************************************************************************

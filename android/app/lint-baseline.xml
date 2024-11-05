@@ -359,6 +359,17 @@
         errorLine1="                SimpleDateFormat parser = new SimpleDateFormat(TIMESTAMP_FORMAT);"
         errorLine2="                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
+            file="packages/modules/Bluetooth/android/app/src/com/android/bluetooth/pbapclient/PbapClientContactsStorage.java"
+            line="485"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="SimpleDateFormat"
+        message="To get local formatting use `getDateInstance()`, `getDateTimeInstance()`, or `getTimeInstance()`, or use `new SimpleDateFormat(String template, Locale locale)` with for example `Locale.US` for ASCII dates."
+        errorLine1="                SimpleDateFormat parser = new SimpleDateFormat(TIMESTAMP_FORMAT);"
+        errorLine2="                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
             file="packages/modules/Bluetooth/android/app/src/com/android/bluetooth/pbapclient/obex/CallLogPullRequest.java"
             line="105"
             column="43"/>
