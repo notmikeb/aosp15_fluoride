@@ -4310,6 +4310,11 @@ public:
                                             "r_state: " + ToString(audio_receiver_state_) +
                                                     ", s_state: " + ToString(audio_sender_state_));
 
+    /* If the local sink direction is used, we want to monitor
+     * if back channel is actually needed.
+     */
+    StartVbcCloseTimeout();
+
     /* Note: This callback is from audio hal driver.
      * Bluetooth peer is a Source for Audio Framework.
      * e.g. Peer is microphone.
@@ -4334,11 +4339,6 @@ public:
     if ((audio_sender_state_ == AudioState::IDLE) ||
         (audio_sender_state_ == AudioState::READY_TO_RELEASE)) {
       OnAudioSuspend();
-    } else {
-      /* If the local sink direction is used, we want to monitor
-       * if back channel is actually needed.
-       */
-      StartVbcCloseTimeout();
     }
 
     log::info("OUT: audio_receiver_state_: {},  audio_sender_state_: {}",

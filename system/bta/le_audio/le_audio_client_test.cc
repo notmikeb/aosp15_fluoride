@@ -9971,8 +9971,8 @@ TEST_F(UnicastTest, SwitchBetweenMicrophoneAndSoundEffectScenario) {
   LocalAudioSinkSuspend();
   SyncOnMainLoop();
 
-  // VBC and Suspend
-  ASSERT_EQ(1, get_func_call_count("alarm_set_on_mloop"));
+  log::info("Expect VBC and Suspend timeouts to be started");
+  ASSERT_EQ(2, get_func_call_count("alarm_set_on_mloop"));
   ASSERT_EQ(0, get_func_call_count("alarm_cancel"));
 
   log::info("Resume local source with touch tone - expect suspend timeout to be canceled");
@@ -9981,7 +9981,8 @@ TEST_F(UnicastTest, SwitchBetweenMicrophoneAndSoundEffectScenario) {
   LocalAudioSourceResume();
   SyncOnMainLoop();
 
-  ASSERT_EQ(1, get_func_call_count("alarm_cancel"));
+  log::info("Expect VBC and Suspend timeouts to be started");
+  ASSERT_EQ(2, get_func_call_count("alarm_set_on_mloop"));
 
   auto group = streaming_groups.at(group_id);
   group->PrintDebugState();
