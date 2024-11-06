@@ -4342,14 +4342,21 @@ public:
   }
 
   inline bool IsDirectionAvailableForCurrentConfiguration(const LeAudioDeviceGroup* group,
-                                                          uint8_t direction) const {
+                                                          uint8_t remote_direction) const {
     auto current_config =
             group->IsUsingPreferredAudioSetConfiguration(configuration_context_type_)
                     ? group->GetCachedPreferredConfiguration(configuration_context_type_)
                     : group->GetCachedConfiguration(configuration_context_type_);
+    log::debug("configuration_context_type_ = {}, group_id: {}, remote_direction: {}",
+               ToString(configuration_context_type_), group->group_id_,
+               remote_direction == bluetooth::le_audio::types::kLeAudioDirectionSink ? "Sink"
+                                                                                     : "Source");
     if (current_config) {
-      return current_config->confs.get(direction).size() != 0;
+      log::debug("name = {}, size {}", current_config->name,
+                 current_config->confs.get(remote_direction).size());
+      return current_config->confs.get(remote_direction).size() != 0;
     }
+    log::debug("no cached configuration");
     return false;
   }
 
