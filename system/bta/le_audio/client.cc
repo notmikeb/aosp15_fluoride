@@ -116,8 +116,6 @@ using bluetooth::le_audio::types::BidirectionalPair;
 using bluetooth::le_audio::types::DataPathState;
 using bluetooth::le_audio::types::hdl_pair;
 using bluetooth::le_audio::types::kDefaultScanDurationS;
-using bluetooth::le_audio::types::kLeAudioContextAllBidir;
-using bluetooth::le_audio::types::kLeAudioContextAllRemoteSinkOnly;
 using bluetooth::le_audio::types::kLeAudioContextAllRemoteSource;
 using bluetooth::le_audio::types::kLeAudioContextAllTypesArray;
 using bluetooth::le_audio::types::LeAudioContextType;
@@ -907,13 +905,6 @@ public:
               "Group is already in the transition state. Waiting for the target "
               "state to be reached.");
       return false;
-    }
-
-    /* Make sure we do not take the local sink metadata when only the local
-     * source scenario is about to be started (e.g. MEDIA).
-     */
-    if (!kLeAudioContextAllBidir.test(configuration_context_type)) {
-      remote_contexts.source.clear();
     }
 
     /* Do not put the TBS CCID when not using Telecom for the VoIP calls. */
@@ -4764,13 +4755,23 @@ public:
         if (contexts_pair.get(dir) == AudioContexts(LeAudioContextType::UNSPECIFIED)) {
           auto is_other_direction_streaming = (*local_hal_state == AudioState::STARTED) ||
                                               (*local_hal_state == AudioState::READY_TO_START);
-          if (is_other_direction_streaming &&
-              (contexts_pair.get(other_dir) != AudioContexts(LeAudioContextType::UNSPECIFIED))) {
+          if (is_other_direction_streaming) {
+            auto supported_contexts = group->GetAllSupportedSingleDirectionOnlyContextTypes(dir);
+            auto common_part = supported_contexts & contexts_pair.get(other_dir);
+
             log::info(
-                    "Other direction is streaming. Aligning other direction "
-                    "metadata to match the current direction context: {}",
-                    ToString(contexts_pair.get(other_dir)));
-            contexts_pair.get(dir) = contexts_pair.get(other_dir);
+                    "Other direction is streaming. Possible aligning other direction "
+                    "metadata to match the remote {} direction context: {}. Remote {} supported "
+                    "contexts: {} ",
+                    other_dir == bluetooth::le_audio::types::kLeAudioDirectionSink ? " Sink"
+                                                                                   : " Source",
+                    ToString(contexts_pair.get(other_dir)),
+                    dir == bluetooth::le_audio::types::kLeAudioDirectionSink ? " Sink" : " Source",
+                    ToString(supported_contexts));
+
+            if (common_part.value() != 0) {
+              contexts_pair.get(dir) = common_part;
+            }
           }
         } else {
           log::debug("Removing UNSPECIFIED from the remote {} context: {}",
@@ -4870,13 +4871,16 @@ public:
             .sink = local_metadata_context_types_.source,
             .source = local_metadata_context_types_.sink};
 
+    auto all_bidirectional_contexts = group->GetAllSupportedBidirectionalContextTypes();
+    log::debug("all_bidirectional_contexts {}", ToString(all_bidirectional_contexts));
+
     /* Make sure we have CONVERSATIONAL when in a call and it is not mixed
      * with any other bidirectional context
      */
     if (IsInCall() || IsInVoipCall()) {
       log::debug("In Call preference used: {}, voip call: {}", IsInCall(), IsInVoipCall());
-      remote_metadata.sink.unset_all(kLeAudioContextAllBidir);
-      remote_metadata.source.unset_all(kLeAudioContextAllBidir);
+      remote_metadata.sink.unset_all(all_bidirectional_contexts);
+      remote_metadata.source.unset_all(all_bidirectional_contexts);
       remote_metadata.sink.set(LeAudioContextType::CONVERSATIONAL);
       remote_metadata.source.set(LeAudioContextType::CONVERSATIONAL);
     }
@@ -4907,32 +4911,46 @@ public:
     log::debug("is_ongoing_call_on_other_direction={}",
                is_ongoing_call_on_other_direction ? "True" : "False");
 
-    if (remote_metadata.get(remote_other_direction).test_any(kLeAudioContextAllBidir) &&
+    if (remote_metadata.get(remote_other_direction).test_any(all_bidirectional_contexts) &&
         !is_streaming_other_direction) {
       log::debug("The other direction is not streaming bidirectional, ignore that context.");
       remote_metadata.get(remote_other_direction).clear();
     }
 
+    auto single_direction_only_context_types =
+            group->GetAllSupportedSingleDirectionOnlyContextTypes(remote_direction);
+    auto single_other_direction_only_context_types =
+            group->GetAllSupportedSingleDirectionOnlyContextTypes(remote_other_direction);
+    log::debug(
+            "single direction only contexts : {} for direction {}, single direction contexts {} "
+            "for {}",
+            ToString(single_direction_only_context_types), remote_direction_str,
+            ToString(single_other_direction_only_context_types), remote_other_direction_str);
+
     /* Mixed contexts in the voiceback channel scenarios can confuse the remote
      * on how to configure each channel. We should align the other direction
      * metadata for the remote device.
      */
-    if (remote_metadata.get(remote_direction).test_any(kLeAudioContextAllBidir)) {
+    if (remote_metadata.get(remote_direction).test_any(all_bidirectional_contexts)) {
       log::debug("Aligning the other direction remote metadata to add this direction context");
 
       if (is_ongoing_call_on_other_direction) {
         /* Other direction is streaming and is in call */
-        remote_metadata.get(remote_direction).unset_all(kLeAudioContextAllBidir);
+        remote_metadata.get(remote_direction).unset_all(all_bidirectional_contexts);
         remote_metadata.get(remote_direction).set(LeAudioContextType::CONVERSATIONAL);
       } else {
         if (!is_streaming_other_direction) {
           // Do not take the obsolete metadata
           remote_metadata.get(remote_other_direction).clear();
+        } else {
+          remote_metadata.get(remote_other_direction).unset_all(all_bidirectional_contexts);
+          remote_metadata.get(remote_other_direction)
+                  .unset_all(single_direction_only_context_types);
         }
-        remote_metadata.get(remote_other_direction).unset_all(kLeAudioContextAllBidir);
-        remote_metadata.get(remote_other_direction).unset_all(kLeAudioContextAllRemoteSinkOnly);
+
         remote_metadata.get(remote_other_direction)
-                .set_all(remote_metadata.get(remote_direction) & ~kLeAudioContextAllRemoteSinkOnly);
+                .set_all(remote_metadata.get(remote_direction) &
+                         ~single_other_direction_only_context_types);
       }
     }
     log::debug("remote_metadata.source= {}", ToString(remote_metadata.source));
@@ -4946,22 +4964,23 @@ public:
        */
       if ((remote_metadata.get(remote_direction).none() &&
            remote_metadata.get(remote_other_direction).any()) ||
-          remote_metadata.get(remote_other_direction).test_any(kLeAudioContextAllBidir)) {
+          remote_metadata.get(remote_other_direction).test_any(all_bidirectional_contexts)) {
         log::debug("Aligning this direction remote metadata to add the other direction context");
         /* Turn off bidirectional contexts on this direction to avoid mixing
          * with the other direction bidirectional context
          */
-        remote_metadata.get(remote_direction).unset_all(kLeAudioContextAllBidir);
+        remote_metadata.get(remote_direction).unset_all(all_bidirectional_contexts);
         remote_metadata.get(remote_direction).set_all(remote_metadata.get(remote_other_direction));
       }
     }
 
     /* Make sure that after alignment no sink only context leaks into the other
      * direction. */
-    remote_metadata.source.unset_all(kLeAudioContextAllRemoteSinkOnly);
+    remote_metadata.source.unset_all(group->GetAllSupportedSingleDirectionOnlyContextTypes(
+            bluetooth::le_audio::types::kLeAudioDirectionSink));
 
-    log::debug("remote_metadata.source= {}", ToString(remote_metadata.source));
-    log::debug("remote_metadata.sink= {}", ToString(remote_metadata.sink));
+    log::debug("final remote_metadata.source= {}", ToString(remote_metadata.source));
+    log::debug("final remote_metadata.sink= {}", ToString(remote_metadata.sink));
     return remote_metadata;
   }
 
