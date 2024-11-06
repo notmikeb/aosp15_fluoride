@@ -1891,29 +1891,29 @@ void LeAudioDeviceGroup::RemoveCisFromStreamIfNeeded(LeAudioDevice* leAudioDevic
           stream_conf.stream_params.source.num_of_devices,
           stream_conf.stream_params.source.num_of_channels);
 
-  if (stream_conf.stream_params.sink.num_of_channels == 0) {
-    ClearSinksFromConfiguration();
-  }
-
-  if (stream_conf.stream_params.source.num_of_channels == 0) {
-    ClearSourcesFromConfiguration();
-  }
-
-  /* Update CodecManager CIS configuration */
-  if (old_sink_channels > stream_conf.stream_params.sink.num_of_channels) {
-    CodecManager::GetInstance()->UpdateCisConfiguration(
-            cig.cises,
-            stream_conf.stream_params.get(bluetooth::le_audio::types::kLeAudioDirectionSink),
-            bluetooth::le_audio::types::kLeAudioDirectionSink);
-  }
-  if (old_source_channels > stream_conf.stream_params.source.num_of_channels) {
-    CodecManager::GetInstance()->UpdateCisConfiguration(
-            cig.cises,
-            stream_conf.stream_params.get(bluetooth::le_audio::types::kLeAudioDirectionSource),
-            bluetooth::le_audio::types::kLeAudioDirectionSource);
-  }
-
   cig.UnassignCis(leAudioDevice, cis_conn_hdl);
+
+  if (old_sink_channels > 0) {
+    if (stream_conf.stream_params.sink.num_of_channels == 0) {
+      ClearSinksFromConfiguration();
+    } else if (old_sink_channels > stream_conf.stream_params.sink.num_of_channels) {
+      CodecManager::GetInstance()->UpdateCisConfiguration(
+              cig.cises,
+              stream_conf.stream_params.get(bluetooth::le_audio::types::kLeAudioDirectionSink),
+              bluetooth::le_audio::types::kLeAudioDirectionSink);
+    }
+  }
+
+  if (old_source_channels > 0) {
+    if (stream_conf.stream_params.source.num_of_channels == 0) {
+      ClearSourcesFromConfiguration();
+    } else if (old_source_channels > stream_conf.stream_params.source.num_of_channels) {
+      CodecManager::GetInstance()->UpdateCisConfiguration(
+              cig.cises,
+              stream_conf.stream_params.get(bluetooth::le_audio::types::kLeAudioDirectionSource),
+              bluetooth::le_audio::types::kLeAudioDirectionSource);
+    }
+  }
 }
 
 bool LeAudioDeviceGroup::IsPendingConfiguration(void) const {
