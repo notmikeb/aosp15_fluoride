@@ -83,6 +83,13 @@ interface IBluetoothVolumeControl {
     void unregisterAudioInputControlCallback(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId, in IAudioInputCallback callback);
 
     @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
+    int getAudioInputGainSettingUnit(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId);
+    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
+    int getAudioInputGainSettingMin(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId);
+    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
+    int getAudioInputGainSettingMax(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId);
+
+    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
     String getAudioInputDescription(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId);
     @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
     boolean isAudioInputDescriptionWritable(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId);
