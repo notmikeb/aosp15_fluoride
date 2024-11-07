@@ -16,6 +16,9 @@
 
 package com.android.bluetooth.vc;
 
+import static java.util.Objects.requireNonNull;
+
+import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
 import com.android.bluetooth.btservice.ProfileService;
@@ -28,9 +31,16 @@ import bluetooth.constants.aics.Mute;
 class VolumeControlInputDescriptor {
     private static final String TAG = VolumeControlInputDescriptor.class.getSimpleName();
 
+    final VolumeControlNativeInterface mNativeInterface;
+    final BluetoothDevice mDevice;
     final Descriptor[] mVolumeInputs;
 
-    VolumeControlInputDescriptor(int numberOfExternalInputs) {
+    VolumeControlInputDescriptor(
+            VolumeControlNativeInterface nativeInterface,
+            BluetoothDevice device,
+            int numberOfExternalInputs) {
+        mNativeInterface = requireNonNull(nativeInterface);
+        mDevice = requireNonNull(device);
         mVolumeInputs = new Descriptor[numberOfExternalInputs];
         // Stack delivers us number of audio inputs. ids are countinous from [0;n[
         for (int i = 0; i < numberOfExternalInputs; i++) {
@@ -57,8 +67,8 @@ class VolumeControlInputDescriptor {
          */
         int mGainSettingsUnits = 0;
 
-        int mGainSettingsMaxSetting = 0;
-        int mGainSettingsMinSetting = 0;
+        int mGainSettingsMax = 0;
+        int mGainSettingsMin = 0;
 
         String mDescription = "";
     }
@@ -119,8 +129,8 @@ class VolumeControlInputDescriptor {
         if (!isValidId(id)) return;
 
         mVolumeInputs[id].mGainSettingsUnits = gainUnit;
-        mVolumeInputs[id].mGainSettingsMinSetting = gainMin;
-        mVolumeInputs[id].mGainSettingsMaxSetting = gainMax;
+        mVolumeInputs[id].mGainSettingsMin = gainMin;
+        mVolumeInputs[id].mGainSettingsMax = gainMax;
     }
 
     void setState(int id, int gainSetting, int mute, int gainMode) {
@@ -128,8 +138,7 @@ class VolumeControlInputDescriptor {
 
         Descriptor desc = mVolumeInputs[id];
 
-        if (gainSetting > desc.mGainSettingsMaxSetting
-                || gainSetting < desc.mGainSettingsMinSetting) {
+        if (gainSetting > desc.mGainSettingsMax || gainSetting < desc.mGainSettingsMin) {
             Log.e(TAG, "Request fail. Illegal gainSetting argument: " + gainSetting);
             return;
         }
@@ -150,8 +159,8 @@ class VolumeControlInputDescriptor {
             ProfileService.println(sb, "        gainMode: " + desc.mGainMode);
             ProfileService.println(sb, "        mute: " + desc.mMute);
             ProfileService.println(sb, "        units:" + desc.mGainSettingsUnits);
-            ProfileService.println(sb, "        minGain:" + desc.mGainSettingsMinSetting);
-            ProfileService.println(sb, "        maxGain:" + desc.mGainSettingsMaxSetting);
+            ProfileService.println(sb, "        minGain:" + desc.mGainSettingsMin);
+            ProfileService.println(sb, "        maxGain:" + desc.mGainSettingsMax);
         }
     }
 }
