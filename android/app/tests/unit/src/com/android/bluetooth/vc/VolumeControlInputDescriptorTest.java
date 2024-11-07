@@ -19,6 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.Mockito.*;
 
+import android.bluetooth.AudioInputControl.AudioInputStatus;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.platform.test.flag.junit.SetFlagsRule;
@@ -74,31 +75,34 @@ public class VolumeControlInputDescriptorTest {
     @Test
     public void setFoo_withAllValidId_valuesAreUpdated() {
         for (int i = 0; i < NUMBER_OF_INPUT; i++) {
-            assertThat(mDescriptor.getStatus(i)).isEqualTo(0); // AudioInputStatus.INACTIVE);
-            mDescriptor.setStatus(i, 1); // AudioInputStatus.ACTIVE);
-            assertThat(mDescriptor.getStatus(i)).isEqualTo(1); // AudioInputStatus.ACTIVE);
+            assertThat(mDescriptor.getStatus(i))
+                    .isEqualTo(bluetooth.constants.aics.AudioInputStatus.INACTIVE);
+            mDescriptor.onStatusChanged(i, bluetooth.constants.aics.AudioInputStatus.ACTIVE);
+            assertThat(mDescriptor.getStatus(i))
+                    .isEqualTo(bluetooth.constants.aics.AudioInputStatus.ACTIVE);
         }
     }
 
     @Test
     public void getStatus_whenNeverSet_defaultToInactive() {
-        assertThat(mDescriptor.getStatus(VALID_ID)).isEqualTo(0); // AudioInputStatus.INACTIVE);
+        assertThat(mDescriptor.getStatus(VALID_ID))
+                .isEqualTo(bluetooth.constants.aics.AudioInputStatus.INACTIVE);
     }
 
     @Test
     public void setStatus_withValidId_valueIsUpdated() {
-        int newStatus = 1; // AudioInputStatus.ACTIVE;
-        mDescriptor.setStatus(VALID_ID, newStatus);
+        @AudioInputStatus int status = bluetooth.constants.aics.AudioInputStatus.ACTIVE;
+        mDescriptor.onStatusChanged(VALID_ID, status);
 
-        assertThat(mDescriptor.getStatus(VALID_ID)).isEqualTo(newStatus);
+        assertThat(mDescriptor.getStatus(VALID_ID)).isEqualTo(status);
     }
 
     @Test
     public void setStatus_withInvalidId_valueIsNotUpdated() {
-        int newStatus = 1; // AudioInputStatus.ACTIVE;
-        mDescriptor.setStatus(INVALID_ID, newStatus);
+        @AudioInputStatus int status = bluetooth.constants.aics.AudioInputStatus.ACTIVE;
+        mDescriptor.onStatusChanged(INVALID_ID, status);
 
-        assertThat(mDescriptor.getStatus(INVALID_ID)).isNotEqualTo(newStatus);
+        assertThat(mDescriptor.getStatus(INVALID_ID)).isNotEqualTo(status);
     }
 
     @Test

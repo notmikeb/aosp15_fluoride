@@ -23,4 +23,5 @@ package android.bluetooth;
  */
 oneway interface IAudioInputCallback {
     void onDescriptionChanged(in String description);
+    void onStatusChanged(int status);
 }

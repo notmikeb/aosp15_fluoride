@@ -88,4 +88,7 @@ interface IBluetoothVolumeControl {
     boolean isAudioInputDescriptionWritable(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId);
     @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
     boolean setAudioInputDescription(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId, in String description);
+
+    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
+    int getAudioInputStatus(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId);
 }

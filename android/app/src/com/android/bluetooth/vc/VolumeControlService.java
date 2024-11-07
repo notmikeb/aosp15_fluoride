@@ -32,6 +32,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElseGet;
 
 import android.annotation.RequiresPermission;
+import android.bluetooth.AudioInputControl.AudioInputStatus;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
@@ -67,7 +68,6 @@ import com.android.internal.annotations.VisibleForTesting;
 import libcore.util.SneakyThrow;
 
 import bluetooth.constants.AudioInputType;
-import bluetooth.constants.aics.AudioInputStatus;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1059,7 +1059,7 @@ public class VolumeControlService extends ProfileService {
         input.setState(id, gainSetting, mute, gainMode);
     }
 
-    void onExtAudioInStatusChanged(BluetoothDevice device, int id, int status) {
+    void onExtAudioInStatusChanged(BluetoothDevice device, int id, @AudioInputStatus int status) {
         String logInfo =
                 "onExtAudioInStatusChanged("
                         + ("device=" + device)
@@ -1073,13 +1073,14 @@ public class VolumeControlService extends ProfileService {
             return;
         }
 
-        if (status != AudioInputStatus.INACTIVE && status != AudioInputStatus.ACTIVE) {
+        if (status != bluetooth.constants.aics.AudioInputStatus.INACTIVE
+                && status != bluetooth.constants.aics.AudioInputStatus.ACTIVE) {
             Log.e(TAG, logInfo + ": Invalid status argument");
             return;
         }
 
         Log.d(TAG, logInfo);
-        input.setStatus(id, status);
+        input.onStatusChanged(id, status);
     }
 
     void onExtAudioInTypeChanged(BluetoothDevice device, int id, int type) {
@@ -1807,6 +1808,17 @@ public class VolumeControlService extends ProfileService {
             Log.d(TAG, "setAudioInputDescription(" + device + ", " + instanceId + ")");
             return aicsWrapper(
                     source, device, i -> i.setDescription(instanceId, description), false);
+        }
+
+        @Override
+        public @AudioInputStatus int getAudioInputStatus(
+                AttributionSource source, BluetoothDevice device, int instanceId) {
+            Log.d(TAG, "getAudioInputStatus(" + device + ", " + instanceId + ")");
+            return aicsWrapper(
+                    source,
+                    device,
+                    i -> i.getStatus(instanceId),
+                    (int) bluetooth.constants.aics.AudioInputStatus.INACTIVE);
         }
     }
 

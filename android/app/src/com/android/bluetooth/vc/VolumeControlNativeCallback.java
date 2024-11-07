@@ -25,6 +25,7 @@ import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_VOLUME
 
 import static java.util.Objects.requireNonNull;
 
+import android.bluetooth.AudioInputControl.AudioInputStatus;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
@@ -159,7 +160,7 @@ class VolumeControlNativeCallback {
     }
 
     @VisibleForTesting
-    void onExtAudioInStatusChanged(int id, int status, byte[] address) {
+    void onExtAudioInStatusChanged(int id, @AudioInputStatus int status, byte[] address) {
         sendMessageToService(s -> s.onExtAudioInStatusChanged(getDevice(address), id, status));
     }
 
