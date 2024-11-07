@@ -21,6 +21,7 @@ import static com.android.bluetooth.Utils.RemoteExceptionIgnoringConsumer;
 import static java.util.Objects.requireNonNull;
 
 import android.bluetooth.AudioInputControl.AudioInputStatus;
+import android.bluetooth.AudioInputControl.AudioInputType;
 import android.bluetooth.AudioInputControl.GainMode;
 import android.bluetooth.AudioInputControl.Mute;
 import android.bluetooth.BluetoothDevice;
@@ -29,8 +30,6 @@ import android.os.RemoteCallbackList;
 import android.util.Log;
 
 import com.android.bluetooth.btservice.ProfileService;
-
-import bluetooth.constants.AudioInputType;
 
 class VolumeControlInputDescriptor {
     private static final String TAG = VolumeControlInputDescriptor.class.getSimpleName();
@@ -55,7 +54,7 @@ class VolumeControlInputDescriptor {
     private static class Descriptor {
         @AudioInputStatus int mStatus = bluetooth.constants.aics.AudioInputStatus.INACTIVE;
 
-        int mType = AudioInputType.UNSPECIFIED;
+        @AudioInputType int mType = bluetooth.constants.AudioInputType.UNSPECIFIED;
 
         int mGainSetting = 0;
         @Mute int mMute = bluetooth.constants.aics.Mute.DISABLED;
@@ -165,7 +164,7 @@ class VolumeControlInputDescriptor {
     }
 
     int getType(int id) {
-        if (!isValidId(id)) return AudioInputType.UNSPECIFIED;
+        if (!isValidId(id)) return bluetooth.constants.AudioInputType.UNSPECIFIED;
         return mVolumeInputs[id].mType;
     }
 
