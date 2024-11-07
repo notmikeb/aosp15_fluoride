@@ -75,6 +75,7 @@ class VolumeControlInputDescriptor {
         int mGainSettingsMin = 0;
 
         String mDescription = "";
+        boolean mDescriptionIsWritable = false;
 
         private final RemoteCallbackList<IAudioInputCallback> mCallbacks =
                 new RemoteCallbackList<>();
@@ -87,7 +88,6 @@ class VolumeControlInputDescriptor {
             mCallbacks.unregister(callback);
         }
 
-        @SuppressWarnings("UnusedMethod")
         synchronized void broadcast(
                 String logAction, RemoteExceptionIgnoringConsumer<IAudioInputCallback> action) {
             final int itemCount = mCallbacks.beginBroadcast();
@@ -131,14 +131,33 @@ class VolumeControlInputDescriptor {
         return mVolumeInputs[id].mStatus;
     }
 
-    void setDescription(int id, String description) {
-        if (!isValidId(id)) return;
-        mVolumeInputs[id].mDescription = description;
+    boolean isDescriptionWritable(int id) {
+        if (!isValidId(id)) return false;
+        return mVolumeInputs[id].mDescriptionIsWritable;
+    }
+
+    boolean setDescription(int id, String description) {
+        if (!isValidId(id)) return false;
+
+        if (!mVolumeInputs[id].mDescriptionIsWritable) {
+            throw new IllegalStateException("Description is not writable");
+        }
+
+        return mNativeInterface.setExtAudioInDescription(mDevice, id, description);
     }
 
     String getDescription(int id) {
         if (!isValidId(id)) return null;
         return mVolumeInputs[id].mDescription;
+    }
+
+    void onDescriptionChanged(int id, String description, boolean isWritable) {
+        if (!isValidId(id)) return;
+        Descriptor desc = mVolumeInputs[id];
+
+        desc.mDescription = description;
+        desc.mDescriptionIsWritable = isWritable;
+        desc.broadcast("onDescriptionChanged", c -> c.onDescriptionChanged(description));
     }
 
     void setType(int id, int type) {

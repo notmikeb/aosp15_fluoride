@@ -1104,12 +1104,14 @@ public class VolumeControlService extends ProfileService {
         input.setType(id, type);
     }
 
-    void onExtAudioInDescriptionChanged(BluetoothDevice device, int id, String description) {
+    void onExtAudioInDescriptionChanged(
+            BluetoothDevice device, int id, String description, boolean isWritable) {
         String logInfo =
                 "onExtAudioInDescriptionChanged("
                         + ("device=" + device)
                         + (", id=" + id)
                         + (", description=" + description)
+                        + (", isWritable=" + isWritable)
                         + ")";
 
         VolumeControlInputDescriptor input = mAudioInputs.get(device);
@@ -1124,7 +1126,7 @@ public class VolumeControlService extends ProfileService {
         }
 
         Log.d(TAG, logInfo);
-        input.setDescription(id, description);
+        input.onDescriptionChanged(id, description, isWritable);
     }
 
     void onExtAudioInGainPropsChanged(BluetoothDevice device, int id, int unit, int min, int max) {
@@ -1762,6 +1764,32 @@ public class VolumeControlService extends ProfileService {
                         return null;
                     },
                     null);
+        }
+
+        @Override
+        public String getAudioInputDescription(
+                AttributionSource source, BluetoothDevice device, int instanceId) {
+            Log.d(TAG, "getAudioInputDescription(" + device + ", " + instanceId + ")");
+            return aicsWrapper(source, device, i -> i.getDescription(instanceId), "");
+        }
+
+        @Override
+        public boolean isAudioInputDescriptionWritable(
+                AttributionSource source, BluetoothDevice device, int instanceId) {
+            Log.d(TAG, "isAudioInputDescriptionWritable(" + device + ", " + instanceId + ")");
+            return aicsWrapper(source, device, i -> i.isDescriptionWritable(instanceId), false);
+        }
+
+        @Override
+        public boolean setAudioInputDescription(
+                AttributionSource source,
+                BluetoothDevice device,
+                int instanceId,
+                String description) {
+            requireNonNull(description);
+            Log.d(TAG, "setAudioInputDescription(" + device + ", " + instanceId + ")");
+            return aicsWrapper(
+                    source, device, i -> i.setDescription(instanceId, description), false);
         }
     }
 
