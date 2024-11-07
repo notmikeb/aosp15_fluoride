@@ -32,9 +32,11 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElseGet;
 
 import android.annotation.RequiresPermission;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothUuid;
+import android.bluetooth.IAudioInputCallback;
 import android.bluetooth.IBluetoothCsipSetCoordinator;
 import android.bluetooth.IBluetoothLeAudio;
 import android.bluetooth.IBluetoothVolumeControl;
@@ -80,6 +82,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 public class VolumeControlService extends ProfileService {
     private static final String TAG = VolumeControlService.class.getSimpleName();
@@ -1683,6 +1686,82 @@ public class VolumeControlService extends ProfileService {
 
             service.enforceCallingOrSelfPermission(BLUETOOTH_PRIVILEGED, null);
             postAndWait(service.mHandler, () -> service.notifyNewRegisteredCallback(callback));
+        }
+
+        private void validateBluetoothDevice(BluetoothDevice device) {
+            requireNonNull(device);
+            String address = device.getAddress();
+            if (!BluetoothAdapter.checkBluetoothAddress(address)) {
+                throw new IllegalArgumentException("Invalid device address: " + address);
+            }
+        }
+
+        @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
+        private <R> R aicsWrapper(
+                AttributionSource source,
+                BluetoothDevice device,
+                Function<VolumeControlInputDescriptor, R> fn,
+                R defaultValue) {
+            validateBluetoothDevice(device);
+
+            VolumeControlService service = getService(source);
+            if (service == null) {
+                return defaultValue;
+            }
+
+            service.enforceCallingOrSelfPermission(BLUETOOTH_PRIVILEGED, null);
+
+            VolumeControlInputDescriptor inputs = service.mAudioInputs.get(device);
+            if (inputs == null) {
+                Log.w(TAG, "No audio inputs for " + device);
+                return defaultValue;
+            }
+
+            return fn.apply(inputs);
+        }
+
+        @Override
+        public void registerAudioInputControlCallback(
+                AttributionSource source,
+                BluetoothDevice device,
+                int instanceId,
+                IAudioInputCallback callback) {
+            requireNonNull(callback);
+            Log.d(
+                    TAG,
+                    "registerAudioInputControlCallback("
+                            + (device + ", " + instanceId + ", " + callback)
+                            + ")");
+            aicsWrapper(
+                    source,
+                    device,
+                    i -> {
+                        i.registerCallback(instanceId, callback);
+                        return null;
+                    },
+                    null);
+        }
+
+        @Override
+        public void unregisterAudioInputControlCallback(
+                AttributionSource source,
+                BluetoothDevice device,
+                int instanceId,
+                IAudioInputCallback callback) {
+            requireNonNull(callback);
+            Log.d(
+                    TAG,
+                    "unregisterAudioInputControlCallback("
+                            + (device + ", " + instanceId + ", " + callback)
+                            + ")");
+            aicsWrapper(
+                    source,
+                    device,
+                    i -> {
+                        i.unregisterCallback(instanceId, callback);
+                        return null;
+                    },
+                    null);
         }
     }
 

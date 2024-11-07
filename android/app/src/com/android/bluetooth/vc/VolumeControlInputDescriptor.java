@@ -16,9 +16,13 @@
 
 package com.android.bluetooth.vc;
 
+import static com.android.bluetooth.Utils.RemoteExceptionIgnoringConsumer;
+
 import static java.util.Objects.requireNonNull;
 
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.IAudioInputCallback;
+import android.os.RemoteCallbackList;
 import android.util.Log;
 
 import com.android.bluetooth.btservice.ProfileService;
@@ -71,6 +75,28 @@ class VolumeControlInputDescriptor {
         int mGainSettingsMin = 0;
 
         String mDescription = "";
+
+        private final RemoteCallbackList<IAudioInputCallback> mCallbacks =
+                new RemoteCallbackList<>();
+
+        void registerCallback(IAudioInputCallback callback) {
+            mCallbacks.register(callback);
+        }
+
+        void unregisterCallback(IAudioInputCallback callback) {
+            mCallbacks.unregister(callback);
+        }
+
+        @SuppressWarnings("UnusedMethod")
+        synchronized void broadcast(
+                String logAction, RemoteExceptionIgnoringConsumer<IAudioInputCallback> action) {
+            final int itemCount = mCallbacks.beginBroadcast();
+            Log.d(TAG, "Broadcasting " + logAction + "() to " + itemCount + " receivers.");
+            for (int i = 0; i < itemCount; i++) {
+                action.accept(mCallbacks.getBroadcastItem(i));
+            }
+            mCallbacks.finishBroadcast();
+        }
     }
 
     int size() {
@@ -83,6 +109,16 @@ class VolumeControlInputDescriptor {
             return false;
         }
         return true;
+    }
+
+    void registerCallback(int id, IAudioInputCallback callback) {
+        if (!isValidId(id)) return;
+        mVolumeInputs[id].registerCallback(callback);
+    }
+
+    void unregisterCallback(int id, IAudioInputCallback callback) {
+        if (!isValidId(id)) return;
+        mVolumeInputs[id].unregisterCallback(callback);
     }
 
     void setStatus(int id, int status) {
