@@ -517,6 +517,7 @@ package android.bluetooth {
   }
 
   public static interface BluetoothLeAudio.Callback {
+    method @FlaggedApi("com.android.bluetooth.flags.leaudio_broadcast_api_manage_primary_group") public default void onBroadcastToUnicastFallbackGroupChanged(int);
     method public void onCodecConfigChanged(int, @NonNull android.bluetooth.BluetoothLeAudioCodecStatus);
     method public void onGroupNodeAdded(@NonNull android.bluetooth.BluetoothDevice, int);
     method public void onGroupNodeRemoved(@NonNull android.bluetooth.BluetoothDevice, int);
