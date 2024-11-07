@@ -26,6 +26,8 @@ import static com.android.bluetooth.vc.VolumeControlStackEvent.EVENT_TYPE_VOLUME
 import static java.util.Objects.requireNonNull;
 
 import android.bluetooth.AudioInputControl.AudioInputStatus;
+import android.bluetooth.AudioInputControl.GainMode;
+import android.bluetooth.AudioInputControl.Mute;
 import android.bluetooth.BluetoothDevice;
 import android.util.Log;
 
@@ -152,11 +154,27 @@ class VolumeControlNativeCallback {
     }
 
     @VisibleForTesting
-    void onExtAudioInStateChanged(int id, int gainSetting, int gainMode, int mute, byte[] address) {
+    void onExtAudioInStateChanged(
+            int id, int gainSetting, @Mute int mute, @GainMode int gainMode, byte[] address) {
         sendMessageToService(
                 s ->
                         s.onExtAudioInStateChanged(
                                 getDevice(address), id, gainSetting, mute, gainMode));
+    }
+
+    @VisibleForTesting
+    void onExtAudioInSetGainSettingFailed(int id, byte[] address) {
+        sendMessageToService(s -> s.onExtAudioInSetGainSettingFailed(getDevice(address), id));
+    }
+
+    @VisibleForTesting
+    void onExtAudioInSetMuteFailed(int id, byte[] address) {
+        sendMessageToService(s -> s.onExtAudioInSetMuteFailed(getDevice(address), id));
+    }
+
+    @VisibleForTesting
+    void onExtAudioInSetGainModeFailed(int id, byte[] address) {
+        sendMessageToService(s -> s.onExtAudioInSetGainModeFailed(getDevice(address), id));
     }
 
     @VisibleForTesting

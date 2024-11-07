@@ -21,6 +21,8 @@ import static com.android.bluetooth.Utils.RemoteExceptionIgnoringConsumer;
 import static java.util.Objects.requireNonNull;
 
 import android.bluetooth.AudioInputControl.AudioInputStatus;
+import android.bluetooth.AudioInputControl.GainMode;
+import android.bluetooth.AudioInputControl.Mute;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.IAudioInputCallback;
 import android.os.RemoteCallbackList;
@@ -29,8 +31,6 @@ import android.util.Log;
 import com.android.bluetooth.btservice.ProfileService;
 
 import bluetooth.constants.AudioInputType;
-import bluetooth.constants.aics.GainMode;
-import bluetooth.constants.aics.Mute;
 
 class VolumeControlInputDescriptor {
     private static final String TAG = VolumeControlInputDescriptor.class.getSimpleName();
@@ -58,10 +58,8 @@ class VolumeControlInputDescriptor {
         int mType = AudioInputType.UNSPECIFIED;
 
         int mGainSetting = 0;
-
-        int mGainMode = GainMode.MANUAL_ONLY;
-
-        int mMute = Mute.DISABLED;
+        @Mute int mMute = bluetooth.constants.aics.Mute.DISABLED;
+        @GainMode int mGainMode = bluetooth.constants.aics.GainMode.MANUAL_ONLY;
 
         /* See AICS 1.0
          * The Gain_Setting (mGainSetting) field is a signed value for which a single increment or
@@ -171,16 +169,6 @@ class VolumeControlInputDescriptor {
         return mVolumeInputs[id].mType;
     }
 
-    int getGainSetting(int id) {
-        if (!isValidId(id)) return 0;
-        return mVolumeInputs[id].mGainSetting;
-    }
-
-    int getMute(int id) {
-        if (!isValidId(id)) return Mute.DISABLED;
-        return mVolumeInputs[id].mMute;
-    }
-
     void setPropSettings(int id, int gainUnit, int gainMin, int gainMax) {
         if (!isValidId(id)) return;
 
@@ -189,7 +177,7 @@ class VolumeControlInputDescriptor {
         mVolumeInputs[id].mGainSettingsMax = gainMax;
     }
 
-    void setState(int id, int gainSetting, int mute, int gainMode) {
+    void onStateChanged(int id, int gainSetting, @Mute int mute, @GainMode int gainMode) {
         if (!isValidId(id)) return;
 
         Descriptor desc = mVolumeInputs[id];
@@ -200,8 +188,83 @@ class VolumeControlInputDescriptor {
         }
 
         desc.mGainSetting = gainSetting;
-        desc.mGainMode = gainMode;
         desc.mMute = mute;
+        desc.mGainMode = gainMode;
+
+        mVolumeInputs[id].broadcast(
+                "onStateChanged", (c) -> c.onStateChanged(gainSetting, mute, gainMode));
+    }
+
+    int getGainSetting(int id) {
+        if (!isValidId(id)) return 0;
+        return mVolumeInputs[id].mGainSetting;
+    }
+
+    boolean setGainSetting(int id, int gainSetting) {
+        if (!isValidId(id)) return false;
+
+        Descriptor desc = mVolumeInputs[id];
+
+        if (gainSetting > desc.mGainSettingsMax || gainSetting < desc.mGainSettingsMin) {
+            throw new IllegalArgumentException("Illegal gainSetting argument: " + gainSetting);
+        }
+
+        if (desc.mGainMode == bluetooth.constants.aics.GainMode.AUTOMATIC
+                || desc.mGainMode == bluetooth.constants.aics.GainMode.AUTOMATIC_ONLY) {
+            throw new IllegalStateException("Disallowed due to gain mode being " + desc.mGainMode);
+        }
+
+        return mNativeInterface.setExtAudioInGainSetting(mDevice, id, gainSetting);
+    }
+
+    void onSetGainSettingFailed(int id) {
+        if (!isValidId(id)) return;
+        mVolumeInputs[id].broadcast("onSetGainSettingFailed", (c) -> c.onSetGainSettingFailed());
+    }
+
+    @Mute
+    int getMute(int id) {
+        if (!isValidId(id)) return bluetooth.constants.aics.Mute.DISABLED;
+        return mVolumeInputs[id].mMute;
+    }
+
+    boolean setMute(int id, @Mute int mute) {
+        if (!isValidId(id)) return false;
+
+        if (mVolumeInputs[id].mMute == bluetooth.constants.aics.Mute.DISABLED) {
+            throw new IllegalStateException("Disallowed due to mute being disabled");
+        }
+
+        return mNativeInterface.setExtAudioInMute(mDevice, id, mute);
+    }
+
+    void onSetMuteFailed(int id) {
+        if (!isValidId(id)) return;
+        mVolumeInputs[id].broadcast("onSetMuteFailed", (c) -> c.onSetMuteFailed());
+    }
+
+    @GainMode
+    int getGainMode(int id) {
+        if (!isValidId(id)) return bluetooth.constants.aics.GainMode.AUTOMATIC_ONLY;
+        return mVolumeInputs[id].mGainMode;
+    }
+
+    boolean setGainMode(int id, @GainMode int gainMode) {
+        if (!isValidId(id)) return false;
+
+        Descriptor desc = mVolumeInputs[id];
+
+        if (desc.mGainMode == bluetooth.constants.aics.GainMode.MANUAL_ONLY
+                || desc.mGainMode == bluetooth.constants.aics.GainMode.AUTOMATIC_ONLY) {
+            throw new IllegalStateException("Disallowed due to gain mode being " + desc.mGainMode);
+        }
+
+        return mNativeInterface.setExtAudioInGainMode(mDevice, id, gainMode);
+    }
+
+    void onSetGainModeFailed(int id) {
+        if (!isValidId(id)) return;
+        mVolumeInputs[id].broadcast("onSetGainModeFailed", (c) -> c.onSetGainModeFailed());
     }
 
     void dump(StringBuilder sb) {
