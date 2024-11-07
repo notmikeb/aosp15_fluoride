@@ -908,7 +908,6 @@ TEST_F_WITH_FLAGS(DeviceIotConfigTest, test_device_iot_config_sections_sort_by_e
                                               .key = "a",
                                       },
                               }},
-
     };
     device_iot_config_sections_sort_by_entry_key(conf,
                                                  [](const entry_t& first, const entry_t& second) {
