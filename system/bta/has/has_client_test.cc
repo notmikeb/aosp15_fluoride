@@ -1544,7 +1544,7 @@ TEST_F(HasClientTest, test_discovery_basic_has_no_opt_ntf) {
 
   /* Verify presets */
   uint16_t conn_id = GetTestConnId(test_address);
-  ASSERT_NE(preset_details.size(), 0u);
+  ASSERT_NE(0u, preset_details.size());
   ASSERT_EQ(current_peer_presets_.at(conn_id).size(), preset_details.size());
 
   for (auto const& preset : current_peer_presets_.at(conn_id)) {
@@ -1736,7 +1736,7 @@ TEST_F(HasClientTest, test_duplicate_presets) {
   TestConnect(test_address);
 
   /* Verify presets - expect 1, no duplicates */
-  ASSERT_EQ(preset_details.size(), 1u);
+  ASSERT_EQ(1u, preset_details.size());
   auto preset = std::find_if(preset_details.begin(), preset_details.end(),
                              [](auto const& preset_info) { return preset_info.preset_index == 5; });
   ASSERT_TRUE(preset != preset_details.end());
@@ -1873,7 +1873,7 @@ TEST_F(HasClientTest, test_preset_group_set_name) {
           .Times(1);
 
   HasClient::Get()->SetPresetName(not_synced_group, 55, "new preset name");
-  ASSERT_EQ(preset_details.size(), 1u);
+  ASSERT_EQ(1u, preset_details.size());
   ASSERT_EQ(preset_details[0].preset_name, "new preset name");
   ASSERT_EQ(preset_details[0].preset_index, 55);
 }
@@ -2198,7 +2198,7 @@ TEST_F(HasClientTest, test_select_preset_valid) {
   EXPECT_CALL(*callbacks, OnActivePresetSelected(_, _)).WillOnce(SaveArg<1>(&active_preset_index));
   TestConnect(test_address);
 
-  ASSERT_TRUE(preset_details.size() > 1);
+  ASSERT_GT(preset_details.size(), 1u);
   ASSERT_EQ(preset_details.front().preset_index, active_preset_index);
 
   uint8_t new_active_preset_index = 0;
@@ -2268,7 +2268,7 @@ TEST_F(HasClientTest, test_select_preset_not_available) {
   EXPECT_CALL(*callbacks, OnActivePresetSelected(_, _)).WillOnce(SaveArg<1>(&active_preset_index));
   TestConnect(test_address);
 
-  ASSERT_TRUE(preset_details.size() > 1);
+  ASSERT_GT(preset_details.size(), 1u);
   ASSERT_EQ(preset_details.front().preset_index, active_preset_index);
 
   EXPECT_CALL(*callbacks, OnActivePresetSelectError(std::variant<RawAddress, int>(test_address),
@@ -2344,8 +2344,8 @@ TEST_F(HasClientTest, test_select_group_preset_not_available) {
   ON_CALL(mock_csis_client_module_, GetDeviceList(group_id))
           .WillByDefault(Return(std::vector<RawAddress>({{test_address1, test_address2}})));
 
-  ASSERT_TRUE(preset_details1.size() > 1);
-  ASSERT_TRUE(preset_details2.size() > 1);
+  ASSERT_GT(preset_details1.size(), 1u);
+  ASSERT_GT(preset_details2.size(), 1u);
   ASSERT_EQ(preset_details1.front().preset_index, active_preset_index1);
   ASSERT_EQ(preset_details2.front().preset_index, active_preset_index2);
 
@@ -2430,8 +2430,8 @@ TEST_F(HasClientTest, test_select_group_preset_not_available_binaural) {
   ON_CALL(mock_csis_client_module_, GetDeviceList(group_id))
           .WillByDefault(Return(std::vector<RawAddress>({{test_address1, test_address2}})));
 
-  ASSERT_TRUE(preset_details1.size() > 1);
-  ASSERT_TRUE(preset_details2.size() > 1);
+  ASSERT_GT(preset_details1.size(), 1u);
+  ASSERT_GT(preset_details2.size(), 1u);
   ASSERT_EQ(preset_details1.front().preset_index, active_preset_index1);
   ASSERT_EQ(preset_details2.front().preset_index, active_preset_index2);
 
@@ -2518,8 +2518,8 @@ TEST_F(HasClientTest, test_select_group_preset_not_available_binaural_independen
   ON_CALL(mock_csis_client_module_, GetDeviceList(group_id))
           .WillByDefault(Return(std::vector<RawAddress>({{test_address1, test_address2}})));
 
-  ASSERT_TRUE(preset_details1.size() > 1);
-  ASSERT_TRUE(preset_details2.size() > 1);
+  ASSERT_GT(preset_details1.size(), 1u);
+  ASSERT_GT(preset_details2.size(), 1u);
   ASSERT_EQ(preset_details1.front().preset_index, active_preset_index1);
   ASSERT_EQ(preset_details2.front().preset_index, active_preset_index2);
 
@@ -2654,7 +2654,7 @@ TEST_F(HasClientTest, test_select_preset_invalid) {
   EXPECT_CALL(*callbacks, OnActivePresetSelected(_, _)).WillOnce(SaveArg<1>(&active_preset_index));
   TestConnect(test_address);
 
-  ASSERT_TRUE(preset_details.size() > 1);
+  ASSERT_GT(preset_details.size(), 1u);
   ASSERT_EQ(preset_details.front().preset_index, active_preset_index);
 
   /* Inject preset deletion of index 2 */
@@ -2694,7 +2694,7 @@ TEST_F(HasClientTest, test_select_preset_next) {
   EXPECT_CALL(*callbacks, OnActivePresetSelected(_, _)).WillOnce(SaveArg<1>(&active_preset_index));
   TestConnect(test_address);
 
-  ASSERT_TRUE(preset_details.size() > 1);
+  ASSERT_GT(preset_details.size(), 1u);
   ASSERT_EQ(1, active_preset_index);
 
   /* Verify active preset change */
@@ -2827,7 +2827,7 @@ TEST_F(HasClientTest, test_select_preset_prev) {
   TestConnect(test_address);
 
   HasClient::Get()->SelectActivePreset(test_address, 2);
-  ASSERT_TRUE(preset_details.size() > 1);
+  ASSERT_GT(preset_details.size(), 1u);
   ASSERT_EQ(2, active_preset_index);
 
   /* Verify active preset change */
