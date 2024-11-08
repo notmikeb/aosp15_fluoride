@@ -785,12 +785,13 @@ public class VolumeControlService extends ProfileService {
                             + (", flags: " + flags));
             /* We are here, because system has just started and LeAudio device is connected. If
              * remote device has User Persistent flag set, Android sets the volume to local cache
-             * and to the audio system.
+             * and to the audio system if not already streaming to other devices.
              * If Reset Flag is set, then Android sets to remote devices either cached volume volume
              * taken from audio manager.
              * Note, to match BR/EDR behavior, don't show volume change in UI here
              */
-            if ((flags & VOLUME_FLAGS_PERSISTED_USER_SET_VOLUME_MASK) == 0x01) {
+            if (((flags & VOLUME_FLAGS_PERSISTED_USER_SET_VOLUME_MASK) == 0x01)
+                    && (getConnectedDevices().size() == 1)) {
                 updateGroupCacheAndAudioSystem(groupId, volume, mute, false);
                 return;
             }
@@ -1138,12 +1139,12 @@ public class VolumeControlService extends ProfileService {
         input.setPropSettings(id, unit, min, max);
     }
 
-    void messageFromNative(VolumeControlStackEvent stackEvent) {
+    void handleStackEvent(VolumeControlStackEvent stackEvent) {
         if (!isAvailable()) {
             Log.e(TAG, "Event ignored, service not available: " + stackEvent);
             return;
         }
-        Log.d(TAG, "messageFromNative: " + stackEvent);
+        Log.d(TAG, "handleStackEvent: " + stackEvent);
 
         if (stackEvent.type == VolumeControlStackEvent.EVENT_TYPE_VOLUME_STATE_CHANGED) {
             handleVolumeControlChanged(
@@ -1182,20 +1183,36 @@ public class VolumeControlService extends ProfileService {
             return;
         }
 
+        Log.e(TAG, "Unhandled event: " + stackEvent);
+    }
+
+    void messageFromNative(VolumeControlStackEvent stackEvent) {
+        Log.d(TAG, "messageFromNative: " + stackEvent);
+
+        // Group events should be handled here directly
+        boolean isGroupEvent = (stackEvent.device == null);
+        if (isGroupEvent) {
+            handleStackEvent(stackEvent);
+            return;
+        }
+
+        // Other device events should be serialized via their state machines so they are processed
+        // in the same order they were sent from the native code.
         synchronized (mStateMachines) {
-            VolumeControlStateMachine sm = mStateMachines.get(device);
+            VolumeControlStateMachine sm = mStateMachines.get(stackEvent.device);
             if (sm == null) {
                 if (stackEvent.type
                         == VolumeControlStackEvent.EVENT_TYPE_CONNECTION_STATE_CHANGED) {
                     switch (stackEvent.valueInt1) {
                         case STATE_CONNECTED, STATE_CONNECTING -> {
-                            sm = getOrCreateStateMachine(device);
+                            sm = getOrCreateStateMachine(stackEvent.device);
                         }
                     }
                 }
             }
             if (sm == null) {
-                Log.e(TAG, "Cannot process stack event: no state machine: " + stackEvent);
+                Log.w(TAG, "Cannot forward stack event: no state machine: " + stackEvent);
+                handleStackEvent(stackEvent);
                 return;
             }
             sm.sendMessage(VolumeControlStateMachine.MESSAGE_STACK_EVENT, stackEvent);
