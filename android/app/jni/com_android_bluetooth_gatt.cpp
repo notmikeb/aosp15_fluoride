@@ -1244,7 +1244,7 @@ public:
   void OnDistanceMeasurementResult(RawAddress address, uint32_t centimeter,
                                    uint32_t error_centimeter, int azimuth_angle,
                                    int error_azimuth_angle, int altitude_angle,
-                                   int error_altitude_angle, long elapsedRealtimeNanos,
+                                   int error_altitude_angle, uint64_t elapsedRealtimeNanos,
                                    int8_t confidence_level, uint8_t method) {
     std::shared_lock<std::shared_mutex> lock(callbacks_mutex);
     CallbackEnv sCallbackEnv(__func__);
