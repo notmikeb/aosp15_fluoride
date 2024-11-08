@@ -672,7 +672,8 @@ public:
       return;
     }
 
-    callbacks_->OnExtAudioInDescriptionChanged(device->address, input->id, input->description);
+    callbacks_->OnExtAudioInDescriptionChanged(device->address, input->id, input->description,
+                                               input->description_writable);
   }
 
   void OnExtAudioInCPWrite(uint16_t connection_id, tGATT_STATUS status, uint16_t handle) {
