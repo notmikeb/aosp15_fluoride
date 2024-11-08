@@ -46,17 +46,21 @@ using types::kLeAudioDirectionSink;
 using types::kLeAudioDirectionSource;
 using types::LeAudioCoreCodecConfig;
 
-void get_cis_count(LeAudioContextType context_type, int expected_device_cnt,
-                   types::LeAudioConfigurationStrategy strategy, int avail_group_ase_snk_cnt,
-                   int avail_group_ase_src_count, uint8_t& out_cis_count_bidir,
-                   uint8_t& out_cis_count_unidir_sink, uint8_t& out_cis_count_unidir_source) {
+void get_cis_count(LeAudioContextType context_type, uint8_t expected_remote_direction,
+                   int expected_device_cnt, types::LeAudioConfigurationStrategy strategy,
+                   int avail_group_ase_snk_cnt, int avail_group_ase_src_count,
+                   uint8_t& out_cis_count_bidir, uint8_t& out_cis_count_unidir_sink,
+                   uint8_t& out_cis_count_unidir_source) {
   log::info(
-          "{} strategy {}, group avail sink ases: {}, group avail source ases {} "
+          "{} expected_remote_direction {}, strategy {}, group avail sink ases: {}, "
+          "group avail source ases {} "
           "expected_device_count {}",
-          bluetooth::common::ToString(context_type), static_cast<int>(strategy),
-          avail_group_ase_snk_cnt, avail_group_ase_src_count, expected_device_cnt);
+          bluetooth::common::ToString(context_type), expected_remote_direction,
+          static_cast<int>(strategy), avail_group_ase_snk_cnt, avail_group_ase_src_count,
+          expected_device_cnt);
 
-  bool is_bidirectional = types::kLeAudioContextAllBidir.test(context_type);
+  bool is_bidirectional = expected_remote_direction == types::kLeAudioDirectionBoth;
+  bool is_source_only = expected_remote_direction == types::kLeAudioDirectionSource;
 
   switch (strategy) {
     case types::LeAudioConfigurationStrategy::MONO_ONE_CIS_PER_DEVICE:
@@ -76,6 +80,8 @@ void get_cis_count(LeAudioContextType context_type, int expected_device_cnt,
             out_cis_count_unidir_source = expected_device_cnt;
           }
         }
+      } else if (is_source_only) {
+        out_cis_count_unidir_source = expected_device_cnt;
       } else {
         out_cis_count_unidir_sink = expected_device_cnt;
       }
@@ -101,6 +107,8 @@ void get_cis_count(LeAudioContextType context_type, int expected_device_cnt,
             out_cis_count_unidir_source = 2 * expected_device_cnt;
           }
         }
+      } else if (is_source_only) {
+        out_cis_count_unidir_source = 2 * expected_device_cnt;
       } else {
         out_cis_count_unidir_sink = 2 * expected_device_cnt;
       }

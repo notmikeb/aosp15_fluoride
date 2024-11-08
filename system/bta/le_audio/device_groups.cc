@@ -1061,6 +1061,46 @@ bool LeAudioDeviceGroup::ReloadAudioDirections(void) {
   return true;
 }
 
+AudioContexts LeAudioDeviceGroup::GetAllSupportedBidirectionalContextTypes(void) {
+  auto result = GetSupportedContexts(types::kLeAudioDirectionSink) &
+                GetSupportedContexts(types::kLeAudioDirectionSource);
+
+  result &= types::kLeAudioContextAllBidir;
+
+  return result;
+}
+
+AudioContexts LeAudioDeviceGroup::GetAllSupportedSingleDirectionOnlyContextTypes(
+        uint8_t remote_direction) {
+  AudioContexts result;
+
+  /* Remote device present supported context types on the different directions.
+   * It might happen that some "single directional" contexts are exposed on both
+   * directions on the remote side.
+   * Android takes the decision on the stream configuration based on the contexts therefore
+   * there is defined list of host bidirectional and host single directional context
+   * types. This function helps to filter out some missconfigurations on the remote side and return
+   * single directional context types.
+   * One of the use cases we want to handle here is is that usually VoiceAssistant and GAME are
+   * bidirectional but some devices might remove it on purpose from one direction.
+   */
+  auto group_single_dir_only_contexts =
+          GetSupportedContexts(remote_direction) & ~GetAllSupportedBidirectionalContextTypes();
+
+  if (remote_direction == types::kLeAudioDirectionSink) {
+    auto host_all_sink_contexts =
+            types::kLeAudioContextAllRemoteSinkOnly | types::kLeAudioContextAllBidir;
+    result = host_all_sink_contexts & group_single_dir_only_contexts;
+
+  } else {
+    auto host_all_source_contexts =
+            types::kLeAudioContextAllRemoteSource | types::kLeAudioContextAllBidir;
+    result = host_all_source_contexts & group_single_dir_only_contexts;
+  }
+
+  return result;
+}
+
 bool LeAudioDeviceGroup::IsInTransition(void) const { return in_transition_; }
 
 bool LeAudioDeviceGroup::IsStreaming(void) const {
@@ -1197,11 +1237,21 @@ void LeAudioDeviceGroup::CigConfiguration::GenerateCisIds(LeAudioContextType con
   uint8_t cis_count_unidir_source = 0;
   int group_size = group_->DesiredSize();
 
-  set_configurations::get_cis_count(context_type, group_size, group_->GetGroupSinkStrategy(),
-                                    group_->GetAseCount(types::kLeAudioDirectionSink),
-                                    group_->GetAseCount(types::kLeAudioDirectionSource),
-                                    cis_count_bidir, cis_count_unidir_sink,
-                                    cis_count_unidir_source);
+  uint8_t expected_remote_directions;
+  if (group_->GetAllSupportedBidirectionalContextTypes().test(context_type)) {
+    expected_remote_directions = types::kLeAudioDirectionBoth;
+  } else if (group_->GetAllSupportedSingleDirectionOnlyContextTypes(types::kLeAudioDirectionSource)
+                     .test(context_type)) {
+    expected_remote_directions = types::kLeAudioDirectionSource;
+  } else {
+    expected_remote_directions = types::kLeAudioDirectionSink;
+  }
+
+  set_configurations::get_cis_count(
+          context_type, expected_remote_directions, group_size, group_->GetGroupSinkStrategy(),
+          group_->GetAseCount(types::kLeAudioDirectionSink),
+          group_->GetAseCount(types::kLeAudioDirectionSource), cis_count_bidir,
+          cis_count_unidir_sink, cis_count_unidir_source);
 
   uint8_t idx = 0;
   while (cis_count_bidir > 0) {
@@ -1891,29 +1941,29 @@ void LeAudioDeviceGroup::RemoveCisFromStreamIfNeeded(LeAudioDevice* leAudioDevic
           stream_conf.stream_params.source.num_of_devices,
           stream_conf.stream_params.source.num_of_channels);
 
-  if (stream_conf.stream_params.sink.num_of_channels == 0) {
-    ClearSinksFromConfiguration();
-  }
-
-  if (stream_conf.stream_params.source.num_of_channels == 0) {
-    ClearSourcesFromConfiguration();
-  }
-
-  /* Update CodecManager CIS configuration */
-  if (old_sink_channels > stream_conf.stream_params.sink.num_of_channels) {
-    CodecManager::GetInstance()->UpdateCisConfiguration(
-            cig.cises,
-            stream_conf.stream_params.get(bluetooth::le_audio::types::kLeAudioDirectionSink),
-            bluetooth::le_audio::types::kLeAudioDirectionSink);
-  }
-  if (old_source_channels > stream_conf.stream_params.source.num_of_channels) {
-    CodecManager::GetInstance()->UpdateCisConfiguration(
-            cig.cises,
-            stream_conf.stream_params.get(bluetooth::le_audio::types::kLeAudioDirectionSource),
-            bluetooth::le_audio::types::kLeAudioDirectionSource);
-  }
-
   cig.UnassignCis(leAudioDevice, cis_conn_hdl);
+
+  if (old_sink_channels > 0) {
+    if (stream_conf.stream_params.sink.num_of_channels == 0) {
+      ClearSinksFromConfiguration();
+    } else if (old_sink_channels > stream_conf.stream_params.sink.num_of_channels) {
+      CodecManager::GetInstance()->UpdateCisConfiguration(
+              cig.cises,
+              stream_conf.stream_params.get(bluetooth::le_audio::types::kLeAudioDirectionSink),
+              bluetooth::le_audio::types::kLeAudioDirectionSink);
+    }
+  }
+
+  if (old_source_channels > 0) {
+    if (stream_conf.stream_params.source.num_of_channels == 0) {
+      ClearSourcesFromConfiguration();
+    } else if (old_source_channels > stream_conf.stream_params.source.num_of_channels) {
+      CodecManager::GetInstance()->UpdateCisConfiguration(
+              cig.cises,
+              stream_conf.stream_params.get(bluetooth::le_audio::types::kLeAudioDirectionSource),
+              bluetooth::le_audio::types::kLeAudioDirectionSource);
+    }
+  }
 }
 
 bool LeAudioDeviceGroup::IsPendingConfiguration(void) const {
