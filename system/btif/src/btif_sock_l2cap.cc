@@ -607,12 +607,11 @@ static void on_cl_l2cap_psm_connect_l(tBTA_JV_L2CAP_OPEN* p_open, l2cap_socket* 
 }
 
 static void on_l2cap_connect(tBTA_JV* p_data, uint32_t id) {
-  l2cap_socket* sock;
   tBTA_JV_L2CAP_OPEN* psm_open = &p_data->l2c_open;
   tBTA_JV_L2CAP_LE_OPEN* le_open = &p_data->l2c_le_open;
 
   std::unique_lock<std::mutex> lock(state_lock);
-  sock = btsock_l2cap_find_by_id_l(id);
+  l2cap_socket* sock = btsock_l2cap_find_by_id_l(id);
   if (!sock) {
     log::error("Unable to find l2cap socket with socket_id:{}", id);
     return;
