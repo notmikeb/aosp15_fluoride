@@ -1304,8 +1304,9 @@ package android.bluetooth.le {
   }
 
   public final class DistanceMeasurementManager {
-    method @RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_PRIVILEGED}) public int getChannelSoundingMaxSupportedSecurityLevel(@NonNull android.bluetooth.BluetoothDevice);
-    method @RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_PRIVILEGED}) public int getLocalChannelSoundingMaxSupportedSecurityLevel();
+    method @Deprecated @FlaggedApi("com.android.bluetooth.flags.channel_sounding_25q2_apis") @RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_PRIVILEGED}) public int getChannelSoundingMaxSupportedSecurityLevel(@NonNull android.bluetooth.BluetoothDevice);
+    method @FlaggedApi("com.android.bluetooth.flags.channel_sounding_25q2_apis") @NonNull @RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_PRIVILEGED}) public java.util.Set<java.lang.Integer> getChannelSoundingSupportedSecurityLevels();
+    method @Deprecated @FlaggedApi("com.android.bluetooth.flags.channel_sounding_25q2_apis") @RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_PRIVILEGED}) public int getLocalChannelSoundingMaxSupportedSecurityLevel();
     method @NonNull @RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_PRIVILEGED}) public java.util.List<android.bluetooth.le.DistanceMeasurementMethod> getSupportedMethods();
     method @Nullable @RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_PRIVILEGED}) public android.os.CancellationSignal startMeasurementSession(@NonNull android.bluetooth.le.DistanceMeasurementParams, @NonNull java.util.concurrent.Executor, @NonNull android.bluetooth.le.DistanceMeasurementSession.Callback);
   }
