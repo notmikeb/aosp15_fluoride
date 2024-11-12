@@ -239,11 +239,6 @@ void LogAclAfterRemoteNameRequest(const RawAddress& raw_address, tBTM_STATUS sta
   }
 }
 
-void LogUserConfirmationRequestResponse(const hci::Address& address, bool positive) {
-  bluetooth::os::LogMetricBluetoothEvent(address, EventType::USER_CONF_REQUEST,
-                                         positive ? State::SUCCESS : State::FAIL);
-}
-
 void LogAuthenticationComplete(const RawAddress& raw_address, tHCI_STATUS hci_status) {
   hci::Address address = bluetooth::ToGdAddress(raw_address);
   bluetooth::os::LogMetricBluetoothEvent(address,
