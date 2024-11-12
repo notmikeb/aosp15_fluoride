@@ -392,9 +392,9 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
      * Register a {@link Callback} that will be invoked during the operation of this profile.
      *
      * <p>Repeated registration of the same <var>callback</var> object will have no effect after the
-     * first call to this method, even when the <var>executor</var> is different. API caller would
-     * have to call {@link #unregisterCallback(Callback)} with the same callback object before
-     * registering it again.
+     * first call to this method, even when the <var>executor</var> is different. API caller must
+     * call {@link #unregisterCallback(Callback)} with the same callback object before registering
+     * it again.
      *
      * @param executor an {@link Executor} to execute given callback
      * @param callback user implementation of the {@link Callback}
@@ -455,7 +455,7 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
      * <p>The same {@link Callback} object used when calling {@link #registerCallback(Executor,
      * Callback)} must be used.
      *
-     * <p>Callbacks are automatically unregistered when application process goes away
+     * <p>Callbacks are automatically unregistered when the application process goes away
      *
      * @param callback user implementation of the {@link Callback}
      * @throws IllegalArgumentException when callback is null or when no callback is registered
