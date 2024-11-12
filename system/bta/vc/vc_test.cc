@@ -120,7 +120,7 @@ public:
               (override));
   MOCK_METHOD((void), OnExtAudioInTypeChanged,
               (const RawAddress& address, uint8_t ext_input_id, VolumeInputType type), (override));
-  MOCK_METHOD((void), OnExtAudioInGainPropsChanged,
+  MOCK_METHOD((void), OnExtAudioInGainSettingPropertiesChanged,
               (const RawAddress& address, uint8_t ext_input_id, uint8_t unit, int8_t min,
                int8_t max),
               (override));
@@ -1383,12 +1383,14 @@ TEST_F(VolumeControlCallbackTest, test_audio_input_state_changed_malformed) {
 
 TEST_F(VolumeControlCallbackTest, test_audio_gain_props_changed) {
   std::vector<uint8_t> value({0x03, 0x01, 0x02});
-  EXPECT_CALL(callbacks, OnExtAudioInGainPropsChanged(test_address, _, 0x03, 0x01, 0x02));
+  EXPECT_CALL(callbacks,
+              OnExtAudioInGainSettingPropertiesChanged(test_address, _, 0x03, 0x01, 0x02));
   GetNotificationEvent(0x0055, value);
 }
 
 TEST_F(VolumeControlCallbackTest, test_audio_gain_props_changed_malformed) {
-  EXPECT_CALL(callbacks, OnExtAudioInGainPropsChanged(test_address, _, _, _, _)).Times(0);
+  EXPECT_CALL(callbacks, OnExtAudioInGainSettingPropertiesChanged(test_address, _, _, _, _))
+          .Times(0);
   std::vector<uint8_t> too_short({0x03, 0x01});
   GetNotificationEvent(0x0055, too_short);
   std::vector<uint8_t> too_long({0x03, 0x01, 0x02, 0x03});
@@ -1527,7 +1529,8 @@ TEST_F(VolumeControlValueGetTest, test_get_ext_audio_in_gain_props) {
   VolumeControl::Get()->GetExtAudioInGainProps(test_address, 0);
   EXPECT_TRUE(cb);
   std::vector<uint8_t> value({0x01, 0x02, 0x03});
-  EXPECT_CALL(callbacks, OnExtAudioInGainPropsChanged(test_address, 0, 0x01, 0x02, 0x03));
+  EXPECT_CALL(callbacks,
+              OnExtAudioInGainSettingPropertiesChanged(test_address, 0, 0x01, 0x02, 0x03));
   cb(conn_id, GATT_SUCCESS, handle, (uint16_t)value.size(), value.data(), cb_data);
 }
 

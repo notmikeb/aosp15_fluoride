@@ -734,8 +734,9 @@ public:
       return;
     }
 
-    callbacks_->OnExtAudioInGainPropsChanged(device->address, input->id, input->gain_settings.unit,
-                                             input->gain_settings.min, input->gain_settings.max);
+    callbacks_->OnExtAudioInGainSettingPropertiesChanged(
+            device->address, input->id, input->gain_settings.unit, input->gain_settings.min,
+            input->gain_settings.max);
   }
 
   void OnExtAudioOutCPWrite(tCONN_ID connection_id, tGATT_STATUS status, uint16_t handle,
