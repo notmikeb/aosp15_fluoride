@@ -78,9 +78,19 @@ interface IBluetoothVolumeControl {
     // AICS related methods:
 
     @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
+    int getNumberOfAudioInputControlServices(in AttributionSource attributionSource, in BluetoothDevice device);
+
+    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
     void registerAudioInputControlCallback(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId, in IAudioInputCallback callback);
     @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
     void unregisterAudioInputControlCallback(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId, in IAudioInputCallback callback);
+
+    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
+    int getAudioInputGainSettingUnit(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId);
+    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
+    int getAudioInputGainSettingMin(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId);
+    @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
+    int getAudioInputGainSettingMax(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId);
 
     @JavaPassthrough(annotation="@android.annotation.RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT,android.Manifest.permission.BLUETOOTH_PRIVILEGED})")
     String getAudioInputDescription(in AttributionSource attributionSource, in BluetoothDevice device, int instanceId);

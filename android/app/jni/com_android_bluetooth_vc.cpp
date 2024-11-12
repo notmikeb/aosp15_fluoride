@@ -57,7 +57,7 @@ static jmethodID method_onExtAudioInSetMuteFailed;
 static jmethodID method_onExtAudioInSetGainModeFailed;
 static jmethodID method_onExtAudioInStatusChanged;
 static jmethodID method_onExtAudioInTypeChanged;
-static jmethodID method_onExtAudioInGainPropsChanged;
+static jmethodID method_onExtAudioInGainSettingPropertiesChanged;
 static jmethodID method_onExtAudioInDescriptionChanged;
 
 static VolumeControlInterface* sVolumeControlInterface = nullptr;
@@ -361,8 +361,8 @@ public:
                                  (jint)type, addr.get());
   }
 
-  void OnExtAudioInGainPropsChanged(const RawAddress& bd_addr, uint8_t ext_input_id, uint8_t unit,
-                                    int8_t min, int8_t max) override {
+  void OnExtAudioInGainSettingPropertiesChanged(const RawAddress& bd_addr, uint8_t ext_input_id,
+                                                uint8_t unit, int8_t min, int8_t max) override {
     log::info("");
 
     std::shared_lock<std::shared_timed_mutex> lock(callbacks_mutex);
@@ -380,7 +380,7 @@ public:
 
     sCallbackEnv->SetByteArrayRegion(addr.get(), 0, sizeof(RawAddress),
                                      reinterpret_cast<const jbyte*>(&bd_addr));
-    sCallbackEnv->CallVoidMethod(mCallbacksObj, method_onExtAudioInGainPropsChanged,
+    sCallbackEnv->CallVoidMethod(mCallbacksObj, method_onExtAudioInGainSettingPropertiesChanged,
                                  (jint)ext_input_id, (jint)unit, (jint)min, (jint)max, addr.get());
   }
 
@@ -984,7 +984,8 @@ int register_com_android_bluetooth_vc(JNIEnv* env) {
           {"onExtAudioInSetGainModeFailed", "(I[B)V", &method_onExtAudioInSetGainModeFailed},
           {"onExtAudioInStatusChanged", "(II[B)V", &method_onExtAudioInStatusChanged},
           {"onExtAudioInTypeChanged", "(II[B)V", &method_onExtAudioInTypeChanged},
-          {"onExtAudioInGainPropsChanged", "(IIII[B)V", &method_onExtAudioInGainPropsChanged},
+          {"onExtAudioInGainSettingPropertiesChanged", "(IIII[B)V",
+           &method_onExtAudioInGainSettingPropertiesChanged},
           {"onExtAudioInDescriptionChanged", "(ILjava/lang/String;Z[B)V",
            &method_onExtAudioInDescriptionChanged},
   };

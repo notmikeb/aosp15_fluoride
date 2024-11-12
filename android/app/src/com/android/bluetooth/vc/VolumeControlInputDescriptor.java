@@ -45,7 +45,7 @@ class VolumeControlInputDescriptor {
         mNativeInterface = requireNonNull(nativeInterface);
         mDevice = requireNonNull(device);
         mVolumeInputs = new Descriptor[numberOfExternalInputs];
-        // Stack delivers us number of audio inputs. ids are countinous from [0;n[
+        // Stack delivers us number of AICSs instances. ids are countinous from [0;n[
         for (int i = 0; i < numberOfExternalInputs; i++) {
             mVolumeInputs[i] = new Descriptor();
         }
@@ -168,12 +168,27 @@ class VolumeControlInputDescriptor {
         return mVolumeInputs[id].mType;
     }
 
-    void setPropSettings(int id, int gainUnit, int gainMin, int gainMax) {
+    void onGainSettingsPropertiesChanged(int id, int gainUnit, int gainMin, int gainMax) {
         if (!isValidId(id)) return;
 
         mVolumeInputs[id].mGainSettingsUnits = gainUnit;
         mVolumeInputs[id].mGainSettingsMin = gainMin;
         mVolumeInputs[id].mGainSettingsMax = gainMax;
+    }
+
+    int getGainSettingUnit(int id) {
+        if (!isValidId(id)) return 0;
+        return mVolumeInputs[id].mGainSettingsUnits;
+    }
+
+    int getGainSettingMin(int id) {
+        if (!isValidId(id)) return 0;
+        return mVolumeInputs[id].mGainSettingsMin;
+    }
+
+    int getGainSettingMax(int id) {
+        if (!isValidId(id)) return 0;
+        return mVolumeInputs[id].mGainSettingsMax;
     }
 
     void onStateChanged(int id, int gainSetting, @Mute int mute, @GainMode int gainMode) {
