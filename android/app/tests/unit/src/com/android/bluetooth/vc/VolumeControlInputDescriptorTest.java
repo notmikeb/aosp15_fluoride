@@ -147,7 +147,7 @@ public class VolumeControlInputDescriptorTest {
         int max = 100;
         int min = 0;
         int unit = 1;
-        mDescriptor.setPropSettings(VALID_ID, unit, min, max);
+        mDescriptor.onGainSettingsPropertiesChanged(VALID_ID, unit, min, max);
 
         int gainSetting = 42;
         @Mute int mute = bluetooth.constants.aics.Mute.MUTED;
@@ -165,7 +165,7 @@ public class VolumeControlInputDescriptorTest {
         int min = 0;
         int unit = 1;
         // Should be no-op but we want to copy the working case test, just with an invalid id
-        mDescriptor.setPropSettings(INVALID_ID, unit, min, max);
+        mDescriptor.onGainSettingsPropertiesChanged(INVALID_ID, unit, min, max);
 
         mDescriptor.onStateChanged(
                 INVALID_ID,

@@ -143,9 +143,9 @@ class VolumeControlInterfaceImpl : public VolumeControlInterface, public VolumeC
                           address, ext_input_id, type));
   }
 
-  void OnExtAudioInGainPropsChanged(const RawAddress& address, uint8_t ext_input_id, uint8_t unit,
-                                    int8_t min, int8_t max) override {
-    do_in_jni_thread(Bind(&VolumeControlCallbacks::OnExtAudioInGainPropsChanged,
+  void OnExtAudioInGainSettingPropertiesChanged(const RawAddress& address, uint8_t ext_input_id,
+                                                uint8_t unit, int8_t min, int8_t max) override {
+    do_in_jni_thread(Bind(&VolumeControlCallbacks::OnExtAudioInGainSettingPropertiesChanged,
                           Unretained(callbacks_), address, ext_input_id, unit, min, max));
   }
 

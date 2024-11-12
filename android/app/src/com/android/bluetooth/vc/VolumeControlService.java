@@ -1170,9 +1170,10 @@ public class VolumeControlService extends ProfileService {
         input.onDescriptionChanged(id, description, isWritable);
     }
 
-    void onExtAudioInGainPropsChanged(BluetoothDevice device, int id, int unit, int min, int max) {
+    void onExtAudioInGainSettingPropertiesChanged(
+            BluetoothDevice device, int id, int unit, int min, int max) {
         String logInfo =
-                "onExtAudioInGainPropsChanged("
+                "onExtAudioInGainSettingPropertiesChanged("
                         + ("device=" + device)
                         + (", id=" + id)
                         + (", unit=" + unit)
@@ -1187,7 +1188,7 @@ public class VolumeControlService extends ProfileService {
         }
 
         Log.d(TAG, logInfo);
-        input.setPropSettings(id, unit, min, max);
+        input.onGainSettingsPropertiesChanged(id, unit, min, max);
     }
 
     void handleStackEvent(VolumeControlStackEvent stackEvent) {
@@ -1780,6 +1781,14 @@ public class VolumeControlService extends ProfileService {
         }
 
         @Override
+        public int getNumberOfAudioInputControlServices(
+                AttributionSource source, BluetoothDevice device) {
+            validateBluetoothDevice(device);
+            Log.d(TAG, "getNumberOfAudioInputControlServices(" + device + ")");
+            return aicsWrapper(source, device, i -> i.size(), 0);
+        }
+
+        @Override
         public void registerAudioInputControlCallback(
                 AttributionSource source,
                 BluetoothDevice device,
@@ -1821,6 +1830,27 @@ public class VolumeControlService extends ProfileService {
                         return null;
                     },
                     null);
+        }
+
+        @Override
+        public int getAudioInputGainSettingUnit(
+                AttributionSource source, BluetoothDevice device, int instanceId) {
+            Log.d(TAG, "getAudioInputGainSettingUnit(" + device + ", " + instanceId + ")");
+            return aicsWrapper(source, device, i -> i.getGainSettingUnit(instanceId), 0);
+        }
+
+        @Override
+        public int getAudioInputGainSettingMin(
+                AttributionSource source, BluetoothDevice device, int instanceId) {
+            Log.d(TAG, "getAudioInputGainSettingMin(" + device + ", " + instanceId + ")");
+            return aicsWrapper(source, device, i -> i.getGainSettingMin(instanceId), 0);
+        }
+
+        @Override
+        public int getAudioInputGainSettingMax(
+                AttributionSource source, BluetoothDevice device, int instanceId) {
+            Log.d(TAG, "getAudioInputGainSettingMax(" + device + ", " + instanceId + ")");
+            return aicsWrapper(source, device, i -> i.getGainSettingMax(instanceId), 0);
         }
 
         @Override

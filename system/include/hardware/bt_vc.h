@@ -87,8 +87,9 @@ public:
   virtual void OnExtAudioInTypeChanged(const RawAddress& address, uint8_t ext_input_id,
                                        VolumeInputType type) = 0;
 
-  virtual void OnExtAudioInGainPropsChanged(const RawAddress& address, uint8_t ext_input_id,
-                                            uint8_t unit, int8_t min, int8_t max) = 0;
+  virtual void OnExtAudioInGainSettingPropertiesChanged(const RawAddress& address,
+                                                        uint8_t ext_input_id, uint8_t unit,
+                                                        int8_t min, int8_t max) = 0;
 
   virtual void OnExtAudioInDescriptionChanged(const RawAddress& address, uint8_t ext_input_id,
                                               std::string description, bool is_writable) = 0;

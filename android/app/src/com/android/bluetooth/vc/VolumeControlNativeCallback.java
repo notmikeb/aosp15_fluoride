@@ -198,8 +198,11 @@ class VolumeControlNativeCallback {
     }
 
     @VisibleForTesting
-    void onExtAudioInGainPropsChanged(int id, int unit, int min, int max, byte[] address) {
+    void onExtAudioInGainSettingPropertiesChanged(
+            int id, int unit, int min, int max, byte[] address) {
         sendMessageToService(
-                s -> s.onExtAudioInGainPropsChanged(getDevice(address), id, unit, min, max));
+                s ->
+                        s.onExtAudioInGainSettingPropertiesChanged(
+                                getDevice(address), id, unit, min, max));
     }
 }
