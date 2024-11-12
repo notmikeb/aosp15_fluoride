@@ -283,7 +283,6 @@ android_app {
 
     plugins: [
         "androidx.room_room-compiler-plugin",
-        "error_prone_android_framework",
     ],
 
     // Export schemas to the test directory so that we have an history
