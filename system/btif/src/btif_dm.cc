@@ -33,7 +33,6 @@
 #include <base/functional/bind.h>
 #include <base/strings/stringprintf.h>
 #include <bluetooth/log.h>
-#include <bluetooth/uuid.h>
 #include <com_android_bluetooth_flags.h>
 #include <hardware/bluetooth.h>
 #include <hardware/bt_csis.h>
@@ -99,6 +98,7 @@
 #include "stack/include/smp_api.h"
 #include "stack/include/srvc_api.h"  // tDIS_VALUE
 #include "storage/config_keys.h"
+#include "types/bluetooth/uuid.h"
 #include "types/raw_address.h"
 
 #ifdef __ANDROID__
