@@ -1151,6 +1151,7 @@ class BassClientStateMachine extends StateMachine {
             log("processBroadcastReceiverState: invalid index: " + recvState.getSourceId());
             return;
         }
+        int sourceId = recvState.getSourceId();
         BluetoothLeBroadcastReceiveState oldRecvState =
                 mBluetoothLeBroadcastReceiveStates.get(characteristic.getInstanceId());
         if (oldRecvState == null) {
@@ -1178,7 +1179,7 @@ class BassClientStateMachine extends StateMachine {
                         .notifySourceAdded(
                                 mDevice, recvState, BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST);
                 if (mPendingMetadata != null) {
-                    setCurrentBroadcastMetadata(recvState.getSourceId(), mPendingMetadata);
+                    setCurrentBroadcastMetadata(sourceId, mPendingMetadata);
                     mPendingMetadata = null;
                 }
                 checkAndUpdateBroadcastCode(recvState);
@@ -1224,28 +1225,28 @@ class BassClientStateMachine extends StateMachine {
                 } else {
                     log("update to an existing recvState");
                     if (mPendingMetadata != null) {
-                        setCurrentBroadcastMetadata(recvState.getSourceId(), mPendingMetadata);
+                        setCurrentBroadcastMetadata(sourceId, mPendingMetadata);
                         mPendingMetadata = null;
                     }
                     removeMessages(CANCEL_PENDING_SOURCE_OPERATION);
                     mService.getCallbacks()
                             .notifySourceModified(
                                     mDevice,
-                                    recvState.getSourceId(),
+                                    sourceId,
                                     BluetoothStatusCodes.REASON_LOCAL_APP_REQUEST);
                     checkAndUpdateBroadcastCode(recvState);
                     processPASyncState(recvState);
                     processSyncStateChangeStats(recvState);
 
-                    if (isPendingRemove(recvState.getSourceId())) {
+                    if (isPendingRemove(sourceId) && !isSyncedToTheSource(sourceId)) {
                         Message message = obtainMessage(REMOVE_BCAST_SOURCE);
-                        message.arg1 = recvState.getSourceId();
+                        message.arg1 = sourceId;
                         sendMessage(message);
                     }
                 }
             }
         }
-        broadcastReceiverState(recvState, recvState.getSourceId());
+        broadcastReceiverState(recvState, sourceId);
     }
 
     // Implements callback methods for GATT events that the app cares about.
