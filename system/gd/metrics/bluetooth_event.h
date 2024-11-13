@@ -45,5 +45,7 @@ void LogAuthenticationComplete(const RawAddress& raw_address, tHCI_STATUS hci_st
 
 void LogSDPComplete(const RawAddress& raw_address, tBTA_STATUS status);
 
+void LogLePairingFail(const RawAddress& raw_address, uint8_t failure_reason, bool is_outgoing);
+
 }  // namespace metrics
 }  // namespace bluetooth
