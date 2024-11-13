@@ -1916,7 +1916,7 @@ class BassClientStateMachine extends StateMachine {
         res[offset++] = (byte) numSubGroups;
 
         for (int i = 0; i < numSubGroups; i++) {
-            int bisIndexValue = existingState.getBisSyncState().get(i).intValue();
+            int bisIndexValue = 0xFFFFFFFF;
             if (paSync == BassConstants.PA_SYNC_DO_NOT_SYNC) {
                 bisIndexValue = 0;
             } else if (metaData != null
@@ -1929,6 +1929,8 @@ class BassClientStateMachine extends StateMachine {
                 if (bisIndexValue == 0) {
                     bisIndexValue = 0xFFFFFFFF;
                 }
+            } else if (i < existingState.getBisSyncState().size()) {
+                bisIndexValue = existingState.getBisSyncState().get(i).intValue();
             }
             log("UPDATE_BCAST_SOURCE: bisIndexValue : " + bisIndexValue);
             // BIS_Sync
