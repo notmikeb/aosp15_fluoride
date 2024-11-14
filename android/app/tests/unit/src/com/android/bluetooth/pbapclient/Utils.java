@@ -38,6 +38,9 @@ public class Utils {
     public static final String OUTGOING_CALL = "DIALED";
     private static final String CALL_HISTORY = "X-IRMC-CALL-DATETIME";
 
+    public static final String ACCOUNT_TYPE =
+            "com.android.bluetooth.pbapclient";
+
     /**
      * Group a list of VCard entries or Call History entries into a full phonebook
      *
