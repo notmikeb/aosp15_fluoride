@@ -2698,6 +2698,7 @@ public class AdapterService extends Service {
                 return false;
             }
             service.mBondAttemptCallerInfo.remove(device.getAddress());
+            service.mPhonePolicy.onRemoveBondRequest(device);
             deviceProp.setBondingInitiatedLocally(false);
 
             Message msg = service.mBondStateMachine.obtainMessage(BondStateMachine.REMOVE_BOND);
