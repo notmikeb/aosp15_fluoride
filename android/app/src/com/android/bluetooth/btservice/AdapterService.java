@@ -4387,6 +4387,16 @@ public class AdapterService extends Service {
             service.enforceCallingOrSelfPermission(BLUETOOTH_PRIVILEGED, null);
             return service.mDatabaseManager.isMicrophonePreferredForCalls(device);
         }
+
+        @Override
+        public boolean isLeCocSocketOffloadSupported(AttributionSource source) {
+            AdapterService service = getService();
+            if (service == null) {
+                return false;
+            }
+            service.enforceCallingOrSelfPermission(BLUETOOTH_PRIVILEGED, null);
+            return service.isLeCocSocketOffloadSupported();
+        }
     }
 
     /**
@@ -7155,5 +7165,16 @@ public class AdapterService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Error happened while removing contents: ", e);
         }
+    }
+
+    /** Get the number of the supported offloaded LE COC sockets. */
+    public int getNumberOfSupportedOffloadedLeCocSockets() {
+        return mAdapterProperties.getNumberOfSupportedOffloadedLeCocSockets();
+    }
+
+    /** Check if the offloaded LE COC socket is supported. */
+    public boolean isLeCocSocketOffloadSupported() {
+        int val = getNumberOfSupportedOffloadedLeCocSockets();
+        return val > 0;
     }
 }
