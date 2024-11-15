@@ -1369,6 +1369,13 @@ private:
 
       instance->audio_state_ = AudioState::ACTIVE;
       if (com::android::bluetooth::flags::leaudio_big_depends_on_audio_state()) {
+        if (instance->broadcasts_.empty()) {
+          log::warn("No broadcasts are ready to resume (pending: {} broadcasts)",
+                    instance->pending_broadcasts_.size());
+          instance->le_audio_source_hal_client_->CancelStreamingRequest();
+          return;
+        }
+
         instance->cancelBroadcastTimers();
         instance->UpdateAudioActiveStateInPublicAnnouncement();
 
