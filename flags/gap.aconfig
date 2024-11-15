@@ -273,3 +273,10 @@ flag {
         purpose: PURPOSE_BUGFIX
     }
 }
+
+flag {
+    name: "rpa_offload_to_bt_controller"
+    namespace: "bluetooth"
+    description: "Offload LE RPA rotation to BT controller. go/rpa-offload-to-bt-controller"
+    bug: "378398874"
+}
