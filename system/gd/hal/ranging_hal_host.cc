@@ -45,9 +45,10 @@ public:
   void WriteRawData(uint16_t /* connection_handle */,
                     const ChannelSoundingRawData& /* raw_data */) override {}
 
-  void UpdateChannelSoundingConfig(
-          uint16_t /* connection_handle */,
-          const hci::LeCsConfigCompleteView& /* leCsConfigCompleteView */) override {}
+  void UpdateChannelSoundingConfig(uint16_t /* connection_handle */,
+                                   const hci::LeCsConfigCompleteView& /* leCsConfigCompleteView */,
+                                   uint8_t /* local_supported_sw_time */,
+                                   uint8_t /* remote_supported_sw_time */) override {}
 
   void UpdateProcedureEnableConfig(
           uint16_t /* connection_handle */,

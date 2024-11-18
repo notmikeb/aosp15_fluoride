@@ -187,10 +187,11 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
     CsRttType rtt_type = CsRttType::RTT_AA_ONLY;
     bool remote_support_phase_based_ranging = false;
     uint8_t remote_num_antennas_supported_ = 0x01;
+    uint8_t remote_supported_sw_time_ = 0;
     // sending from host to controller with CS config command, request the controller to use it.
     uint8_t requesting_config_id = kInvalidConfigId;
     // received from controller to host with CS config complete event, it will be used
-    // for the following measruement.
+    // for the following measurement.
     uint8_t used_config_id = kInvalidConfigId;
     uint8_t selected_tx_power = 0;
     std::vector<CsProcedureData> procedure_data_list = {};
@@ -406,7 +407,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
   void start_distance_measurement_with_cs(const Address& cs_remote_address,
                                           uint16_t connection_handle) {
     log::info("connection_handle: {}, address: {}", connection_handle, cs_remote_address);
-    if (!com::android::bluetooth::flags::channel_sounding_in_stack()) {
+    if (!com::android::bluetooth::flags::channel_sounding_in_stack() && !is_local_cs_ready_) {
       log::error("Channel Sounding is not enabled");
       distance_measurement_callbacks_->OnDistanceMeasurementStopped(
               cs_remote_address, REASON_INTERNAL_ERROR, METHOD_CS);
@@ -812,6 +813,8 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
     cs_subfeature_supported_ = complete_view.GetOptionalSubfeaturesSupported();
     num_antennas_supported_ = complete_view.GetNumAntennasSupported();
     local_support_phase_based_ranging_ = cs_subfeature_supported_.phase_based_ranging_ == 0x01;
+    local_supported_sw_time_ = complete_view.GetTSwTimeSupported();
+    is_local_cs_ready_ = true;
   }
 
   void on_cs_read_remote_supported_capabilities_complete(
@@ -844,6 +847,7 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
       log::info("Setup phase complete, connection_handle: {}, address: {}", connection_handle,
                 req_it->second.address);
       req_it->second.retry_counter_for_create_config = 0;
+      req_it->second.remote_supported_sw_time_ = event_view.GetTSwTimeSupported();
       send_le_cs_create_config(connection_handle, req_it->second.requesting_config_id);
     }
     log::info(
@@ -944,7 +948,9 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
     live_tracker->sub_mode_type = event_view.GetSubModeType();
     live_tracker->rtt_type = event_view.GetRttType();
     if (live_tracker->local_start && is_hal_v2()) {
-      ranging_hal_->UpdateChannelSoundingConfig(connection_handle, event_view);
+      ranging_hal_->UpdateChannelSoundingConfig(connection_handle, event_view,
+                                                local_supported_sw_time_,
+                                                live_tracker->remote_supported_sw_time_);
     }
     if (live_tracker->local_hci_role == hci::Role::CENTRAL) {
       // send the cmd from the BLE central only.
@@ -2386,6 +2392,8 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
   CsOptionalSubfeaturesSupported cs_subfeature_supported_;
   uint8_t num_antennas_supported_ = 0x01;
   bool local_support_phase_based_ranging_ = false;
+  uint8_t local_supported_sw_time_ = 0;
+  bool is_local_cs_ready_ = false;
   // A table that maps num_antennas_supported and remote_num_antennas_supported to Antenna
   // Configuration Index.
   uint8_t cs_tone_antenna_config_mapping_table_[4][4] = {
