@@ -26,12 +26,21 @@
 
 #define LOG_TAG "bluetooth-a2dp"
 
+#include "bta_av_api.h"
+
 #include <bluetooth/log.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+
+#include "avdt_api.h"
+#include "avrc_defs.h"
 #include "bta/av/bta_av_int.h"
+#include "bta_api.h"
+#include "bta_sys.h"
 #include "btif/include/btif_av.h"
 #include "internal_include/bt_target.h"
-#include "internal_include/bt_trace.h"
 #include "osi/include/allocator.h"
 #include "osi/include/compat.h"
 #include "stack/include/bt_hdr.h"
