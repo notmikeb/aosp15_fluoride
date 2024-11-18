@@ -230,7 +230,7 @@ void BTA_AvStart(tBTA_AV_HNDL handle, bool use_latency_mode) {
             use_latency_mode);
 
   tBTA_AV_DO_START* p_buf = (tBTA_AV_DO_START*)osi_malloc(sizeof(tBTA_AV_DO_START));
-  p_buf->hdr.event = BTA_AV_API_START_EVT;
+  p_buf->hdr.event = BTA_AV_AP_START_EVT;
   p_buf->hdr.layer_specific = handle;
   p_buf->use_latency_mode = use_latency_mode;
 
@@ -273,7 +273,7 @@ void BTA_AvStop(tBTA_AV_HNDL handle, bool suspend) {
 
   tBTA_AV_API_STOP* p_buf = (tBTA_AV_API_STOP*)osi_malloc(sizeof(tBTA_AV_API_STOP));
 
-  p_buf->hdr.event = BTA_AV_API_STOP_EVT;
+  p_buf->hdr.event = BTA_AV_AP_STOP_EVT;
   p_buf->hdr.layer_specific = handle;
   p_buf->flush = true;
   p_buf->suspend = suspend;
