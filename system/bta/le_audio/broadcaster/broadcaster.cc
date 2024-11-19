@@ -84,7 +84,7 @@ std::mutex instance_mutex;
  * for test purposes.
  */
 class LeAudioBroadcasterImpl : public LeAudioBroadcaster, public BigCallbacks {
-  enum class AudioState { SUSPENDED, ACTIVE };
+  enum class AudioState { STOPPED, SUSPENDED, ACTIVE };
 
 public:
   LeAudioBroadcasterImpl(bluetooth::le_audio::LeAudioBroadcasterCallbacks* callbacks_)
@@ -695,7 +695,9 @@ public:
           le_audio_source_hal_client_->Stop();
         }
       }
-      audio_state_ = AudioState::SUSPENDED;
+
+      /* Block AF requests to resume/suspend stream */
+      audio_state_ = AudioState::STOPPED;
       broadcasts_[broadcast_id]->SetMuted(true);
       broadcasts_[broadcast_id]->ProcessMessage(BroadcastStateMachine::Message::SUSPEND, nullptr);
     } else {
@@ -718,38 +720,43 @@ public:
   void StartAudioBroadcast(uint32_t broadcast_id) override {
     log::info("Starting broadcast_id={}", broadcast_id);
 
-    if (queued_start_broadcast_request_) {
-      log::error("Not processed yet start broadcast request");
-      return;
-    }
-
-    if (is_iso_running_) {
-      queued_start_broadcast_request_ = broadcast_id;
-      return;
-    }
-
-    if (IsAnyoneStreaming()) {
-      log::error("Stop the other broadcast first!");
-      return;
-    }
-
-    if (broadcasts_.count(broadcast_id) != 0) {
-      if (!le_audio_source_hal_client_) {
-        le_audio_source_hal_client_ = LeAudioSourceAudioHalClient::AcquireBroadcast();
-        if (!le_audio_source_hal_client_) {
-          log::error("Could not acquire le audio");
-          return;
-        }
-
-        auto result = CodecManager::GetInstance()->UpdateActiveBroadcastAudioHalClient(
-                le_audio_source_hal_client_.get(), true);
-        log::assert_that(result, "Could not update session in codec manager");
+    if (com::android::bluetooth::flags::leaudio_big_depends_on_audio_state()) {
+      /* Enable possibility for AF to drive stream */
+      audio_state_ = AudioState::SUSPENDED;
+    } else {
+      if (queued_start_broadcast_request_) {
+        log::error("Not processed yet start broadcast request");
+        return;
       }
 
-      broadcasts_[broadcast_id]->ProcessMessage(BroadcastStateMachine::Message::START, nullptr);
-      bluetooth::le_audio::MetricsCollector::Get()->OnBroadcastStateChanged(true);
-    } else {
-      log::error("No such broadcast_id={}", broadcast_id);
+      if (is_iso_running_) {
+        queued_start_broadcast_request_ = broadcast_id;
+        return;
+      }
+
+      if (IsAnyoneStreaming()) {
+        log::error("Stop the other broadcast first!");
+        return;
+      }
+
+      if (broadcasts_.count(broadcast_id) != 0) {
+        if (!le_audio_source_hal_client_) {
+          le_audio_source_hal_client_ = LeAudioSourceAudioHalClient::AcquireBroadcast();
+          if (!le_audio_source_hal_client_) {
+            log::error("Could not acquire le audio");
+            return;
+          }
+
+          auto result = CodecManager::GetInstance()->UpdateActiveBroadcastAudioHalClient(
+                  le_audio_source_hal_client_.get(), true);
+          log::assert_that(result, "Could not update session in codec manager");
+        }
+
+        broadcasts_[broadcast_id]->ProcessMessage(BroadcastStateMachine::Message::START, nullptr);
+        bluetooth::le_audio::MetricsCollector::Get()->OnBroadcastStateChanged(true);
+      } else {
+        log::error("No such broadcast_id={}", broadcast_id);
+      }
     }
   }
 
@@ -1286,6 +1293,11 @@ private:
 
       log::verbose("Received {} bytes.", data.size());
 
+      if (instance->audio_state_ == AudioState::STOPPED) {
+        log::warn("audio stopped, skip audio data ready callback");
+        return;
+      }
+
       if (!broadcast_config_.has_value() || (broadcast_config_->subgroups.size() == 0)) {
         log::error("Codec was not configured properly");
         return;
@@ -1328,6 +1340,11 @@ private:
         return;
       }
 
+      if (instance->audio_state_ == AudioState::STOPPED) {
+        log::warn("audio stopped, skip suspend request");
+        return;
+      }
+
       instance->audio_state_ = AudioState::SUSPENDED;
       if (com::android::bluetooth::flags::leaudio_big_depends_on_audio_state()) {
         instance->UpdateAudioActiveStateInPublicAnnouncement();
@@ -1338,6 +1355,12 @@ private:
     virtual void OnAudioResume(void) override {
       log::info("");
       if (!instance) {
+        return;
+      }
+
+      if (instance->audio_state_ == AudioState::STOPPED) {
+        log::warn("audio stopped, skip resume request");
+        instance->le_audio_source_hal_client_->CancelStreamingRequest();
         return;
       }
 

@@ -264,10 +264,7 @@ public class LeAudioBroadcastServiceTest {
         create_event.valueBool1 = true;
         mService.messageFromNative(create_event);
 
-        if (!Flags.leaudioBigDependsOnAudioState()) {
-            // Verify if broadcast is auto-started on start
-            verify(mLeAudioBroadcasterNativeInterface).startBroadcast(eq(broadcastId));
-        }
+        verify(mLeAudioBroadcasterNativeInterface).startBroadcast(eq(broadcastId));
 
         // Notify initial paused state
         LeAudioStackEvent state_event =
@@ -1237,10 +1234,10 @@ public class LeAudioBroadcastServiceTest {
         if (Flags.leaudioBigDependsOnAudioState()) {
             /* Verify if broadcast triggers transition */
             Assert.assertFalse(mService.mBroadcastIdDeactivatedForUnicastTransition.isPresent());
-        } else {
-            /* Verify if broadcast is auto-started on start */
-            verify(mLeAudioBroadcasterNativeInterface, times(2)).startBroadcast(eq(broadcastId));
         }
+
+        /* Verify if broadcast is auto-started on start */
+        verify(mLeAudioBroadcasterNativeInterface, times(2)).startBroadcast(eq(broadcastId));
     }
 
     @Test
@@ -1251,10 +1248,7 @@ public class LeAudioBroadcastServiceTest {
 
         prepareHandoverStreamingBroadcast(groupId, broadcastId, code);
 
-        if (!Flags.leaudioBigDependsOnAudioState()) {
-            /* Verify if broadcast is auto-started on start */
-            verify(mLeAudioBroadcasterNativeInterface).startBroadcast(eq(broadcastId));
-        }
+        verify(mLeAudioBroadcasterNativeInterface).startBroadcast(eq(broadcastId));
 
         /* Imitate group change request by Bluetooth Sink HAL resume request */
         LeAudioStackEvent create_event =
@@ -1316,10 +1310,9 @@ public class LeAudioBroadcastServiceTest {
         if (Flags.leaudioBigDependsOnAudioState()) {
             /* Verify if broadcast triggers transition */
             Assert.assertFalse(mService.mBroadcastIdDeactivatedForUnicastTransition.isPresent());
-        } else {
-            /* Verify if broadcast is auto-started on start */
-            verify(mLeAudioBroadcasterNativeInterface, times(2)).startBroadcast(eq(broadcastId));
         }
+
+        verify(mLeAudioBroadcasterNativeInterface, times(2)).startBroadcast(eq(broadcastId));
     }
 
     @Test
