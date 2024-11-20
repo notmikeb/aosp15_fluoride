@@ -29,17 +29,6 @@ import java.io.InputStream;
 abstract class PbapClientRequest {
     static final String TAG = PbapClientRequest.class.getSimpleName();
 
-    protected static final byte OAP_TAGID_ORDER = 0x01;
-    protected static final byte OAP_TAGID_SEARCH_VALUE = 0x02;
-    protected static final byte OAP_TAGID_SEARCH_ATTRIBUTE = 0x03;
-    protected static final byte OAP_TAGID_MAX_LIST_COUNT = 0x04;
-    protected static final byte OAP_TAGID_LIST_START_OFFSET = 0x05;
-    protected static final byte OAP_TAGID_FILTER = 0x06;
-    protected static final byte OAP_TAGID_FORMAT = 0x07;
-    protected static final byte OAP_TAGID_PHONEBOOK_SIZE = 0x08;
-    protected static final byte OAP_TAGID_NEW_MISSED_CALLS = 0x09;
-    protected static final byte OAP_TAGID_PBAP_SUPPORTED_FEATURES = 0x10;
-
     protected HeaderSet mHeaderSet;
 
     protected int mResponseCode;

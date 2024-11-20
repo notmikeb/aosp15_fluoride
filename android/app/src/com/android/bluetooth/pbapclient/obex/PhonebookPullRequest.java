@@ -38,7 +38,7 @@ public class PhonebookPullRequest extends PullRequest {
 
     public PhonebookPullRequest(Context context) {
         mContext = context;
-        path = PbapClientConnectionHandler.PB_PATH;
+        path = PbapPhonebook.LOCAL_PHONEBOOK_PATH;
     }
 
     @Override

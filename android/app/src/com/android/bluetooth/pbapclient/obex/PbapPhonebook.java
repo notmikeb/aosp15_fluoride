@@ -17,6 +17,7 @@
 package com.android.bluetooth.pbapclient;
 
 import android.accounts.Account;
+import android.annotation.Nullable;
 import android.util.Log;
 
 import com.android.vcard.VCardConfig;
@@ -35,13 +36,36 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-class PbapClientVcardList {
-    private static final String TAG = PbapClientVcardList.class.getSimpleName();
+public class PbapPhonebook {
+    private static final String TAG = PbapPhonebook.class.getSimpleName();
+
     // {@link BufferedInputStream#DEFAULT_BUFFER_SIZE} is not public
     private static final int BIS_DEFAULT_BUFFER_SIZE = 8192;
 
+    // Phonebooks, including call history. See PBAP 1.2.3, Section 3.1.2
+    public static final String LOCAL_PHONEBOOK_PATH = "telecom/pb.vcf"; // Device phonebook
+    public static final String FAVORITES_PATH = "telecom/fav.vcf"; // Contacts marked as favorite
+    public static final String MCH_PATH = "telecom/mch.vcf"; // Missed Calls
+    public static final String ICH_PATH = "telecom/ich.vcf"; // Incoming Calls
+    public static final String OCH_PATH = "telecom/och.vcf"; // Outgoing Calls
+    public static final String SIM_PHONEBOOK_PATH = "SIM1/telecom/pb.vcf"; // SIM stored phonebook
+    public static final String SIM_MCH_PATH = "SIM1/telecom/mch.vcf"; // SIM stored Missed Calls
+    public static final String SIM_ICH_PATH = "SIM1/telecom/ich.vcf"; // SIM stored Incoming Calls
+    public static final String SIM_OCH_PATH = "SIM1/telecom/och.vcf"; // SIM stored Outgoing Calls
+
+    // VCard Formats, both are required to be supported by the Server, PBAP 1.2.3, Section 5.1.4.2
+    public static byte FORMAT_VCARD_21 = 0;
+    public static byte FORMAT_VCARD_30 = 1;
+
+    private final String mPhonebook;
+    private final int mListStartOffset;
     private final List<VCardEntry> mCards = new ArrayList<VCardEntry>();
-    private final Account mAccount;
+
+    // Needed for VCard parsing, since the account on older platform versions cannot be associated
+    // with the VCard (to construct a query) after parse time. Newer platform versions support this
+    // though, which means we can eventually remove this in favor of assigning an account post parse
+    // time.
+    @Nullable private final Account mAccount;
 
     class CardEntryHandler implements VCardEntryHandler {
         @Override
@@ -56,19 +80,32 @@ class PbapClientVcardList {
         public void onEnd() {}
     }
 
-    PbapClientVcardList(Account account, InputStream in, byte format) throws IOException {
-        if (format != PbapClientConnectionHandler.VCARD_TYPE_21
-                && format != PbapClientConnectionHandler.VCARD_TYPE_30) {
+    PbapPhonebook(String phonebook) {
+        mPhonebook = phonebook;
+        mAccount = null;
+        mListStartOffset = 0;
+    }
+
+    PbapPhonebook(
+            String phonebook,
+            byte format,
+            int listStartOffset,
+            @Nullable Account account,
+            InputStream inputStream)
+            throws IOException {
+        if (format != FORMAT_VCARD_21 && format != FORMAT_VCARD_30) {
             throw new IllegalArgumentException("Unsupported vCard version.");
         }
+        mPhonebook = phonebook;
+        mListStartOffset = listStartOffset;
         mAccount = account;
-        parse(in, format);
+        parse(inputStream, format);
     }
 
     private void parse(InputStream in, byte format) throws IOException {
         VCardParser parser;
 
-        if (format == PbapClientConnectionHandler.VCARD_TYPE_30) {
+        if (format == FORMAT_VCARD_30) {
             parser = new VCardParser_V30();
         } else {
             parser = new VCardParser_V21();
@@ -92,7 +129,7 @@ class PbapClientVcardList {
         // fails with a different {@link VCardException}.
         if (parsedWithVcardVersionException(parser, bufferedInput)) {
             // PBAP v1.2.3 only supports vCard versions 2.1 and 3.0; it's one or the other
-            if (format == PbapClientConnectionHandler.VCARD_TYPE_21) {
+            if (format == FORMAT_VCARD_21) {
                 parser = new VCardParser_V30();
                 Log.w(TAG, "vCard version and Parser mismatch; expected v2.1, switching to v3.0");
             } else {
@@ -132,15 +169,46 @@ class PbapClientVcardList {
         return false;
     }
 
+    /**
+     * Get the phonebook path associated with this PbapPhonebook object
+     *
+     * @return a string representing the path these VCard objects were requested from
+     */
+    public String getPhonebook() {
+        return mPhonebook;
+    }
+
+    /**
+     * Get the offset associated with this PbapPhonebook object
+     *
+     * <p>The offset respresents the start index of the remote contacts pull
+     *
+     * @return an int representing the offset index where this pull started from
+     */
+    public int getOffset() {
+        return mListStartOffset;
+    }
+
+    /**
+     * Get the total number of contacts contained in this phonebook
+     *
+     * @return an int containing the total number of contacts contained in this phonebook
+     */
     public int getCount() {
         return mCards.size();
     }
 
+    /**
+     * Get the list of VCard objects contained in this phonebook
+     *
+     * @return a list of VCard objects in this phonebook
+     */
     public List<VCardEntry> getList() {
         return mCards;
     }
 
-    public VCardEntry getFirst() {
-        return mCards.get(0);
+    @Override
+    public String toString() {
+        return "<" + TAG + "phonebook=" + mPhonebook + " entries=" + getCount() + ">";
     }
 }

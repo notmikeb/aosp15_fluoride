@@ -57,10 +57,6 @@ class PbapClientConnectionHandler extends Handler {
     // progress when Bluetooth stack is torn down.
     private static final int DEFAULT_BATCH_SIZE = 250;
 
-    // Upper limit on the indices of the vcf cards/entries, inclusive,
-    // i.e., valid indices are [0, 1, ... , UPPER_LIMIT]
-    private static final int UPPER_LIMIT = 65535;
-
     static final int MSG_CONNECT = 1;
     static final int MSG_DISCONNECT = 2;
     static final int MSG_DOWNLOAD = 3;
@@ -90,38 +86,10 @@ class PbapClientConnectionHandler extends Handler {
     private static final int PBAP_FEATURE_DEFAULT_IMAGE_FORMAT = 0x00000200;
     private static final int PBAP_FEATURE_DOWNLOADING = 0x00000001;
 
-    private static final long PBAP_FILTER_VERSION = 1 << 0;
-    private static final long PBAP_FILTER_FN = 1 << 1;
-    private static final long PBAP_FILTER_N = 1 << 2;
-    private static final long PBAP_FILTER_PHOTO = 1 << 3;
-    private static final long PBAP_FILTER_ADR = 1 << 5;
-    private static final long PBAP_FILTER_TEL = 1 << 7;
-    private static final long PBAP_FILTER_EMAIL = 1 << 8;
-    private static final long PBAP_FILTER_NICKNAME = 1 << 23;
-
     private static final int PBAP_SUPPORTED_FEATURE =
             PBAP_FEATURE_DEFAULT_IMAGE_FORMAT | PBAP_FEATURE_DOWNLOADING;
-    private static final long PBAP_REQUESTED_FIELDS =
-            PBAP_FILTER_VERSION
-                    | PBAP_FILTER_FN
-                    | PBAP_FILTER_N
-                    | PBAP_FILTER_PHOTO
-                    | PBAP_FILTER_ADR
-                    | PBAP_FILTER_EMAIL
-                    | PBAP_FILTER_TEL
-                    | PBAP_FILTER_NICKNAME;
 
     @VisibleForTesting static final int L2CAP_INVALID_PSM = -1;
-
-    public static final String PB_PATH = "telecom/pb.vcf";
-    public static final String FAV_PATH = "telecom/fav.vcf";
-    public static final String MCH_PATH = "telecom/mch.vcf";
-    public static final String ICH_PATH = "telecom/ich.vcf";
-    public static final String OCH_PATH = "telecom/och.vcf";
-    public static final String SIM_PB_PATH = "SIM1/telecom/pb.vcf";
-    public static final String SIM_MCH_PATH = "SIM1/telecom/mch.vcf";
-    public static final String SIM_ICH_PATH = "SIM1/telecom/ich.vcf";
-    public static final String SIM_OCH_PATH = "SIM1/telecom/och.vcf";
 
     // PBAP v1.2.3 Sec. 7.1.2
     private static final int SUPPORTED_REPOSITORIES_LOCALPHONEBOOK = 1 << 0;
@@ -129,8 +97,6 @@ class PbapClientConnectionHandler extends Handler {
     private static final int SUPPORTED_REPOSITORIES_FAVORITES = 1 << 3;
 
     public static final int PBAP_V1_2 = 0x0102;
-    public static final byte VCARD_TYPE_21 = 0;
-    public static final byte VCARD_TYPE_30 = 1;
 
     private Account mAccount;
     private AccountManager mAccountManager;
@@ -250,19 +216,19 @@ class PbapClientConnectionHandler extends Handler {
                     return;
                 }
                 if (isRepositorySupported(SUPPORTED_REPOSITORIES_FAVORITES)) {
-                    downloadContacts(FAV_PATH);
+                    downloadContacts(PbapPhonebook.FAVORITES_PATH);
                 }
                 if (isRepositorySupported(SUPPORTED_REPOSITORIES_LOCALPHONEBOOK)) {
-                    downloadContacts(PB_PATH);
+                    downloadContacts(PbapPhonebook.LOCAL_PHONEBOOK_PATH);
                 }
                 if (isRepositorySupported(SUPPORTED_REPOSITORIES_SIMCARD)) {
-                    downloadContacts(SIM_PB_PATH);
+                    downloadContacts(PbapPhonebook.SIM_PHONEBOOK_PATH);
                 }
 
                 Map<String, Integer> callCounter = new HashMap<>();
-                downloadCallLog(MCH_PATH, callCounter);
-                downloadCallLog(ICH_PATH, callCounter);
-                downloadCallLog(OCH_PATH, callCounter);
+                downloadCallLog(PbapPhonebook.MCH_PATH, callCounter);
+                downloadCallLog(PbapPhonebook.ICH_PATH, callCounter);
+                downloadCallLog(PbapPhonebook.OCH_PATH, callCounter);
                 break;
 
             default:
@@ -334,7 +300,7 @@ class PbapClientConnectionHandler extends Handler {
 
                 if (mPseRec.getProfileVersion() >= PBAP_V1_2) {
                     oap.add(
-                            PbapClientRequest.OAP_TAGID_PBAP_SUPPORTED_FEATURES,
+                            PbapApplicationParameters.OAP_PBAP_SUPPORTED_FEATURES,
                             PBAP_SUPPORTED_FEATURE);
                 }
 
@@ -381,14 +347,21 @@ class PbapClientConnectionHandler extends Handler {
             PhonebookPullRequest processor =
                     new PhonebookPullRequest(mPbapClientStateMachine.getContext());
 
+            PbapApplicationParameters params =
+                    new PbapApplicationParameters(
+                            PbapApplicationParameters.PROPERTIES_ALL,
+                            /* format, unused */ (byte) 0,
+                            PbapApplicationParameters.RETURN_SIZE_ONLY,
+                            /* list start offeset, start from beginning */ 0);
+
             // Download contacts in batches of size DEFAULT_BATCH_SIZE
-            RequestPullPhoneBookSize requestPbSize =
-                    new RequestPullPhoneBookSize(path, PBAP_REQUESTED_FIELDS);
+            RequestPullPhonebookMetadata requestPbSize =
+                    new RequestPullPhonebookMetadata(path, params);
             requestPbSize.execute(mObexSession);
 
-            int numberOfContactsRemaining = requestPbSize.getSize();
+            int numberOfContactsRemaining = requestPbSize.getMetadata().getSize();
             int startOffset = 0;
-            if (PB_PATH.equals(path)) {
+            if (PbapPhonebook.LOCAL_PHONEBOOK_PATH.equals(path)) {
                 // PBAP v1.2.3, Sec 3.1.5. The first contact in pb is owner card 0.vcf, which we
                 // do not want to download. The other phonebook objects (e.g., fav) don't have an
                 // owner card, so they don't need an offset.
@@ -397,22 +370,24 @@ class PbapClientConnectionHandler extends Handler {
                 numberOfContactsRemaining -= 1;
             }
 
-            while ((numberOfContactsRemaining > 0) && (startOffset <= UPPER_LIMIT)) {
+            while ((numberOfContactsRemaining > 0)
+                    && (startOffset <= PbapApplicationParameters.MAX_PHONEBOOK_SIZE)) {
                 int numberOfContactsToDownload =
                         Math.min(
                                 Math.min(DEFAULT_BATCH_SIZE, numberOfContactsRemaining),
-                                UPPER_LIMIT - startOffset + 1);
-                RequestPullPhoneBook request =
-                        new RequestPullPhoneBook(
-                                path,
-                                mAccount,
-                                PBAP_REQUESTED_FIELDS,
-                                VCARD_TYPE_30,
+                                PbapApplicationParameters.MAX_PHONEBOOK_SIZE - startOffset + 1);
+
+                params =
+                        new PbapApplicationParameters(
+                                PbapApplicationParameters.PROPERTIES_ALL,
+                                PbapPhonebook.FORMAT_VCARD_30,
                                 numberOfContactsToDownload,
                                 startOffset);
+
+                RequestPullPhonebook request = new RequestPullPhonebook(path, params, mAccount);
                 request.execute(mObexSession);
                 List<VCardEntry> vcards = request.getList();
-                if (FAV_PATH.equals(path)) {
+                if (PbapPhonebook.FAVORITES_PATH.equals(path)) {
                     // mark each vcard as a favorite
                     for (VCardEntry v : vcards) {
                         v.setStarred(true);
@@ -424,7 +399,8 @@ class PbapClientConnectionHandler extends Handler {
                 startOffset += numberOfContactsToDownload;
                 numberOfContactsRemaining -= numberOfContactsToDownload;
             }
-            if ((startOffset > UPPER_LIMIT) && (numberOfContactsRemaining > 0)) {
+            if ((startOffset > PbapApplicationParameters.MAX_PHONEBOOK_SIZE)
+                    && (numberOfContactsRemaining > 0)) {
                 Log.w(TAG, "Download contacts incomplete, index exceeded upper limit.");
             }
         } catch (IOException e) {
@@ -437,8 +413,14 @@ class PbapClientConnectionHandler extends Handler {
     @VisibleForTesting
     void downloadCallLog(String path, Map<String, Integer> callCounter) {
         try {
-            RequestPullPhoneBook request =
-                    new RequestPullPhoneBook(path, mAccount, 0, VCARD_TYPE_30, 0, 0);
+            PbapApplicationParameters params =
+                    new PbapApplicationParameters(
+                            /* properties, unused for call logs */ 0,
+                            PbapPhonebook.FORMAT_VCARD_30,
+                            0,
+                            0);
+
+            RequestPullPhonebook request = new RequestPullPhonebook(path, params, mAccount);
             request.execute(mObexSession);
             CallLogPullRequest processor =
                     new CallLogPullRequest(
