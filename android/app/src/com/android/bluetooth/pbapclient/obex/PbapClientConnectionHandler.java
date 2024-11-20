@@ -140,21 +140,21 @@ class PbapClientConnectionHandler extends Handler {
     private SdpPseRecord mPseRec = null;
     private ClientSession mObexSession;
     private Context mContext;
-    private BluetoothPbapObexAuthenticator mAuth = null;
+    private PbapClientObexAuthenticator mAuth = null;
     private final PbapClientStateMachine mPbapClientStateMachine;
     private boolean mAccountCreated;
 
     /**
      * Constructs PCEConnectionHandler object
      *
-     * @param pceHandlerbuild To build BluetoothPbapClientHandler Instance.
+     * @param pceHandlerbuild To build PbapClientConnectionHandler Instance.
      */
     PbapClientConnectionHandler(Builder pceHandlerbuild) {
         super(pceHandlerbuild.mLooper);
         mDevice = pceHandlerbuild.mDevice;
         mContext = pceHandlerbuild.mContext;
         mPbapClientStateMachine = pceHandlerbuild.mClientStateMachine;
-        mAuth = new BluetoothPbapObexAuthenticator();
+        mAuth = new PbapClientObexAuthenticator();
         mAccountManager = AccountManager.get(mPbapClientStateMachine.getContext());
         mAccount =
                 new Account(
@@ -334,7 +334,7 @@ class PbapClientConnectionHandler extends Handler {
 
                 if (mPseRec.getProfileVersion() >= PBAP_V1_2) {
                     oap.add(
-                            BluetoothPbapRequest.OAP_TAGID_PBAP_SUPPORTED_FEATURES,
+                            PbapClientRequest.OAP_TAGID_PBAP_SUPPORTED_FEATURES,
                             PBAP_SUPPORTED_FEATURE);
                 }
 
@@ -382,8 +382,8 @@ class PbapClientConnectionHandler extends Handler {
                     new PhonebookPullRequest(mPbapClientStateMachine.getContext());
 
             // Download contacts in batches of size DEFAULT_BATCH_SIZE
-            BluetoothPbapRequestPullPhoneBookSize requestPbSize =
-                    new BluetoothPbapRequestPullPhoneBookSize(path, PBAP_REQUESTED_FIELDS);
+            RequestPullPhoneBookSize requestPbSize =
+                    new RequestPullPhoneBookSize(path, PBAP_REQUESTED_FIELDS);
             requestPbSize.execute(mObexSession);
 
             int numberOfContactsRemaining = requestPbSize.getSize();
@@ -402,8 +402,8 @@ class PbapClientConnectionHandler extends Handler {
                         Math.min(
                                 Math.min(DEFAULT_BATCH_SIZE, numberOfContactsRemaining),
                                 UPPER_LIMIT - startOffset + 1);
-                BluetoothPbapRequestPullPhoneBook request =
-                        new BluetoothPbapRequestPullPhoneBook(
+                RequestPullPhoneBook request =
+                        new RequestPullPhoneBook(
                                 path,
                                 mAccount,
                                 PBAP_REQUESTED_FIELDS,
@@ -437,8 +437,8 @@ class PbapClientConnectionHandler extends Handler {
     @VisibleForTesting
     void downloadCallLog(String path, Map<String, Integer> callCounter) {
         try {
-            BluetoothPbapRequestPullPhoneBook request =
-                    new BluetoothPbapRequestPullPhoneBook(path, mAccount, 0, VCARD_TYPE_30, 0, 0);
+            RequestPullPhoneBook request =
+                    new RequestPullPhoneBook(path, mAccount, 0, VCARD_TYPE_30, 0, 0);
             request.execute(mObexSession);
             CallLogPullRequest processor =
                     new CallLogPullRequest(
