@@ -21,14 +21,14 @@ import android.util.Log;
 import com.android.bluetooth.ObexAppParameters;
 import com.android.obex.HeaderSet;
 
-final class BluetoothPbapRequestPullPhoneBookSize extends BluetoothPbapRequest {
-    private static final String TAG = "PbapClient.PullPbSize";
+final class RequestPullPhoneBookSize extends PbapClientRequest {
+    private static final String TAG = RequestPullPhoneBookSize.class.getSimpleName();
 
     private static final String TYPE = "x-bt/phonebook";
 
     private int mSize;
 
-    BluetoothPbapRequestPullPhoneBookSize(String pbName, long filter) {
+    RequestPullPhoneBookSize(String pbName, long filter) {
         mHeaderSet.setHeader(HeaderSet.NAME, pbName);
 
         mHeaderSet.setHeader(HeaderSet.TYPE, TYPE);

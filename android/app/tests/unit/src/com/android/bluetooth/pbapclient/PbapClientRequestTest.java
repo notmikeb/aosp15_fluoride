@@ -41,9 +41,9 @@ import java.io.InputStream;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class BluetoothPbapRequestTest {
+public class PbapClientRequestTest {
 
-    private BluetoothPbapRequest mRequest = new BluetoothPbapRequest() {};
+    private PbapClientRequest mRequest = new PbapClientRequest() {};
 
     @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
@@ -51,7 +51,7 @@ public class BluetoothPbapRequestTest {
 
     @Before
     public void setUp() throws Exception {
-        mRequest = new BluetoothPbapRequest() {};
+        mRequest = new PbapClientRequest() {};
     }
 
     @Test

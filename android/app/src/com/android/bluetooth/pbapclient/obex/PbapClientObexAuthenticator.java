@@ -28,8 +28,8 @@ import java.util.Arrays;
  * with PSE devices prior to PBAP 1.2. With profiles prior to 1.2 the actual initiation of
  * authentication is implementation defined.
  */
-class BluetoothPbapObexAuthenticator implements Authenticator {
-    private static final String TAG = "PbapClientObexAuth";
+class PbapClientObexAuthenticator implements Authenticator {
+    private static final String TAG = PbapClientObexAuthenticator.class.getSimpleName();
 
     // Default session key for legacy devices is 0000
     @VisibleForTesting String mSessionKey = "0000";

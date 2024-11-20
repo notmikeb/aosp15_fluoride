@@ -23,6 +23,12 @@ public abstract class PullRequest {
     public String path;
     protected List<VCardEntry> mEntries;
 
+    /**
+     * How this request should be handled and the data should be stored once its complete.
+     *
+     * <p>Override to provide an implementation specific to the type of results your implementation
+     * expects.
+     */
     public abstract void onPullComplete();
 
     @Override

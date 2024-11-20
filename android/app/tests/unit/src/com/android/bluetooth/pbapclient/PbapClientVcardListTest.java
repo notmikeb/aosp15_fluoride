@@ -40,7 +40,7 @@ import java.io.InputStream;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-public class BluetoothPbapVcardListTest {
+public class PbapClientVcardListTest {
 
     private static final Account ACCOUNT = mock(Account.class);
     private Context mTargetContext = InstrumentationRegistry.getTargetContext();
@@ -70,12 +70,12 @@ public class BluetoothPbapVcardListTest {
         assertThrows(
                 IOException.class,
                 () ->
-                        new BluetoothPbapVcardList(
+                        new PbapClientVcardList(
                                 ACCOUNT, is, PbapClientConnectionHandler.VCARD_TYPE_30));
         assertThrows(
                 IOException.class,
                 () ->
-                        new BluetoothPbapVcardList(
+                        new PbapClientVcardList(
                                 ACCOUNT, is, PbapClientConnectionHandler.VCARD_TYPE_21));
     }
 
@@ -84,7 +84,7 @@ public class BluetoothPbapVcardListTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () ->
-                        new BluetoothPbapVcardList(
+                        new PbapClientVcardList(
                                 ACCOUNT,
                                 new ByteArrayInputStream("Hello world".getBytes()),
                                 (byte) -1));
@@ -94,8 +94,8 @@ public class BluetoothPbapVcardListTest {
     public void test30ParserWith21Vcard_parsingSucceeds() throws IOException {
         InputStream fileStream =
                 mTestResources.openRawResource(com.android.bluetooth.tests.R.raw.v21_simple);
-        BluetoothPbapVcardList result =
-                new BluetoothPbapVcardList(
+        PbapClientVcardList result =
+                new PbapClientVcardList(
                         ACCOUNT, fileStream, PbapClientConnectionHandler.VCARD_TYPE_30);
         assertThat(result.getCount()).isEqualTo(1);
     }
@@ -104,8 +104,8 @@ public class BluetoothPbapVcardListTest {
     public void test21ParserWith30Vcard_parsingSucceeds() throws IOException {
         InputStream fileStream =
                 mTestResources.openRawResource(com.android.bluetooth.tests.R.raw.v30_simple);
-        BluetoothPbapVcardList result =
-                new BluetoothPbapVcardList(
+        PbapClientVcardList result =
+                new PbapClientVcardList(
                         ACCOUNT, fileStream, PbapClientConnectionHandler.VCARD_TYPE_21);
         assertThat(result.getCount()).isEqualTo(1);
     }
@@ -115,8 +115,8 @@ public class BluetoothPbapVcardListTest {
         InputStream fileStream =
                 mTestResources.openRawResource(
                         com.android.bluetooth.tests.R.raw.unsupported_version);
-        BluetoothPbapVcardList result =
-                new BluetoothPbapVcardList(
+        PbapClientVcardList result =
+                new PbapClientVcardList(
                         ACCOUNT, fileStream, PbapClientConnectionHandler.VCARD_TYPE_30);
         assertThat(result.getCount()).isEqualTo(0);
     }
