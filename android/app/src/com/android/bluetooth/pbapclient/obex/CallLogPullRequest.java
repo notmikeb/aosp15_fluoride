@@ -69,11 +69,11 @@ public class CallLogPullRequest extends PullRequest {
         Log.d(TAG, "onPullComplete with " + mEntries.size() + " entries");
         int type;
         try {
-            if (path.equals(PbapClientConnectionHandler.ICH_PATH)) {
+            if (path.equals(PbapPhonebook.ICH_PATH)) {
                 type = CallLog.Calls.INCOMING_TYPE;
-            } else if (path.equals(PbapClientConnectionHandler.OCH_PATH)) {
+            } else if (path.equals(PbapPhonebook.OCH_PATH)) {
                 type = CallLog.Calls.OUTGOING_TYPE;
-            } else if (path.equals(PbapClientConnectionHandler.MCH_PATH)) {
+            } else if (path.equals(PbapPhonebook.MCH_PATH)) {
                 type = CallLog.Calls.MISSED_TYPE;
             } else {
                 Log.w(TAG, "Unknown path type:" + path);
