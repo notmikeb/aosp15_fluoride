@@ -1381,7 +1381,18 @@ public class ActiveDeviceManager implements AdapterService.BluetoothStateCallbac
      */
     private boolean isBroadcastingAudio() {
         final LeAudioService leAudioService = mFactory.getLeAudioService();
-        return leAudioService != null && !leAudioService.getAllBroadcastMetadata().isEmpty();
+        if (leAudioService == null) {
+            Log.d(TAG, "isBroadcastingAudio: false - there is no LeAudioService");
+            return false;
+        }
+
+        if (leAudioService.getAllBroadcastMetadata().isEmpty()) {
+            Log.d(TAG, "isBroadcastingAudio: false - getAllBroadcastMetadata is empty");
+            return false;
+        }
+
+        Log.d(TAG, "isBroadcastingAudio: true");
+        return true;
     }
 
     /**
