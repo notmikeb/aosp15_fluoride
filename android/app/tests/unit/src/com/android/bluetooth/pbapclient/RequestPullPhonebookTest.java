@@ -16,56 +16,147 @@
 
 package com.android.bluetooth.pbapclient;
 
-import static org.junit.Assert.assertThrows;
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.mockito.Mockito.mock;
 
 import android.accounts.Account;
+import android.util.Log;
 
-import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bluetooth.FakeObexServer;
+import com.android.obex.ClientSession;
+import com.android.obex.HeaderSet;
+import com.android.obex.Operation;
+import com.android.obex.ResponseCodes;
+
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
-@SmallTest
 @RunWith(AndroidJUnit4.class)
 public class RequestPullPhonebookTest {
 
-    private static final String PB_NAME = "phonebook";
+    private static final String PHONEBOOK_NAME = "phonebook";
     private static final Account ACCOUNT = mock(Account.class);
 
-    @Test
-    public void readResponse_failWithInputStreamThatThrowsIOEWhenRead() {
+    private FakePbapObexServer mServer;
+    private ClientSession mSession;
+
+    private RequestPullPhonebook mRequest;
+
+    @Before
+    public void setUp() throws IOException {
+        mServer = new FakePbapObexServer();
+        mSession = mServer.getClientSession();
+
         PbapApplicationParameters params =
                 new PbapApplicationParameters(
-                        PbapApplicationParameters.PROPERTY_VERSION,
-                        PbapPhonebook.FORMAT_VCARD_21,
-                        PbapApplicationParameters.RETURN_SIZE_ONLY,
-                        /* startOffset= */ 10);
+                        PbapApplicationParameters.PROPERTIES_ALL,
+                        PbapPhonebook.FORMAT_VCARD_30,
+                        PbapApplicationParameters.MAX_PHONEBOOK_SIZE,
+                        /* startOffset= */ 0);
+        mRequest = new RequestPullPhonebook(PHONEBOOK_NAME, params, ACCOUNT);
+    }
 
-        RequestPullPhonebook request = new RequestPullPhonebook(PB_NAME, params, ACCOUNT);
+    @Test
+    public void getType_returnsTypeMetadataRequest() {
+        assertThat(mRequest.getType()).isEqualTo(PbapClientRequest.TYPE_PULL_PHONEBOOK);
+    }
 
-        final InputStream is =
-                new InputStream() {
-                    @Override
-                    public int read() throws IOException {
-                        throw new IOException();
-                    }
+    @Test
+    public void getResponseCode_beforeExecutingRequest_returnsNegativeOne() {
+        assertThat(mRequest.getResponseCode()).isEqualTo(-1);
+    }
 
-                    @Override
-                    public int read(byte[] b) throws IOException {
-                        throw new IOException();
-                    }
+    @Test
+    public void executeRequest_sessionConnectedWithContacts_returnsContacts() throws IOException {
+        mSession.connect(null);
 
-                    @Override
-                    public int read(byte[] b, int off, int len) throws IOException {
-                        throw new IOException();
-                    }
-                };
+        String vcard =
+                Utils.createVcard(
+                        Utils.VERSION_30,
+                        "Foo",
+                        "Bar",
+                        "+1-234-567-8901",
+                        "111 Test Street;Test Town;CA;90210;USA",
+                        "Foo@email.com");
+        mServer.addContact(vcard);
 
-        assertThrows(IOException.class, () -> request.readResponse(is));
+        mRequest.execute(mSession);
+
+        assertThat(mRequest.getResponseCode()).isEqualTo(ResponseCodes.OBEX_HTTP_OK);
+        assertThat(mRequest.getPhonebook()).isEqualTo(PHONEBOOK_NAME);
+
+        PbapPhonebook phonebook = mRequest.getContacts();
+        assertThat(phonebook).isNotNull();
+        assertThat(phonebook.getPhonebook()).isEqualTo(PHONEBOOK_NAME);
+        assertThat(phonebook.getOffset()).isEqualTo(0);
+        assertThat(phonebook.getCount()).isEqualTo(1);
+        assertThat(phonebook.getList()).isNotEmpty();
+    }
+
+    @Test
+    public void execute_sessionConnectedAndResponseBad_returnsEmptyPhonebook() throws IOException {
+        mSession.connect(null);
+        mServer.setResponseCode(ResponseCodes.OBEX_HTTP_BAD_REQUEST);
+
+        mRequest.execute(mSession);
+
+        assertThat(mRequest.getResponseCode()).isEqualTo(ResponseCodes.OBEX_HTTP_BAD_REQUEST);
+        assertThat(mRequest.getPhonebook()).isEqualTo(PHONEBOOK_NAME);
+
+        PbapPhonebook phonebook = mRequest.getContacts();
+        assertThat(phonebook).isNotNull();
+        assertThat(phonebook.getPhonebook()).isEqualTo(PHONEBOOK_NAME);
+        assertThat(phonebook.getOffset()).isEqualTo(0);
+        assertThat(phonebook.getCount()).isEqualTo(0);
+        assertThat(phonebook.getList()).isEmpty();
+    }
+
+    // *********************************************************************************************
+    // * Fake PBAP Server
+    // *********************************************************************************************
+
+    private static class FakePbapObexServer extends FakeObexServer {
+        private static final String TAG = FakePbapObexServer.class.getSimpleName();
+
+        private int mResponseCode = ResponseCodes.OBEX_HTTP_OK;
+        private final List<String> mPhonebook = new ArrayList<>();
+
+        FakePbapObexServer() throws IOException {
+            super();
+        }
+
+        public void setResponseCode(int responseCode) {
+            mResponseCode = responseCode;
+        }
+
+        public void addContact(String vcard) {
+            mPhonebook.add(vcard);
+        }
+
+        @Override
+        public int onGet(final Operation op) {
+            Log.i(TAG, "onGet()");
+
+            if (mResponseCode != ResponseCodes.OBEX_HTTP_OK) {
+                return mResponseCode;
+            }
+
+            byte[] contacts = null;
+            if (mPhonebook.size() > 0) {
+                String phonebook = Utils.createPhonebook(mPhonebook);
+                contacts = phonebook.getBytes();
+            }
+
+            HeaderSet replyHeaders = new HeaderSet();
+            return sendResponse(op, replyHeaders, contacts);
+        }
     }
 }

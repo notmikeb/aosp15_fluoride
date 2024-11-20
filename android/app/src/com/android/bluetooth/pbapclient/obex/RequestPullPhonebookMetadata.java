@@ -35,6 +35,11 @@ final class RequestPullPhonebookMetadata extends PbapClientRequest {
     private final String mPhonebook;
     private PbapPhonebookMetadata mResponse;
 
+    @Override
+    public int getType() {
+        return TYPE_PULL_PHONEBOOK_METADATA;
+    }
+
     RequestPullPhonebookMetadata(String phonebook, PbapApplicationParameters params) {
         mPhonebook = phonebook;
         mHeaderSet.setHeader(HeaderSet.NAME, phonebook);
