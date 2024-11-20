@@ -157,7 +157,9 @@ class PbapClientConnectionHandler extends Handler {
         mAuth = new BluetoothPbapObexAuthenticator();
         mAccountManager = AccountManager.get(mPbapClientStateMachine.getContext());
         mAccount =
-                new Account(mDevice.getAddress(), mContext.getString(R.string.pbap_account_type));
+                new Account(
+                        mDevice.getAddress(),
+                        mContext.getString(R.string.pbap_client_account_type));
     }
 
     public static class Builder {

@@ -19,12 +19,17 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 
-public class AuthenticationService extends Service {
-    private Authenticator mAuthenticator;
+/**
+ * A service to host out AccountManagerService compliant Authenticator
+ *
+ * <p>See PbapClientAccountAuthenticator for details.
+ */
+public class PbapClientAccountAuthenticatorService extends Service {
+    private PbapClientAccountAuthenticator mAuthenticator;
 
     @Override
     public void onCreate() {
-        mAuthenticator = new Authenticator(this);
+        mAuthenticator = new PbapClientAccountAuthenticator(this);
     }
 
     @Override
