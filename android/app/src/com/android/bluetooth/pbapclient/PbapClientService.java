@@ -21,6 +21,7 @@ import android.accounts.AccountManager;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothUuid;
+import android.bluetooth.SdpPseRecord;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -184,6 +185,48 @@ public class PbapClientService extends ProfileService {
         setComponentAvailable(AUTHENTICATOR_SERVICE, false);
     }
 
+    /**
+     * Add our PBAP Client SDP record to the device SDP database
+     *
+     * <p>This allows our client to be recognized by the remove device. The record must be cleaned
+     * up when we shutdown.
+     */
+    private void registerSdpRecord() {
+        SdpManagerNativeInterface nativeInterface = SdpManagerNativeInterface.getInstance();
+        if (!nativeInterface.isAvailable()) {
+            Log.e(TAG, "SdpManagerNativeInterface is not available");
+            return;
+        }
+        mSdpHandle = nativeInterface.createPbapPceRecord(SERVICE_NAME, PbapSdpRecord.VERSION_1_2);
+    }
+
+    /**
+     * Remove our PBAP Client SDP record from the device SDP database
+     *
+     * <p>Gracefully removes PBAP Client support from our SDP records. Called when shutting down.
+     */
+    private void cleanUpSdpRecord() {
+        if (mSdpHandle < 0) {
+            Log.e(TAG, "cleanUpSdpRecord, SDP record never created");
+            return;
+        }
+        int sdpHandle = mSdpHandle;
+        mSdpHandle = -1;
+        SdpManagerNativeInterface nativeInterface = SdpManagerNativeInterface.getInstance();
+        if (!nativeInterface.isAvailable()) {
+            Log.e(
+                    TAG,
+                    "cleanUpSdpRecord failed, SdpManagerNativeInterface is not available,"
+                            + " sdpHandle="
+                            + sdpHandle);
+            return;
+        }
+        Log.i(TAG, "cleanUpSdpRecord, mSdpHandle=" + sdpHandle);
+        if (!nativeInterface.removeSdpRecord(sdpHandle)) {
+            Log.e(TAG, "cleanUpSdpRecord, removeSdpRecord failed, sdpHandle=" + sdpHandle);
+        }
+    }
+
     void cleanupDevice(BluetoothDevice device) {
         Log.d(TAG, "Cleanup device: " + device);
         synchronized (mPbapClientStateMachineMap) {
@@ -277,39 +320,6 @@ public class PbapClientService extends ProfileService {
         }
     }
 
-    private void registerSdpRecord() {
-        SdpManagerNativeInterface nativeInterface = SdpManagerNativeInterface.getInstance();
-        if (!nativeInterface.isAvailable()) {
-            Log.e(TAG, "SdpManagerNativeInterface is not available");
-            return;
-        }
-        mSdpHandle =
-                nativeInterface.createPbapPceRecord(
-                        SERVICE_NAME, PbapClientConnectionHandler.PBAP_V1_2);
-    }
-
-    private void cleanUpSdpRecord() {
-        if (mSdpHandle < 0) {
-            Log.e(TAG, "cleanUpSdpRecord, SDP record never created");
-            return;
-        }
-        int sdpHandle = mSdpHandle;
-        mSdpHandle = -1;
-        SdpManagerNativeInterface nativeInterface = SdpManagerNativeInterface.getInstance();
-        if (!nativeInterface.isAvailable()) {
-            Log.e(
-                    TAG,
-                    "cleanUpSdpRecord failed, SdpManagerNativeInterface is not available,"
-                            + " sdpHandle="
-                            + sdpHandle);
-            return;
-        }
-        Log.i(TAG, "cleanUpSdpRecord, mSdpHandle=" + sdpHandle);
-        if (!nativeInterface.removeSdpRecord(sdpHandle)) {
-            Log.e(TAG, "cleanUpSdpRecord, removeSdpRecord failed, sdpHandle=" + sdpHandle);
-        }
-    }
-
     @VisibleForTesting
     class PbapBroadcastReceiver extends BroadcastReceiver {
         @Override
@@ -399,11 +409,6 @@ public class PbapClientService extends ProfileService {
      */
     public void receiveSdpSearchRecord(
             BluetoothDevice device, int status, Parcelable record, ParcelUuid uuid) {
-        PbapClientStateMachine stateMachine = mPbapClientStateMachineMap.get(device);
-        if (stateMachine == null) {
-            Log.e(TAG, "No Statemachine found for the device=" + device.toString());
-            return;
-        }
         Log.v(
                 TAG,
                 "Received SDP record for UUID="
@@ -412,9 +417,21 @@ public class PbapClientService extends ProfileService {
                         + BluetoothUuid.PBAP_PSE.toString()
                         + ")");
         if (uuid.equals(BluetoothUuid.PBAP_PSE)) {
-            stateMachine
-                    .obtainMessage(PbapClientStateMachine.MSG_SDP_COMPLETE, record)
-                    .sendToTarget();
+            PbapClientStateMachine stateMachine = mPbapClientStateMachineMap.get(device);
+            if (stateMachine == null) {
+                Log.e(TAG, "No Statemachine found for the device=" + device.toString());
+                return;
+            }
+            SdpPseRecord pseRecord = (SdpPseRecord) record;
+            if (pseRecord != null) {
+                stateMachine
+                        .obtainMessage(
+                                PbapClientStateMachine.MSG_SDP_COMPLETE,
+                                new PbapSdpRecord(device, pseRecord))
+                        .sendToTarget();
+            } else {
+                Log.w(TAG, "Received null PSE record for device=" + device);
+            }
         }
     }
 
