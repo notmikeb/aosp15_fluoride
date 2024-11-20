@@ -38,7 +38,7 @@ import org.junit.runner.RunWith;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
-public class AuthenticationServiceTest {
+public class PbapClientAccountAuthenticatorServiceTest {
 
     Context mTargetContext;
 
@@ -58,7 +58,7 @@ public class AuthenticationServiceTest {
     @Test
     public void bind() throws Exception {
         Intent intent = new Intent("android.accounts.AccountAuthenticator");
-        intent.setClass(mTargetContext, AuthenticationService.class);
+        intent.setClass(mTargetContext, PbapClientAccountAuthenticatorService.class);
 
         assertThat(mServiceRule.bindService(intent)).isNotNull();
     }
@@ -66,7 +66,8 @@ public class AuthenticationServiceTest {
     private void enableService(boolean enable) {
         int enabledState =
                 enable ? COMPONENT_ENABLED_STATE_ENABLED : COMPONENT_ENABLED_STATE_DEFAULT;
-        ComponentName serviceName = new ComponentName(mTargetContext, AuthenticationService.class);
+        ComponentName serviceName =
+                new ComponentName(mTargetContext, PbapClientAccountAuthenticatorService.class);
         mTargetContext
                 .getPackageManager()
                 .setComponentEnabledSetting(serviceName, enabledState, DONT_KILL_APP);
