@@ -35,7 +35,6 @@ import android.provider.CallLog;
 import android.sysprop.BluetoothProperties;
 import android.util.Log;
 
-import com.android.bluetooth.BluetoothMethodProxy;
 import com.android.bluetooth.R;
 import com.android.bluetooth.btservice.AdapterService;
 import com.android.bluetooth.btservice.ProfileService;
@@ -297,11 +296,10 @@ public class PbapClientService extends ProfileService {
         }
     }
 
-    private void removeHfpCallLog(String accountName, Context context) {
+    private void removeHfpCallLog(String accountName) {
         Log.d(TAG, "Removing call logs from " + accountName);
-        // Delete call logs belonging to accountName==BD_ADDR that also match
-        // component name "hfpclient".
-        ComponentName componentName = new ComponentName(context, HfpClientConnectionService.class);
+        // Delete call logs belonging to accountName==BD_ADDR that also match component "hfpclient"
+        ComponentName componentName = new ComponentName(this, HfpClientConnectionService.class);
         String selectionFilter =
                 CallLog.Calls.PHONE_ACCOUNT_ID
                         + "=? AND "
@@ -309,12 +307,7 @@ public class PbapClientService extends ProfileService {
                         + "=?";
         String[] selectionArgs = new String[] {accountName, componentName.flattenToString()};
         try {
-            BluetoothMethodProxy.getInstance()
-                    .contentResolverDelete(
-                            getContentResolver(),
-                            CallLog.Calls.CONTENT_URI,
-                            selectionFilter,
-                            selectionArgs);
+            getContentResolver().delete(CallLog.Calls.CONTENT_URI, selectionFilter, selectionArgs);
         } catch (IllegalArgumentException e) {
             Log.w(TAG, "Call Logs could not be deleted, they may not exist yet.");
         }
@@ -345,7 +338,7 @@ public class PbapClientService extends ProfileService {
             Log.d(TAG, "Received intent to disconnect HFP with " + device);
             // HFP client stores entries in calllog.db by BD_ADDR and component name
             // Using the current Service as the context.
-            removeHfpCallLog(device.getAddress(), this);
+            removeHfpCallLog(device.getAddress());
         }
     }
 
