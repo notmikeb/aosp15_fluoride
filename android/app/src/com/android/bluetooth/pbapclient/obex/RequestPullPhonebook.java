@@ -17,7 +17,6 @@
 package com.android.bluetooth.pbapclient;
 
 import android.accounts.Account;
-import android.util.Log;
 
 import com.android.bluetooth.ObexAppParameters;
 import com.android.obex.HeaderSet;
@@ -39,6 +38,11 @@ final class RequestPullPhonebook extends PbapClientRequest {
     private Account mAccount;
 
     private PbapPhonebook mResponse;
+
+    @Override
+    public int getType() {
+        return TYPE_PULL_PHONEBOOK;
+    }
 
     RequestPullPhonebook(String phonebook, PbapApplicationParameters params, Account account) {
         mPhonebook = phonebook;
@@ -80,10 +84,7 @@ final class RequestPullPhonebook extends PbapClientRequest {
 
     @Override
     protected void readResponse(InputStream stream) throws IOException {
-        Log.v(TAG, "readResponse");
-
         mResponse = new PbapPhonebook(mPhonebook, mFormat, mListStartOffset, mAccount, stream);
-        Log.d(TAG, "Read " + mResponse.getCount() + " entries");
     }
 
     public String getPhonebook() {

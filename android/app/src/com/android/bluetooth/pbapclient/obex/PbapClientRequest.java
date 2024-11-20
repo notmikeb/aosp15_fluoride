@@ -29,91 +29,97 @@ import java.io.InputStream;
 abstract class PbapClientRequest {
     static final String TAG = PbapClientRequest.class.getSimpleName();
 
-    protected HeaderSet mHeaderSet;
+    // Request Types
+    public static final int TYPE_PULL_PHONEBOOK_METADATA = 0;
+    public static final int TYPE_PULL_PHONEBOOK = 1;
 
-    protected int mResponseCode;
-
-    private boolean mAborted = false;
-
-    private ClientOperation mOp = null;
+    protected HeaderSet mHeaderSet = new HeaderSet();
+    private int mResponseCode = -1;
 
     PbapClientRequest() {
-        mHeaderSet = new HeaderSet();
+        mResponseCode = -1;
     }
 
-    public final boolean isSuccess() {
-        return (mResponseCode == ResponseCodes.OBEX_HTTP_OK);
+    /**
+     * A function that returns the type of the request.
+     *
+     * <p>Used to determine type instead of using 'instanceof'
+     */
+    public abstract int getType();
+
+    /**
+     * Get the actual response code associated with the request
+     *
+     * @return The response code as in integer
+     */
+    public final int getResponseCode() {
+        return mResponseCode;
     }
 
+    /**
+     * A generica operation, providing overridable hooks to read response headers and content.
+     *
+     * <p>All PBAP Client operations are GET OBEX operations, so that is what this is.
+     */
     public void execute(ClientSession session) throws IOException {
         Log.v(TAG, "execute");
-
-        /* in case request is aborted before can be executed */
-        if (mAborted) {
-            mResponseCode = ResponseCodes.OBEX_HTTP_INTERNAL_ERROR;
-            return;
-        }
-
+        ClientOperation operation = null;
         try {
-            mOp = (ClientOperation) session.get(mHeaderSet);
+            operation = (ClientOperation) session.get(mHeaderSet);
 
             /* make sure final flag for GET is used (PBAP spec 6.2.2) */
-            mOp.setGetFinalFlag(true);
+            operation.setGetFinalFlag(true);
 
             /*
              * this will trigger ClientOperation to use non-buffered stream so
              * we can abort operation
              */
-            mOp.continueOperation(true, false);
+            operation.continueOperation(true, false);
 
-            readResponseHeaders(mOp.getReceivedHeader());
-
-            InputStream is = mOp.openInputStream();
-            readResponse(is);
-            is.close();
-
-            mOp.close();
-
-            mResponseCode = mOp.getResponseCode();
-
-            Log.d(TAG, "mResponseCode=" + mResponseCode);
-
-            checkResponseCode(mResponseCode);
+            readResponseHeaders(operation.getReceivedHeader());
+            InputStream inputStream = operation.openInputStream();
+            readResponse(inputStream);
+            inputStream.close();
+            mResponseCode = operation.getResponseCode();
         } catch (IOException e) {
-            Log.e(TAG, "IOException occurred when processing request", e);
             mResponseCode = ResponseCodes.OBEX_HTTP_INTERNAL_ERROR;
-
+            Log.e(TAG, "IOException occurred when processing request", e);
             throw e;
-        }
-    }
-
-    public void abort() {
-        mAborted = true;
-
-        if (mOp != null) {
-            try {
-                mOp.abort();
-            } catch (IOException e) {
-                Log.e(TAG, "Exception occurred when trying to abort", e);
+        } finally {
+            // Always close the operation so the next operation can successfully complete
+            if (operation != null) {
+                operation.close();
             }
         }
     }
 
     protected void readResponse(InputStream stream) throws IOException {
         Log.v(TAG, "readResponse");
-
         /* nothing here by default */
     }
 
     protected void readResponseHeaders(HeaderSet headerset) {
         Log.v(TAG, "readResponseHeaders");
-
         /* nothing here by default */
     }
 
-    protected void checkResponseCode(int responseCode) throws IOException {
-        Log.v(TAG, "checkResponseCode");
+    public static String typeToString(int type) {
+        switch (type) {
+            case TYPE_PULL_PHONEBOOK_METADATA:
+                return "TYPE_PULL_PHONEBOOK_METADATA";
+            case TYPE_PULL_PHONEBOOK:
+                return "TYPE_PULL_PHONEBOOK";
+            default:
+                return "TYPE_RESERVED (" + type + ")";
+        }
+    }
 
-        /* nothing here by default */
+    @Override
+    public String toString() {
+        return "<"
+                + TAG
+                + (" type=" + typeToString(getType()))
+                + (", responseCode=" + getResponseCode())
+                + ">";
     }
 }

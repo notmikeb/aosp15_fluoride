@@ -21,7 +21,6 @@ import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.bluetooth.BluetoothUuid;
-import android.bluetooth.SdpPseRecord;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
@@ -61,6 +60,9 @@ class PbapClientConnectionHandler extends Handler {
     static final int MSG_DISCONNECT = 2;
     static final int MSG_DOWNLOAD = 3;
 
+    static final int L2CAP_INVALID_PSM = -1;
+    static final int RFCOMM_INVALID_CHANNEL_ID = -1;
+
     // The following constants are pulled from the Bluetooth Phone Book Access Profile specification
     // 1.1
     private static final byte[] PBAP_TARGET =
@@ -83,27 +85,15 @@ class PbapClientConnectionHandler extends Handler {
                 0x66
             };
 
-    private static final int PBAP_FEATURE_DEFAULT_IMAGE_FORMAT = 0x00000200;
-    private static final int PBAP_FEATURE_DOWNLOADING = 0x00000001;
-
-    private static final int PBAP_SUPPORTED_FEATURE =
-            PBAP_FEATURE_DEFAULT_IMAGE_FORMAT | PBAP_FEATURE_DOWNLOADING;
-
-    @VisibleForTesting static final int L2CAP_INVALID_PSM = -1;
-
-    // PBAP v1.2.3 Sec. 7.1.2
-    private static final int SUPPORTED_REPOSITORIES_LOCALPHONEBOOK = 1 << 0;
-    private static final int SUPPORTED_REPOSITORIES_SIMCARD = 1 << 1;
-    private static final int SUPPORTED_REPOSITORIES_FAVORITES = 1 << 3;
-
-    public static final int PBAP_V1_2 = 0x0102;
+    private static final int PBAP_SUPPORTED_FEATURES =
+            PbapSdpRecord.FEATURE_DEFAULT_IMAGE_FORMAT | PbapSdpRecord.FEATURE_DOWNLOADING;
 
     private Account mAccount;
     private AccountManager mAccountManager;
     private BluetoothSocket mSocket;
     private final BluetoothDevice mDevice;
     // PSE SDP Record for current device.
-    private SdpPseRecord mPseRec = null;
+    private PbapSdpRecord mPseRec = null;
     private ClientSession mObexSession;
     private Context mContext;
     private PbapClientObexAuthenticator mAuth = null;
@@ -166,7 +156,8 @@ class PbapClientConnectionHandler extends Handler {
         Log.d(TAG, "Handling Message = " + msg.what);
         switch (msg.what) {
             case MSG_CONNECT:
-                mPseRec = (SdpPseRecord) msg.obj;
+                mPseRec = (PbapSdpRecord) msg.obj;
+
                 /* To establish a connection, first open a socket and then create an OBEX session */
                 if (connectSocket()) {
                     Log.d(TAG, "Socket connected");
@@ -215,13 +206,13 @@ class PbapClientConnectionHandler extends Handler {
                     Log.e(TAG, "Account creation failed.");
                     return;
                 }
-                if (isRepositorySupported(SUPPORTED_REPOSITORIES_FAVORITES)) {
+                if (mPseRec.isRepositorySupported(PbapSdpRecord.REPOSITORY_FAVORITES)) {
                     downloadContacts(PbapPhonebook.FAVORITES_PATH);
                 }
-                if (isRepositorySupported(SUPPORTED_REPOSITORIES_LOCALPHONEBOOK)) {
+                if (mPseRec.isRepositorySupported(PbapSdpRecord.REPOSITORY_LOCAL_PHONEBOOK)) {
                     downloadContacts(PbapPhonebook.LOCAL_PHONEBOOK_PATH);
                 }
-                if (isRepositorySupported(SUPPORTED_REPOSITORIES_SIMCARD)) {
+                if (mPseRec.isRepositorySupported(PbapSdpRecord.REPOSITORY_SIM_CARD)) {
                     downloadContacts(PbapPhonebook.SIM_PHONEBOOK_PATH);
                 }
 
@@ -237,7 +228,7 @@ class PbapClientConnectionHandler extends Handler {
     }
 
     @VisibleForTesting
-    synchronized void setPseRecord(SdpPseRecord record) {
+    synchronized void setPseRecord(PbapSdpRecord record) {
         mPseRec = record;
     }
 
@@ -261,9 +252,12 @@ class PbapClientConnectionHandler extends Handler {
             } else if (mPseRec.getL2capPsm() != L2CAP_INVALID_PSM) {
                 Log.v(TAG, "connectSocket: PSM: " + mPseRec.getL2capPsm());
                 mSocket = mDevice.createL2capSocket(mPseRec.getL2capPsm());
-            } else {
+            } else if (mPseRec.getRfcommChannelNumber() != RFCOMM_INVALID_CHANNEL_ID) {
                 Log.v(TAG, "connectSocket: channel: " + mPseRec.getRfcommChannelNumber());
                 mSocket = mDevice.createRfcommSocket(mPseRec.getRfcommChannelNumber());
+            } else {
+                Log.w(TAG, "connectSocket: transport PSM or channel ID not specified");
+                return false;
             }
 
             if (mSocket != null) {
@@ -298,10 +292,10 @@ class PbapClientConnectionHandler extends Handler {
 
                 ObexAppParameters oap = new ObexAppParameters();
 
-                if (mPseRec.getProfileVersion() >= PBAP_V1_2) {
+                if (mPseRec.getProfileVersion() >= PbapSdpRecord.VERSION_1_2) {
                     oap.add(
                             PbapApplicationParameters.OAP_PBAP_SUPPORTED_FEATURES,
-                            PBAP_SUPPORTED_FEATURE);
+                            PBAP_SUPPORTED_FEATURES);
                 }
 
                 oap.addToHeaderSet(connectionRequest);
@@ -468,14 +462,5 @@ class PbapClientConnectionHandler extends Handler {
         } catch (IllegalArgumentException e) {
             Log.d(TAG, "Call Logs could not be deleted, they may not exist yet.");
         }
-    }
-
-    @VisibleForTesting
-    boolean isRepositorySupported(int mask) {
-        if (mPseRec == null) {
-            Log.v(TAG, "No PBAP Server SDP Record");
-            return false;
-        }
-        return (mask & mPseRec.getSupportedRepositories()) != 0;
     }
 }
