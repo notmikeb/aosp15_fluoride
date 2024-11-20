@@ -26,8 +26,8 @@ import com.android.obex.ResponseCodes;
 import java.io.IOException;
 import java.io.InputStream;
 
-abstract class BluetoothPbapRequest {
-    static final String TAG = "PbapClient.BaseRequest";
+abstract class PbapClientRequest {
+    static final String TAG = PbapClientRequest.class.getSimpleName();
 
     protected static final byte OAP_TAGID_ORDER = 0x01;
     protected static final byte OAP_TAGID_SEARCH_VALUE = 0x02;
@@ -48,7 +48,7 @@ abstract class BluetoothPbapRequest {
 
     private ClientOperation mOp = null;
 
-    BluetoothPbapRequest() {
+    PbapClientRequest() {
         mHeaderSet = new HeaderSet();
     }
 

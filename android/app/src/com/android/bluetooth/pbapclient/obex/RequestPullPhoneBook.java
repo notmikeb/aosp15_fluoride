@@ -27,12 +27,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-final class BluetoothPbapRequestPullPhoneBook extends BluetoothPbapRequest {
-    private static final String TAG = "PbapClient.PullPb";
+final class RequestPullPhoneBook extends PbapClientRequest {
+    private static final String TAG = RequestPullPhoneBook.class.getSimpleName();
 
     private static final String TYPE = "x-bt/phonebook";
 
-    private BluetoothPbapVcardList mResponse;
+    private PbapClientVcardList mResponse;
 
     private Account mAccount;
 
@@ -40,7 +40,7 @@ final class BluetoothPbapRequestPullPhoneBook extends BluetoothPbapRequest {
 
     private final byte mFormat;
 
-    BluetoothPbapRequestPullPhoneBook(
+    RequestPullPhoneBook(
             String pbName,
             Account account,
             long filter,
@@ -76,7 +76,7 @@ final class BluetoothPbapRequestPullPhoneBook extends BluetoothPbapRequest {
 
         /*
          * maxListCount == 0 is a special case which is handled in
-         * BluetoothPbapRequestPullPhoneBookSize
+         * RequestPullPhoneBookSize
          */
         if (maxListCount > 0) {
             oap.add(OAP_TAGID_MAX_LIST_COUNT, (short) maxListCount);
@@ -97,7 +97,7 @@ final class BluetoothPbapRequestPullPhoneBook extends BluetoothPbapRequest {
     protected void readResponse(InputStream stream) throws IOException {
         Log.v(TAG, "readResponse");
 
-        mResponse = new BluetoothPbapVcardList(mAccount, stream, mFormat);
+        mResponse = new PbapClientVcardList(mAccount, stream, mFormat);
         Log.d(TAG, "Read " + mResponse.getCount() + " entries");
     }
 

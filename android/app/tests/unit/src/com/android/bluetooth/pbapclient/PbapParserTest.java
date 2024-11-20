@@ -68,8 +68,8 @@ public class PbapParserTest {
         fileStream =
                 mTestResources.openRawResource(
                         com.android.bluetooth.tests.R.raw.no_timestamp_call_log);
-        BluetoothPbapVcardList pbapVCardList =
-                new BluetoothPbapVcardList(
+        PbapClientVcardList pbapVCardList =
+                new PbapClientVcardList(
                         mAccount, fileStream, PbapClientConnectionHandler.VCARD_TYPE_30);
         Assert.assertEquals(1, pbapVCardList.getCount());
         CallLogPullRequest processor =
@@ -95,8 +95,8 @@ public class PbapParserTest {
         fileStream =
                 mTestResources.openRawResource(
                         com.android.bluetooth.tests.R.raw.single_missed_call);
-        BluetoothPbapVcardList pbapVCardList =
-                new BluetoothPbapVcardList(
+        PbapClientVcardList pbapVCardList =
+                new PbapClientVcardList(
                         mAccount, fileStream, PbapClientConnectionHandler.VCARD_TYPE_30);
         Assert.assertEquals(1, pbapVCardList.getCount());
         CallLogPullRequest processor =
@@ -121,8 +121,8 @@ public class PbapParserTest {
         fileStream =
                 mTestResources.openRawResource(
                         com.android.bluetooth.tests.R.raw.unknown_number_call);
-        BluetoothPbapVcardList pbapVCardList =
-                new BluetoothPbapVcardList(
+        PbapClientVcardList pbapVCardList =
+                new PbapClientVcardList(
                         mAccount, fileStream, PbapClientConnectionHandler.VCARD_TYPE_30);
         Assert.assertEquals(2, pbapVCardList.getCount());
         CallLogPullRequest processor =
@@ -147,8 +147,8 @@ public class PbapParserTest {
     public void testPullPhoneBook() throws IOException {
         InputStream fileStream;
         fileStream = mTestResources.openRawResource(com.android.bluetooth.tests.R.raw.v30_simple);
-        BluetoothPbapVcardList pbapVCardList =
-                new BluetoothPbapVcardList(
+        PbapClientVcardList pbapVCardList =
+                new PbapClientVcardList(
                         mAccount, fileStream, PbapClientConnectionHandler.VCARD_TYPE_30);
         Assert.assertEquals(1, pbapVCardList.getCount());
         PhonebookPullRequest processor = new PhonebookPullRequest(mTargetContext);
