@@ -54,7 +54,8 @@ public class PbapParserTest {
         mAccount =
                 new Account(
                         TEST_ACCOUNT_NAME,
-                        mTargetContext.getString(com.android.bluetooth.R.string.pbap_account_type));
+                        mTargetContext.getString(
+                                com.android.bluetooth.R.string.pbap_client_account_type));
         mTestResources = TestUtils.getTestApplicationResources(mTargetContext);
         cleanupCallLog();
         cleanupPhonebook();
