@@ -56,6 +56,10 @@ public class PbapClientConnectionHandlerTest {
     private static final String TAG = "ConnHandlerTest";
     private static final String REMOTE_DEVICE_ADDRESS = "00:00:00:00:00:00";
 
+    // Normal supported features for our client
+    private static final int SUPPORTED_FEATURES =
+            PbapSdpRecord.FEATURE_DOWNLOADING | PbapSdpRecord.FEATURE_DEFAULT_IMAGE_FORMAT;
+
     private HandlerThread mThread;
     private Looper mLooper;
     private Context mTargetContext;
@@ -103,6 +107,7 @@ public class PbapClientConnectionHandlerTest {
         mHandler =
                 new PbapClientConnectionHandler.Builder()
                         .setLooper(mLooper)
+                        .setLocalSupportedFeatures(SUPPORTED_FEATURES)
                         .setClientSM(mStateMachine)
                         .setContext(mTargetContext)
                         .setRemoteDevice(mRemoteDevice)
