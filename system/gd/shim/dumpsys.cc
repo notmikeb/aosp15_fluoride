@@ -26,6 +26,7 @@
 #include <string>
 
 #include "dumpsys/filter.h"
+#include "hal/snoop_logger.h"
 #include "hci/acl_manager.h"
 #include "hci/controller_interface.h"
 #include "main/shim/entry.h"
@@ -137,6 +138,7 @@ void Dumpsys::impl::DumpWithArgsAsync(int fd, const char** /*args*/) const {
   const auto registry = dumpsys_module_.GetModuleRegistry();
   bluetooth::shim::GetController()->Dump(fd);
   bluetooth::shim::GetAclManager()->Dump(fd);
+  bluetooth::shim::GetSnoopLogger()->DumpSnoozLogToFile();
 
   ModuleDumper dumper(fd, *registry, kDumpsysTitle);
   std::string dumpsys_data;
