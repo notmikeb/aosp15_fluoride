@@ -25,6 +25,7 @@ import static android.bluetooth.BluetoothUtils.executeFromBinder;
 import static java.util.Objects.requireNonNull;
 
 import android.annotation.CallbackExecutor;
+import android.annotation.FlaggedApi;
 import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -42,6 +43,7 @@ import android.os.RemoteException;
 import android.util.CloseGuard;
 import android.util.Log;
 
+import com.android.bluetooth.flags.Flags;
 import com.android.internal.annotations.GuardedBy;
 
 import java.util.Arrays;
@@ -705,15 +707,27 @@ public final class BluetoothVolumeControl implements BluetoothProfile, AutoClose
     }
 
     /**
-     * @return The list of {@code AudioInputControl} associated with a device
+     * Returns a list of {@link AudioInputControl} objects associated with a Bluetooth device.
+     *
+     * <p>Each {@link AudioInputControl} object represents an instance of the Audio Input Control
+     * Service (AICS) on the remote device. A device may have multiple instances of the AICS, as
+     * described in the <a href="https://www.bluetooth.com/specifications/specs/aics-1-0/">Audio
+     * Input Control Service Specification (AICS 1.0)</a>.
+     *
+     * @param device The remote Bluetooth device.
+     * @return A list of {@link AudioInputControl} objects, or an empty list if no AICS instances
+     *     are found or if an error occurs.
+     * @throws IllegalArgumentException If the provided device is invalid.
      * @hide
      */
+    @FlaggedApi(Flags.FLAG_AICS_API)
+    @SystemApi
     @RequiresBluetoothConnectPermission
     @RequiresPermission(allOf = {BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED})
-    public @NonNull List<AudioInputControl> getAudioInputControlPoints(
+    public @NonNull List<AudioInputControl> getAudioInputControlServices(
             @NonNull BluetoothDevice device) {
         requireNonNull(device);
-        Log.d(TAG, "getAudioInputControlPoints(" + device + ")");
+        Log.d(TAG, "getAudioInputControlServices(" + device + ")");
         if (!isValidDevice(device)) {
             throw new IllegalArgumentException("Invalid device " + device);
         }
