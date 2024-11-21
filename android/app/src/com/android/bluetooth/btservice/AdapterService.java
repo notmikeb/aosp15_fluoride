@@ -721,11 +721,7 @@ public class AdapterService extends Service {
             Log.i(TAG, "Phone policy disabled");
         }
 
-        if (Flags.audioRoutingCentralization()) {
-            mActiveDeviceManager = new AudioRoutingManager(this, new ServiceFactory());
-        } else {
-            mActiveDeviceManager = new ActiveDeviceManager(this, new ServiceFactory());
-        }
+        mActiveDeviceManager = new ActiveDeviceManager(this, new ServiceFactory());
         mActiveDeviceManager.start();
 
         mSilenceDeviceManager.start();
