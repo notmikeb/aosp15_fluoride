@@ -4397,6 +4397,16 @@ public class AdapterService extends Service {
             service.enforceCallingOrSelfPermission(BLUETOOTH_PRIVILEGED, null);
             return service.isLeCocSocketOffloadSupported();
         }
+
+        @Override
+        public boolean isRfcommSocketOffloadSupported(AttributionSource source) {
+            AdapterService service = getService();
+            if (service == null) {
+                return false;
+            }
+            service.enforceCallingOrSelfPermission(BLUETOOTH_PRIVILEGED, null);
+            return service.isRfcommSocketOffloadSupported();
+        }
     }
 
     /**
@@ -7175,6 +7185,17 @@ public class AdapterService extends Service {
     /** Check if the offloaded LE COC socket is supported. */
     public boolean isLeCocSocketOffloadSupported() {
         int val = getNumberOfSupportedOffloadedLeCocSockets();
+        return val > 0;
+    }
+
+    /** Get the number of the supported offloaded RFCOMM sockets. */
+    public int getNumberOfSupportedOffloadedRfcommSockets() {
+        return mAdapterProperties.getNumberOfSupportedOffloadedRfcommSockets();
+    }
+
+    /** Check if the offloaded RFCOMM socket is supported. */
+    public boolean isRfcommSocketOffloadSupported() {
+        int val = getNumberOfSupportedOffloadedRfcommSockets();
         return val > 0;
     }
 }
