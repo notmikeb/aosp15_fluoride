@@ -26,7 +26,6 @@
 #include <string>
 
 #include "dumpsys/filter.h"
-#include "dumpsys_data_generated.h"
 #include "hci/acl_manager.h"
 #include "hci/controller_interface.h"
 #include "main/shim/entry.h"
@@ -181,19 +180,6 @@ void Dumpsys::ListDependencies(ModuleList* /* list */) const {}
 void Dumpsys::Start() { pimpl_ = std::make_unique<impl>(*this, reflection_schema_); }
 
 void Dumpsys::Stop() { pimpl_.reset(); }
-
-DumpsysDataFinisher Dumpsys::GetDumpsysData(flatbuffers::FlatBufferBuilder* fb_builder) const {
-  auto name = fb_builder->CreateString("----- Shim Dumpsys -----");
-
-  DumpsysModuleDataBuilder builder(*fb_builder);
-  builder.add_title(name);
-  builder.add_number_of_bundled_schemas(pimpl_->GetNumberOfBundledSchemas());
-  auto dumpsys_data = builder.Finish();
-
-  return [dumpsys_data](DumpsysDataBuilder* builder) {
-    builder->add_shim_dumpsys_data(dumpsys_data);
-  };
-}
 
 std::string Dumpsys::ToString() const { return kModuleName; }
 
