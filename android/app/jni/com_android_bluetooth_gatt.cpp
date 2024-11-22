@@ -2400,6 +2400,14 @@ static AdvertiseParameters parseParams(JNIEnv* env, jobject i) {
   int8_t txPowerLevel = env->CallIntMethod(i, methodId);
   methodId = env->GetMethodID(clazz, "getOwnAddressType", "()I");
   int8_t ownAddressType = env->CallIntMethod(i, methodId);
+  methodId = env->GetMethodID(clazz, "isDirected", "()Z");
+  jboolean isDirected = env->CallBooleanMethod(i, methodId);
+  methodId = env->GetMethodID(clazz, "isHighDutyCycle", "()Z");
+  jboolean isHighDutyCycle = env->CallIntMethod(i, methodId);
+  methodId = env->GetMethodID(clazz, "getPeerAddress", "()Ljava/lang/String;");
+  jstring peerAddress = (jstring)env->CallObjectMethod(i, methodId);
+  methodId = env->GetMethodID(clazz, "getPeerAddressType", "()I");
+  int8_t peerAddressType = env->CallIntMethod(i, methodId);
 
   uint16_t props = 0;
   if (isConnectable) {
@@ -2408,8 +2416,11 @@ static AdvertiseParameters parseParams(JNIEnv* env, jobject i) {
   if (isScannable) {
     props |= 0x02;
   }
-  if (isDiscoverable) {
+  if (isDirected) {
     props |= 0x04;
+  }
+  if (isHighDutyCycle) {
+    props |= 0x08;
   }
   if (isLegacy) {
     props |= 0x10;
@@ -2434,6 +2445,9 @@ static AdvertiseParameters parseParams(JNIEnv* env, jobject i) {
   p.secondary_advertising_phy = secondaryPhy;
   p.scan_request_notification_enable = false;
   p.own_address_type = ownAddressType;
+  p.peer_address = str2addr(env, peerAddress);
+  p.peer_address_type = peerAddressType;
+  p.discoverable = isDiscoverable;
   return p;
 }
 
