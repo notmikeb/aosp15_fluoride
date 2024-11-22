@@ -22,10 +22,7 @@
 #include <sstream>
 #include <string>
 
-#include "dumpsys_data_generated.h"
 #include "gtest/gtest.h"
-#include "module_dumper.h"
-#include "module_unittest_generated.h"
 #include "os/handler.h"
 #include "os/thread.h"
 
@@ -160,48 +157,6 @@ protected:
 
 const ModuleFactory TestModuleTwoDependencies::Factory =
         ModuleFactory([]() { return new TestModuleTwoDependencies(); });
-
-// To generate module unittest flatbuffer headers:
-// $ flatc --cpp module_unittest.fbs
-class TestModuleDumpState : public Module {
-public:
-  static const ModuleFactory Factory;
-
-  std::string test_string_{"Initial Test String"};
-
-protected:
-  void ListDependencies(ModuleList* list) const { list->add<TestModuleNoDependency>(); }
-
-  void Start() override {
-    EXPECT_TRUE(GetModuleRegistry()->IsStarted<TestModuleNoDependency>());
-
-    // A module is not considered started until Start() finishes
-    EXPECT_FALSE(GetModuleRegistry()->IsStarted<TestModuleDumpState>());
-    test_module_one_dependency_handler = GetHandler();
-  }
-
-  void Stop() override {
-    EXPECT_TRUE(GetModuleRegistry()->IsStarted<TestModuleNoDependency>());
-
-    // A module is not considered stopped until after Stop() finishes
-    EXPECT_TRUE(GetModuleRegistry()->IsStarted<TestModuleDumpState>());
-  }
-
-  std::string ToString() const override { return std::string("TestModuleDumpState"); }
-
-  DumpsysDataFinisher GetDumpsysData(flatbuffers::FlatBufferBuilder* fb_builder) const override {
-    auto string = fb_builder->CreateString(test_string_.c_str());
-
-    auto builder = ModuleUnitTestDataBuilder(*fb_builder);
-    builder.add_title(string);
-    auto table = builder.Finish();
-
-    return [table](DumpsysDataBuilder* builder) { builder->add_module_unittest_data(table); };
-  }
-};
-
-const ModuleFactory TestModuleDumpState::Factory =
-        ModuleFactory([]() { return new TestModuleDumpState(); });
 
 TEST_F(ModuleTest, no_dependency) {
   ModuleList list;
