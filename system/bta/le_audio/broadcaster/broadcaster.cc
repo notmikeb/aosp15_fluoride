@@ -992,26 +992,24 @@ private:
   }
 
   void setBroadcastTimers() {
-    if (audio_state_ == AudioState::SUSPENDED) {
-      log::info(" Started");
-      alarm_set_on_mloop(
-              big_terminate_timer_, kBigTerminateTimeoutMs,
-              [](void*) {
-                if (instance) {
-                  instance->SuspendAudioBroadcasts();
-                }
-              },
-              nullptr);
+    log::info(" Started");
+    alarm_set_on_mloop(
+            big_terminate_timer_, kBigTerminateTimeoutMs,
+            [](void*) {
+              if (instance) {
+                instance->SuspendAudioBroadcasts();
+              }
+            },
+            nullptr);
 
-      alarm_set_on_mloop(
-              broadcast_stop_timer_, kBroadcastStopTimeoutMs,
-              [](void*) {
-                if (instance) {
-                  instance->StopAudioBroadcasts();
-                }
-              },
-              nullptr);
-    }
+    alarm_set_on_mloop(
+            broadcast_stop_timer_, kBroadcastStopTimeoutMs,
+            [](void*) {
+              if (instance) {
+                instance->StopAudioBroadcasts();
+              }
+            },
+            nullptr);
   }
 
   void cancelBroadcastTimers() {
@@ -1107,9 +1105,6 @@ private:
               } else {
                 instance->UpdateAudioActiveStateInPublicAnnouncement();
               }
-            }
-            if (com::android::bluetooth::flags::leaudio_big_depends_on_audio_state()) {
-              instance->setBroadcastTimers();
             }
           }
           break;
@@ -1378,6 +1373,13 @@ private:
 
         instance->cancelBroadcastTimers();
         instance->UpdateAudioActiveStateInPublicAnnouncement();
+
+        /* In case of double call of resume when broadcast are already in streaming states */
+        if (IsAnyoneStreaming()) {
+          log::debug("broadcasts are already streaming");
+          instance->le_audio_source_hal_client_->ConfirmStreamingRequest();
+          return;
+        }
 
         for (auto& broadcast_pair : instance->broadcasts_) {
           auto& broadcast = broadcast_pair.second;
