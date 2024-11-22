@@ -313,8 +313,8 @@ public class AdapterService extends Service {
     private UserManager mUserManager;
     private CompanionDeviceManager mCompanionDeviceManager;
 
-    // Phone Policy is not used on all devices. Ensure you null check before using it
-    @Nullable private PhonePolicy mPhonePolicy;
+    // Phone Policy is not used on all devices and can be empty
+    private Optional<PhonePolicy> mPhonePolicy = Optional.empty();
 
     private ActiveDeviceManager mActiveDeviceManager;
     private final DatabaseManager mDatabaseManager;
@@ -715,8 +715,9 @@ public class AdapterService extends Service {
          */
         if (!isAutomotiveDevice && getResources().getBoolean(R.bool.enable_phone_policy)) {
             Log.i(TAG, "Phone policy enabled");
-            mPhonePolicy = new PhonePolicy(this, new ServiceFactory());
-            mPhonePolicy.start();
+            PhonePolicy phonePolicy = new PhonePolicy(this, new ServiceFactory());
+            phonePolicy.start();
+            mPhonePolicy = Optional.of(phonePolicy);
         } else {
             Log.i(TAG, "Phone policy disabled");
         }
@@ -1469,9 +1470,7 @@ public class AdapterService extends Service {
             mBluetoothKeystoreService.cleanup();
         }
 
-        if (mPhonePolicy != null) {
-            mPhonePolicy.cleanup();
-        }
+        mPhonePolicy.ifPresent(policy -> policy.cleanup());
 
         mSilenceDeviceManager.cleanup();
 
@@ -2700,9 +2699,7 @@ public class AdapterService extends Service {
             }
             service.logUserBondResponse(device, false, source);
             service.mBondAttemptCallerInfo.remove(device.getAddress());
-            if (service.mPhonePolicy != null) {
-                service.mPhonePolicy.onRemoveBondRequest(device);
-            }
+            service.mPhonePolicy.ifPresent(policy -> policy.onRemoveBondRequest(device));
             deviceProp.setBondingInitiatedLocally(false);
 
             Message msg = service.mBondStateMachine.obtainMessage(BondStateMachine.REMOVE_BOND);
@@ -6124,11 +6121,8 @@ public class AdapterService extends Service {
         }
     }
 
-    /** Update PhonePolicy when new {@link BluetoothDevice} creates an ACL connection. */
-    public void updatePhonePolicyOnAclConnect(BluetoothDevice device) {
-        if (mPhonePolicy != null) {
-            mPhonePolicy.handleAclConnected(device);
-        }
+    void updatePhonePolicyOnAclConnect(BluetoothDevice device) {
+        mPhonePolicy.ifPresent(policy -> policy.handleAclConnected(device));
     }
 
     /**
@@ -6174,18 +6168,16 @@ public class AdapterService extends Service {
      */
     public void handleProfileConnectionStateChange(
             int profile, BluetoothDevice device, int fromState, int toState) {
-        if (mPhonePolicy != null) {
-            mPhonePolicy.profileConnectionStateChanged(profile, device, fromState, toState);
-        }
+        mPhonePolicy.ifPresent(
+                policy ->
+                        policy.profileConnectionStateChanged(profile, device, fromState, toState));
     }
 
     /** Handle Bluetooth app state when active device changes for a given {@code profile}. */
     public void handleActiveDeviceChange(int profile, BluetoothDevice device) {
         mActiveDeviceManager.profileActiveDeviceChanged(profile, device);
         mSilenceDeviceManager.profileActiveDeviceChanged(profile, device);
-        if (mPhonePolicy != null) {
-            mPhonePolicy.profileActiveDeviceChanged(profile, device);
-        }
+        mPhonePolicy.ifPresent(policy -> policy.profileActiveDeviceChanged(profile, device));
     }
 
     /** Notify MAP and Pbap when a new sdp search record is found. */
@@ -7069,9 +7061,7 @@ public class AdapterService extends Service {
         for (int i = 0; i < uuids.length; i++) {
             Log.d(TAG, "sendUuidsInternal: index=" + i + " uuid=" + uuids[i]);
         }
-        if (mPhonePolicy != null) {
-            mPhonePolicy.onUuidsDiscovered(device, uuids);
-        }
+        mPhonePolicy.ifPresent(policy -> policy.onUuidsDiscovered(device, uuids));
     }
 
     /** Clear storage */
