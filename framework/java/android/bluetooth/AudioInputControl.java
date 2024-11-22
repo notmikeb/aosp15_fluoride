@@ -360,11 +360,11 @@ public class AudioInputControl {
      * remote device changes.
      *
      * <p>Repeated registration of the same callback object will have no effect after the first call
-     * to this method, even when the executor is different. API caller would have to call {@link
+     * to this method, even when the executor is different. API caller must call {@link
      * #unregisterCallback(AudioInputCallback)} with the same callback object before registering it
      * again.
      *
-     * <p>Callbacks are automatically unregistered when application process goes away.
+     * <p>Callbacks are automatically unregistered when the application process goes away.
      *
      * @param executor an {@link Executor} to execute given callback
      * @param callback user implementation of the {@link AudioInputCallback}
@@ -383,7 +383,7 @@ public class AudioInputControl {
      * <p>The same {@link AudioInputCallback} object used when calling {@link
      * #registerCallback(Executor, AudioInputCallback)} must be used.
      *
-     * <p>Callbacks are automatically unregistered when application process goes away.
+     * <p>Callbacks are automatically unregistered when the application process goes away.
      *
      * @param callback user implementation of the {@link AudioInputCallback}
      * @throws IllegalArgumentException when no callback is registered
