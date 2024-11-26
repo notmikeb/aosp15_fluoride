@@ -355,11 +355,10 @@ void avdt_ad_tc_open_ind(AvdtpTransportChannel* p_tbl) {
     }
 
     p_ccb = avdt_ccb_by_idx(p_tbl->ccb_idx);
-    /* use err_param to indicate the role of connection.
-     * AVDT_ACP, if ACP */
-    evt.err_param = AVDT_INT;
+    /* use err_param to indicate the role of connection */
+    evt.err_param = static_cast<uint8_t>(tAVDT_ROLE::AVDT_INT);
     if (p_tbl->cfg_flags & AVDT_L2C_CFG_CONN_ACP) {
-      evt.err_param = AVDT_ACP;
+      evt.err_param = static_cast<uint8_t>(tAVDT_ROLE::AVDT_ACP);
     }
     tAVDT_CCB_EVT avdt_ccb_evt;
     avdt_ccb_evt.msg.hdr = evt;
@@ -503,7 +502,7 @@ tL2CAP_DW_RESULT avdt_ad_write_req(uint8_t type, AvdtpCcb* p_ccb, AvdtpScb* p_sc
  * Returns          Nothing.
  *
  ******************************************************************************/
-void avdt_ad_open_req(uint8_t type, AvdtpCcb* p_ccb, AvdtpScb* p_scb, uint8_t role) {
+void avdt_ad_open_req(uint8_t type, AvdtpCcb* p_ccb, AvdtpScb* p_scb, tAVDT_ROLE role) {
   AvdtpTransportChannel* p_tbl;
   uint16_t lcid;
 
@@ -516,7 +515,8 @@ void avdt_ad_open_req(uint8_t type, AvdtpCcb* p_ccb, AvdtpScb* p_scb, uint8_t ro
   p_tbl->tcid = avdt_ad_type_to_tcid(type, p_scb);
   p_tbl->my_mtu = kAvdtpMtu;
   log::verbose("p_tbl: {} state: {} tcid: {} type: {} role: {} my_mtu: {}", std::format_ptr(p_tbl),
-               tc_state_text(p_tbl->state), p_tbl->tcid, tc_type_text(type), role, p_tbl->my_mtu);
+               tc_state_text(p_tbl->state), p_tbl->tcid, tc_type_text(type), avdt_role_text(role),
+               p_tbl->my_mtu);
 
   if (type != AVDT_CHAN_SIG) {
     /* also set scb_hdl in rt_tbl */
@@ -525,7 +525,7 @@ void avdt_ad_open_req(uint8_t type, AvdtpCcb* p_ccb, AvdtpScb* p_scb, uint8_t ro
                  p_tbl->tcid, avdt_scb_to_hdl(p_scb));
   }
 
-  if (role == AVDT_ACP) {
+  if (role == tAVDT_ROLE::AVDT_ACP) {
     /* if we're acceptor, we're done; just sit back and listen */
     p_tbl->state = AVDT_AD_ST_ACP;
   } else {
