@@ -12289,6 +12289,27 @@ TEST_F(UnicastTestHandoverMode, SetSourceMonitorModeWhileUnicastIsInactive) {
   Mock::VerifyAndClearExpectations(&mock_audio_hal_client_callbacks_);
 }
 
+TEST_F(UnicastTestHandoverMode, SetTwiceSourceMonitorModeWhileUnicastIsInactive) {
+  /* Enabling monitor mode for source while group is not active should result in
+   * sending STREAMING_SUSPENDED notification.
+   */
+  EXPECT_CALL(mock_audio_hal_client_callbacks_,
+              OnUnicastMonitorModeStatus(bluetooth::le_audio::types::kLeAudioDirectionSource,
+                                         UnicastMonitorModeStatus::STREAMING_SUSPENDED))
+          .Times(1);
+
+  // Imitate activation of monitor mode
+  do_in_main_thread(base::BindOnce(
+          &LeAudioClient::SetUnicastMonitorMode, base::Unretained(LeAudioClient::Get()),
+          bluetooth::le_audio::types::kLeAudioDirectionSource, true /* enable */));
+  // Imitate second activation of monitor mode - should not be notified
+  do_in_main_thread(base::BindOnce(
+          &LeAudioClient::SetUnicastMonitorMode, base::Unretained(LeAudioClient::Get()),
+          bluetooth::le_audio::types::kLeAudioDirectionSource, true /* enable */));
+  SyncOnMainLoop();
+  Mock::VerifyAndClearExpectations(&mock_audio_hal_client_callbacks_);
+}
+
 TEST_F(UnicastTestHandoverMode, SetSourceMonitorModeWhileUnicastIsNotStreaming) {
   int group_id = 2;
 
