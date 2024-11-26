@@ -939,6 +939,10 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
     live_tracker->main_mode_type = event_view.GetMainModeType();
     live_tracker->sub_mode_type = event_view.GetSubModeType();
     live_tracker->rtt_type = event_view.GetRttType();
+    if (com::android::bluetooth::flags::channel_sounding_25q2_apis() && live_tracker->local_start &&
+        ranging_hal_->GetRangingHalVersion() == hal::V_2) {
+      ranging_hal_->UpdateChannelSoundingConfig(connection_handle, event_view);
+    }
     if (live_tracker->local_hci_role == hci::Role::CENTRAL) {
       // send the cmd from the BLE central only.
       send_le_cs_security_enable(connection_handle);
@@ -1090,6 +1094,10 @@ struct DistanceMeasurementManager::impl : bluetooth::hal::RangingHalCallback {
         live_tracker->waiting_for_start_callback = false;
         distance_measurement_callbacks_->OnDistanceMeasurementStarted(live_tracker->address,
                                                                       METHOD_CS);
+      }
+      if (com::android::bluetooth::flags::channel_sounding_25q2_apis() &&
+          live_tracker->local_start && ranging_hal_->GetRangingHalVersion() == hal::V_2) {
+        ranging_hal_->UpdateProcedureEnableConfig(connection_handle, event_view);
       }
     } else if (event_view.GetState() == Enable::DISABLED) {
       uint8_t valid_requester_states = static_cast<uint8_t>(CsTrackerState::STARTED);
