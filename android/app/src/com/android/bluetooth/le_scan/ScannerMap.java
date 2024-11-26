@@ -15,6 +15,7 @@
  */
 package com.android.bluetooth.le_scan;
 
+import static com.android.bluetooth.Utils.sSystemClock;
 import static com.android.bluetooth.util.AttributionSourceUtil.getLastAttributionTag;
 
 import android.annotation.Nullable;
@@ -91,7 +92,8 @@ public class ScannerMap {
         }
         AppScanStats appScanStats = mAppScanStatsMap.get(appUid);
         if (appScanStats == null) {
-            appScanStats = new AppScanStats(appName, workSource, this, context, scanHelper);
+            appScanStats =
+                    new AppScanStats(appName, workSource, this, context, scanHelper, sSystemClock);
             mAppScanStatsMap.put(appUid, appScanStats);
         }
         ScannerApp app =

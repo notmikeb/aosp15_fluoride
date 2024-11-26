@@ -16,6 +16,8 @@
 
 package com.android.bluetooth.le_scan;
 
+import static java.util.Objects.requireNonNull;
+
 import android.annotation.Nullable;
 import android.bluetooth.BluetoothProtoEnums;
 import android.bluetooth.le.ScanFilter;
@@ -23,11 +25,11 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.BatteryStatsManager;
 import android.os.Binder;
-import android.os.SystemClock;
 import android.os.WorkSource;
 
 import com.android.bluetooth.BluetoothMetricsProto;
 import com.android.bluetooth.BluetoothStatsLog;
+import com.android.bluetooth.Utils.TimeProvider;
 import com.android.bluetooth.btservice.AdapterService;
 import com.android.bluetooth.btservice.MetricsLogger;
 import com.android.bluetooth.flags.Flags;
@@ -71,6 +73,7 @@ public class AppScanStats {
     BatteryStatsManager mBatteryStatsManager;
 
     private final AdapterService mAdapterService;
+    private final TimeProvider mTimeProvider;
 
     private static Object sLock = new Object();
 
@@ -171,7 +174,9 @@ public class AppScanStats {
             WorkSource source,
             ScannerMap map,
             Context context,
-            TransitionalScanHelper scanHelper) {
+            TransitionalScanHelper scanHelper,
+            TimeProvider timeProvider) {
+        mTimeProvider = requireNonNull(timeProvider);
         mAppName = name;
         mScannerMap = map;
         mScanHelper = scanHelper;
@@ -250,7 +255,7 @@ public class AppScanStats {
             return;
         }
         this.mScansStarted++;
-        startTime = SystemClock.elapsedRealtime();
+        startTime = mTimeProvider.elapsedRealtime();
 
         LastScan scan =
                 new LastScan(
@@ -333,7 +338,7 @@ public class AppScanStats {
             return;
         }
         this.mScansStopped++;
-        stopTime = SystemClock.elapsedRealtime();
+        stopTime = mTimeProvider.elapsedRealtime();
         long scanDuration = stopTime - scan.timestamp;
         scan.duration = scanDuration;
         if (scan.isSuspended) {
@@ -582,12 +587,17 @@ public class AppScanStats {
     }
 
     static boolean recordScanRadioStart(
-            int scanMode, int scannerId, AppScanStats stats, int scanWindowMs, int scanIntervalMs) {
+            int scanMode,
+            int scannerId,
+            AppScanStats stats,
+            int scanWindowMs,
+            int scanIntervalMs,
+            TimeProvider timeProvider) {
         synchronized (sLock) {
             if (sIsRadioStarted) {
                 return false;
             }
-            sRadioStartTime = SystemClock.elapsedRealtime();
+            sRadioStartTime = timeProvider.elapsedRealtime();
             sRadioScanWorkSourceUtil = stats.mWorkSourceUtil;
             sRadioScanType = convertScanType(stats.getScanFromScannerId(scannerId));
             sRadioScanMode = scanMode;
@@ -598,12 +608,12 @@ public class AppScanStats {
         return true;
     }
 
-    static boolean recordScanRadioStop() {
+    static boolean recordScanRadioStop(TimeProvider timeProvider) {
         synchronized (sLock) {
             if (!sIsRadioStarted) {
                 return false;
             }
-            recordScanRadioDurationMetrics();
+            recordScanRadioDurationMetrics(timeProvider);
             if (!Flags.bleScanAdvMetricsRedesign()) {
                 sRadioStartTime = 0;
                 sIsRadioStarted = false;
@@ -613,12 +623,12 @@ public class AppScanStats {
     }
 
     @GuardedBy("sLock")
-    private static void recordScanRadioDurationMetrics() {
+    private static void recordScanRadioDurationMetrics(TimeProvider timeProvider) {
         if (!sIsRadioStarted) {
             return;
         }
         MetricsLogger logger = MetricsLogger.getInstance();
-        long currentTime = SystemClock.elapsedRealtime();
+        long currentTime = timeProvider.elapsedRealtime();
         long radioScanDuration = currentTime - sRadioStartTime;
         double scanWeight = getScanWeight(sRadioScanMode) * 0.01;
         long weightedDuration = (long) (radioScanDuration * scanWeight);
@@ -746,14 +756,14 @@ public class AppScanStats {
         }
     }
 
-    static void setScreenState(boolean isScreenOn) {
+    static void setScreenState(boolean isScreenOn, TimeProvider timeProvider) {
         synchronized (sLock) {
             if (sIsScreenOn == isScreenOn) {
                 return;
             }
             if (sIsRadioStarted) {
-                recordScanRadioDurationMetrics();
-                sRadioStartTime = SystemClock.elapsedRealtime();
+                recordScanRadioDurationMetrics(timeProvider);
+                sRadioStartTime = timeProvider.elapsedRealtime();
             }
             recordScreenOnOffMetrics(isScreenOn);
             sIsScreenOn = isScreenOn;
@@ -765,7 +775,7 @@ public class AppScanStats {
         if (scan == null || scan.isSuspended) {
             return;
         }
-        scan.suspendStartTime = SystemClock.elapsedRealtime();
+        scan.suspendStartTime = mTimeProvider.elapsedRealtime();
         scan.isSuspended = true;
     }
 
@@ -775,7 +785,7 @@ public class AppScanStats {
             return;
         }
         scan.isSuspended = false;
-        stopTime = SystemClock.elapsedRealtime();
+        stopTime = mTimeProvider.elapsedRealtime();
         long suspendDuration = stopTime - scan.suspendStartTime;
         scan.suspendDuration += suspendDuration;
         mTotalSuspendTime += suspendDuration;
@@ -815,7 +825,7 @@ public class AppScanStats {
             return false;
         }
 
-        return (SystemClock.elapsedRealtime() - mLastScans.get(0).timestamp)
+        return (mTimeProvider.elapsedRealtime() - mLastScans.get(0).timestamp)
                 < mAdapterService.getScanQuotaWindowMillis();
     }
 
@@ -823,7 +833,7 @@ public class AppScanStats {
         if (!isScanning()) {
             return false;
         }
-        return (SystemClock.elapsedRealtime() - mScanStartTime)
+        return (mTimeProvider.elapsedRealtime() - mScanStartTime)
                 >= mAdapterService.getScanTimeoutMillis();
     }
 
@@ -832,7 +842,7 @@ public class AppScanStats {
             return false;
         }
         LastScan lastScan = mLastScans.get(mLastScans.size() - 1);
-        return ((SystemClock.elapsedRealtime() - lastScan.duration - lastScan.timestamp)
+        return ((mTimeProvider.elapsedRealtime() - lastScan.duration - lastScan.timestamp)
                 < LARGE_SCAN_TIME_GAP_MS);
     }
 
@@ -947,7 +957,7 @@ public class AppScanStats {
     @SuppressWarnings("JavaUtilDate") // TODO: b/365629730 -- prefer Instant or LocalDate
     public synchronized void dumpToString(StringBuilder sb) {
         long currentTime = System.currentTimeMillis();
-        long currTime = SystemClock.elapsedRealtime();
+        long currTime = mTimeProvider.elapsedRealtime();
         long scanDuration = 0;
         long suspendDuration = 0;
         long activeDuration = 0;

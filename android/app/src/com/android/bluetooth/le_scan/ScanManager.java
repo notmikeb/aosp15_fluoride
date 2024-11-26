@@ -38,7 +38,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.os.RemoteException;
-import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.provider.Settings;
 import android.util.Log;
@@ -47,6 +46,7 @@ import android.util.SparseIntArray;
 import android.view.Display;
 
 import com.android.bluetooth.Utils;
+import com.android.bluetooth.Utils.TimeProvider;
 import com.android.bluetooth.btservice.AdapterService;
 import com.android.bluetooth.btservice.BluetoothAdapterProxy;
 import com.android.bluetooth.flags.Flags;
@@ -123,6 +123,7 @@ public class ScanManager {
     private final Context mContext;
     private final TransitionalScanHelper mScanHelper;
     private final AdapterService mAdapterService;
+    private final TimeProvider mTimeProvider;
     private ScanNative mScanNative;
     private volatile ClientHandler mHandler;
     private BluetoothAdapterProxy mBluetoothAdapterProxy;
@@ -164,7 +165,8 @@ public class ScanManager {
             TransitionalScanHelper scanHelper,
             AdapterService adapterService,
             BluetoothAdapterProxy bluetoothAdapterProxy,
-            Looper looper) {
+            Looper looper,
+            TimeProvider timeProvider) {
         mRegularScanClients =
                 Collections.newSetFromMap(new ConcurrentHashMap<ScanClient, Boolean>());
         mBatchClients = Collections.newSetFromMap(new ConcurrentHashMap<ScanClient, Boolean>());
@@ -173,6 +175,7 @@ public class ScanManager {
         mContext = context;
         mScanHelper = scanHelper;
         mAdapterService = adapterService;
+        mTimeProvider = timeProvider;
         mScanNative = new ScanNative(scanHelper);
         mDisplayManager = mContext.getSystemService(DisplayManager.class);
         mActivityManager = mContext.getSystemService(ActivityManager.class);
@@ -195,7 +198,7 @@ public class ScanManager {
         }
         mScreenOn = isScreenOn();
         AppScanStats.initScanRadioState();
-        AppScanStats.setScreenState(mScreenOn);
+        AppScanStats.setScreenState(mScreenOn, mTimeProvider);
         if (mActivityManager != null) {
             mActivityManager.addOnUidImportanceListener(
                     mUidImportanceListener, FOREGROUND_IMPORTANCE_CUTOFF);
@@ -545,7 +548,7 @@ public class ScanManager {
         }
 
         void handleScreenOff() {
-            AppScanStats.setScreenState(false);
+            AppScanStats.setScreenState(false, mTimeProvider);
             if (!mScreenOn) {
                 return;
             }
@@ -880,7 +883,7 @@ public class ScanManager {
         }
 
         void handleScreenOn() {
-            AppScanStats.setScreenState(true);
+            AppScanStats.setScreenState(true, mTimeProvider);
             if (mScreenOn) {
                 return;
             }
@@ -1050,7 +1053,7 @@ public class ScanManager {
                     new BroadcastReceiver() {
                         @Override
                         public void onReceive(Context context, Intent intent) {
-                            Log.d(TAG, "awakened up at time " + SystemClock.elapsedRealtime());
+                            Log.d(TAG, "awakened up at time " + mTimeProvider.elapsedRealtime());
                             String action = intent.getAction();
 
                             if (action.equals(ACTION_REFRESH_BATCHED_SCAN)) {
@@ -1107,7 +1110,7 @@ public class ScanManager {
                     int scanInterval = Utils.millsToUnit(scanIntervalMs);
                     int scanPhyMask = getScanPhyMask(client.settings);
                     mNativeInterface.gattClientScan(false);
-                    if (!AppScanStats.recordScanRadioStop()) {
+                    if (!AppScanStats.recordScanRadioStop(mTimeProvider)) {
                         Log.w(TAG, "There is no scan radio to stop");
                     }
                     Log.d(
@@ -1139,7 +1142,8 @@ public class ScanManager {
                                     client.scannerId,
                                     client.stats,
                                     scanWindowMs,
-                                    scanIntervalMs)) {
+                                    scanIntervalMs,
+                                    mTimeProvider)) {
                         Log.w(TAG, "Scan radio already started");
                     }
                     mLastConfiguredScanSetting = curScanSetting;
@@ -1188,7 +1192,8 @@ public class ScanManager {
                                     client.scannerId,
                                     client.stats,
                                     getScanWindowMillis(client.settings),
-                                    getScanIntervalMillis(client.settings))) {
+                                    getScanIntervalMillis(client.settings),
+                                    mTimeProvider)) {
                         Log.w(TAG, "Scan radio already started");
                     }
                 }
@@ -1382,7 +1387,7 @@ public class ScanManager {
             // Allows the alarm to be triggered within
             // [batchTriggerIntervalMillis, 1.1 * batchTriggerIntervalMillis]
             long windowLengthMillis = batchTriggerIntervalMillis / 10;
-            long windowStartMillis = SystemClock.elapsedRealtime() + batchTriggerIntervalMillis;
+            long windowStartMillis = mTimeProvider.elapsedRealtime() + batchTriggerIntervalMillis;
             mAlarmManager.setWindow(
                     AlarmManager.ELAPSED_REALTIME_WAKEUP,
                     windowStartMillis,
@@ -1418,7 +1423,7 @@ public class ScanManager {
             if (numRegularScanClients() == 0) {
                 Log.d(TAG, "stop gattClientScanNative");
                 mNativeInterface.gattClientScan(false);
-                if (!AppScanStats.recordScanRadioStop()) {
+                if (!AppScanStats.recordScanRadioStop(mTimeProvider)) {
                     Log.w(TAG, "There is no scan radio to stop");
                 }
             }
@@ -1465,7 +1470,7 @@ public class ScanManager {
             if (numRegularScanClients() == 0) {
                 Log.d(TAG, "stop gattClientScanNative");
                 mNativeInterface.gattClientScan(false);
-                if (!AppScanStats.recordScanRadioStop()) {
+                if (!AppScanStats.recordScanRadioStop(mTimeProvider)) {
                     Log.w(TAG, "There is no scan radio to stop");
                 }
             }

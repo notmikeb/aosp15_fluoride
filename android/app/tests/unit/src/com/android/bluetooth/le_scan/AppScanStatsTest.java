@@ -16,6 +16,8 @@
 
 package com.android.bluetooth.le_scan;
 
+import static com.android.bluetooth.Utils.sSystemClock;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.Mockito.mock;
@@ -50,13 +52,10 @@ import java.util.List;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class AppScanStatsTest {
-
     @Rule public final ServiceTestRule mServiceRule = new ServiceTestRule();
-
     @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
     @Mock private ScannerMap map;
-
     @Mock private Context mMockContext;
     @Mock private TransitionalScanHelper mMockScanHelper;
     @Mock private AdapterService mAdapterService;
@@ -89,7 +88,7 @@ public class AppScanStatsTest {
         WorkSource source = null;
 
         AppScanStats appScanStats =
-                new AppScanStats(name, source, map, mMockContext, mMockScanHelper);
+                new AppScanStats(name, source, map, mMockContext, mMockScanHelper, sSystemClock);
 
         assertThat(appScanStats.mScannerMap).isEqualTo(map);
         assertThat(appScanStats.mScanHelper).isEqualTo(mMockScanHelper);
@@ -103,7 +102,7 @@ public class AppScanStatsTest {
         WorkSource source = null;
 
         AppScanStats appScanStats =
-                new AppScanStats(name, source, map, mMockContext, mMockScanHelper);
+                new AppScanStats(name, source, map, mMockContext, mMockScanHelper, sSystemClock);
 
         ScanSettings settings = new ScanSettings.Builder().build();
         List<ScanFilter> filters = new ArrayList<>();
