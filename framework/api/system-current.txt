@@ -1306,6 +1306,10 @@ package android.bluetooth.le {
 
   public final class AdvertisingSetParameters implements android.os.Parcelable {
     method public int getOwnAddressType();
+    method @FlaggedApi("com.android.bluetooth.flags.directed_advertising_api") @Nullable public String getPeerAddress();
+    method @FlaggedApi("com.android.bluetooth.flags.directed_advertising_api") public int getPeerAddressType();
+    method @FlaggedApi("com.android.bluetooth.flags.directed_advertising_api") public boolean isDirected();
+    method @FlaggedApi("com.android.bluetooth.flags.directed_advertising_api") public boolean isHighDutyCycle();
     field public static final int ADDRESS_TYPE_DEFAULT = -1; // 0xffffffff
     field public static final int ADDRESS_TYPE_PUBLIC = 0; // 0x0
     field public static final int ADDRESS_TYPE_RANDOM = 1; // 0x1
@@ -1313,7 +1317,11 @@ package android.bluetooth.le {
   }
 
   public static final class AdvertisingSetParameters.Builder {
+    method @FlaggedApi("com.android.bluetooth.flags.directed_advertising_api") @NonNull public android.bluetooth.le.AdvertisingSetParameters.Builder setDirected(boolean);
+    method @FlaggedApi("com.android.bluetooth.flags.directed_advertising_api") @NonNull public android.bluetooth.le.AdvertisingSetParameters.Builder setHighDutyCycle(boolean);
     method @NonNull public android.bluetooth.le.AdvertisingSetParameters.Builder setOwnAddressType(int);
+    method @FlaggedApi("com.android.bluetooth.flags.directed_advertising_api") @NonNull public android.bluetooth.le.AdvertisingSetParameters.Builder setPeerAddress(@NonNull String);
+    method @FlaggedApi("com.android.bluetooth.flags.directed_advertising_api") @NonNull public android.bluetooth.le.AdvertisingSetParameters.Builder setPeerAddressType(int);
   }
 
   public final class BluetoothLeAdvertiser {
