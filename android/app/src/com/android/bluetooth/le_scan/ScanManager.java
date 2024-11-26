@@ -103,7 +103,6 @@ public class ScanManager {
     static final int MSG_REVERT_SCAN_MODE_UPGRADE = 9;
     static final int MSG_START_CONNECTING = 10;
     static final int MSG_STOP_CONNECTING = 11;
-    private static final int MSG_BT_PROFILE_CONN_STATE_CHANGED = 12;
     private static final String ACTION_REFRESH_BATCHED_SCAN =
             "com.android.bluetooth.gatt.REFRESH_BATCHED_SCAN";
 
@@ -125,8 +124,8 @@ public class ScanManager {
     private final AdapterService mAdapterService;
     private final TimeProvider mTimeProvider;
     private ScanNative mScanNative;
-    private volatile ClientHandler mHandler;
     private BluetoothAdapterProxy mBluetoothAdapterProxy;
+    @VisibleForTesting final ClientHandler mHandler;
 
     private Set<ScanClient> mRegularScanClients;
     private Set<ScanClient> mBatchClients;
@@ -225,14 +224,11 @@ public class ScanManager {
             mDisplayManager.unregisterDisplayListener(mDisplayListener);
         }
 
-        if (mHandler != null) {
-            // Shut down the thread
-            mHandler.removeCallbacksAndMessages(null);
-            Looper looper = mHandler.getLooper();
-            if (looper != null) {
-                looper.quitSafely();
-            }
-            mHandler = null;
+        // Shut down the thread
+        mHandler.removeCallbacksAndMessages(null);
+        Looper looper = mHandler.getLooper();
+        if (looper != null) {
+            looper.quitSafely();
         }
 
         try {
@@ -303,15 +299,7 @@ public class ScanManager {
     }
 
     private void sendMessage(int what, ScanClient client) {
-        final ClientHandler handler = mHandler;
-        if (handler == null) {
-            Log.d(TAG, "sendMessage: mHandler is null.");
-            return;
-        }
-        Message message = new Message();
-        message.what = what;
-        message.obj = client;
-        handler.sendMessage(message);
+        mHandler.obtainMessage(what, client).sendToTarget();
     }
 
     private boolean isFilteringSupported() {
@@ -327,7 +315,8 @@ public class ScanManager {
     }
 
     // Handler class that handles BLE scan operations.
-    private class ClientHandler extends Handler {
+    @VisibleForTesting
+    class ClientHandler extends Handler {
 
         ClientHandler(Looper looper) {
             super(looper);
@@ -371,9 +360,6 @@ public class ScanManager {
                     break;
                 case MSG_STOP_CONNECTING:
                     handleClearConnectingState();
-                    break;
-                case MSG_BT_PROFILE_CONN_STATE_CHANGED:
-                    handleProfileConnectionStateChanged(msg);
                     break;
                 default:
                     // Shouldn't happen.
@@ -921,9 +907,7 @@ public class ScanManager {
             }
         }
 
-        private void handleProfileConnectionStateChanged(Message msg) {
-            int fromState = msg.arg1, toState = msg.arg2;
-            int profile = ((Integer) msg.obj).intValue();
+        private void handleProfileConnectionStateChanged(int profile, int fromState, int toState) {
             boolean updatedConnectingState =
                     updateCountersAndCheckForConnectingState(toState, fromState);
             Log.d(
@@ -2063,11 +2047,6 @@ public class ScanManager {
     }
 
     @VisibleForTesting
-    ClientHandler getClientHandler() {
-        return mHandler;
-    }
-
-    @VisibleForTesting
     BatchScanParams getBatchScanParams() {
         return mBatchScanParams;
     }
@@ -2246,15 +2225,7 @@ public class ScanManager {
      */
     public void handleBluetoothProfileConnectionStateChanged(
             int profile, int fromState, int toState) {
-        if (mHandler == null) {
-            Log.d(TAG, "handleBluetoothProfileConnectionStateChanged: mHandler is null.");
-            return;
-        }
-        mHandler.obtainMessage(
-                        MSG_BT_PROFILE_CONN_STATE_CHANGED,
-                        fromState,
-                        toState,
-                        Integer.valueOf(profile))
-                .sendToTarget();
+        mHandler.post(
+                () -> mHandler.handleProfileConnectionStateChanged(profile, fromState, toState));
     }
 }
