@@ -21,7 +21,6 @@ import static com.android.bluetooth.util.AttributionSourceUtil.getLastAttributio
 import android.annotation.Nullable;
 import android.bluetooth.le.IScannerCallback;
 import android.content.AttributionSource;
-import android.content.Context;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.IInterface;
@@ -29,6 +28,8 @@ import android.os.RemoteException;
 import android.os.UserHandle;
 import android.os.WorkSource;
 import android.util.Log;
+
+import com.android.bluetooth.btservice.AdapterService;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -54,9 +55,9 @@ public class ScannerMap {
             AttributionSource attributionSource,
             WorkSource workSource,
             IScannerCallback callback,
-            Context context,
+            AdapterService adapterService,
             TransitionalScanHelper scanHelper) {
-        return add(uuid, attributionSource, workSource, callback, null, context, scanHelper);
+        return add(uuid, attributionSource, workSource, callback, null, adapterService, scanHelper);
     }
 
     /** Add an entry to the application context list with a pending intent. */
@@ -64,9 +65,9 @@ public class ScannerMap {
             UUID uuid,
             AttributionSource attributionSource,
             TransitionalScanHelper.PendingIntentInfo piInfo,
-            Context context,
+            AdapterService adapterService,
             TransitionalScanHelper scanHelper) {
-        return add(uuid, attributionSource, null, null, piInfo, context, scanHelper);
+        return add(uuid, attributionSource, null, null, piInfo, adapterService, scanHelper);
     }
 
     private ScannerApp add(
@@ -75,7 +76,7 @@ public class ScannerMap {
             @Nullable WorkSource workSource,
             @Nullable IScannerCallback callback,
             @Nullable TransitionalScanHelper.PendingIntentInfo piInfo,
-            Context context,
+            AdapterService adapterService,
             TransitionalScanHelper scanHelper) {
         int appUid;
         String appName = null;
@@ -84,7 +85,7 @@ public class ScannerMap {
             appName = piInfo.callingPackage;
         } else {
             appUid = Binder.getCallingUid();
-            appName = context.getPackageManager().getNameForUid(appUid);
+            appName = adapterService.getPackageManager().getNameForUid(appUid);
         }
         if (appName == null) {
             // Assign an app name if one isn't found
@@ -93,7 +94,8 @@ public class ScannerMap {
         AppScanStats appScanStats = mAppScanStatsMap.get(appUid);
         if (appScanStats == null) {
             appScanStats =
-                    new AppScanStats(appName, workSource, this, context, scanHelper, sSystemClock);
+                    new AppScanStats(
+                            appName, workSource, this, adapterService, scanHelper, sSystemClock);
             mAppScanStatsMap.put(appUid, appScanStats);
         }
         ScannerApp app =

@@ -6649,14 +6649,14 @@ public class AdapterService extends Service {
     }
 
     /** Returns scan upgrade duration in millis. */
-    public long getScanUpgradeDurationMillis() {
+    public int getScanUpgradeDurationMillis() {
         synchronized (mDeviceConfigLock) {
             return mScanUpgradeDurationMillis;
         }
     }
 
     /** Returns scan downgrade duration in millis. */
-    public long getScanDowngradeDurationMillis() {
+    public int getScanDowngradeDurationMillis() {
         synchronized (mDeviceConfigLock) {
             return mScanDowngradeDurationMillis;
         }
@@ -6690,7 +6690,8 @@ public class AdapterService extends Service {
         }
     }
 
-    private class DeviceConfigListener implements DeviceConfig.OnPropertiesChangedListener {
+    @VisibleForTesting
+    public class DeviceConfigListener implements DeviceConfig.OnPropertiesChangedListener {
         private static final String LOCATION_DENYLIST_NAME = "location_denylist_name";
         private static final String LOCATION_DENYLIST_MAC = "location_denylist_mac";
         private static final String LOCATION_DENYLIST_ADVERTISING_DATA =
@@ -6720,9 +6721,15 @@ public class AdapterService extends Service {
 
         private static final int DEFAULT_SCAN_QUOTA_COUNT = 5;
         private static final long DEFAULT_SCAN_QUOTA_WINDOW_MILLIS = 30 * SECOND_IN_MILLIS;
-        private static final long DEFAULT_SCAN_TIMEOUT_MILLIS = 10 * MINUTE_IN_MILLIS;
-        private static final int DEFAULT_SCAN_UPGRADE_DURATION_MILLIS = (int) SECOND_IN_MILLIS * 6;
-        private static final int DEFAULT_SCAN_DOWNGRADE_DURATION_BT_CONNECTING_MILLIS =
+
+        @VisibleForTesting
+        public static final long DEFAULT_SCAN_TIMEOUT_MILLIS = 10 * MINUTE_IN_MILLIS;
+
+        @VisibleForTesting
+        public static final int DEFAULT_SCAN_UPGRADE_DURATION_MILLIS = (int) SECOND_IN_MILLIS * 6;
+
+        @VisibleForTesting
+        public static final int DEFAULT_SCAN_DOWNGRADE_DURATION_BT_CONNECTING_MILLIS =
                 (int) SECOND_IN_MILLIS * 6;
 
         public void start() {

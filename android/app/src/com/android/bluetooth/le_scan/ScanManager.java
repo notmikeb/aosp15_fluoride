@@ -161,9 +161,8 @@ public class ScanManager {
     }
 
     public ScanManager(
-            Context context,
-            TransitionalScanHelper scanHelper,
             AdapterService adapterService,
+            TransitionalScanHelper scanHelper,
             BluetoothAdapterProxy bluetoothAdapterProxy,
             Looper looper,
             TimeProvider timeProvider) {
@@ -172,7 +171,7 @@ public class ScanManager {
         mBatchClients = Collections.newSetFromMap(new ConcurrentHashMap<ScanClient, Boolean>());
         mSuspendedScanClients =
                 Collections.newSetFromMap(new ConcurrentHashMap<ScanClient, Boolean>());
-        mContext = context;
+        mContext = adapterService;
         mScanHelper = scanHelper;
         mAdapterService = adapterService;
         mTimeProvider = timeProvider;
@@ -1609,8 +1608,7 @@ public class ScanManager {
                             if (client.stats != null) {
                                 client.stats.recordTrackingHwFilterNotAvailableCountMetrics(
                                         client.scannerId,
-                                        AdapterService.getAdapterService()
-                                                .getTotalNumOfTrackableAdvertisements());
+                                        mAdapterService.getTotalNumOfTrackableAdvertisements());
                             }
                             try {
                                 mScanHelper.onScanManagerErrorCallback(
@@ -1711,8 +1709,7 @@ public class ScanManager {
                 if (client.stats != null) {
                     client.stats.recordHwFilterNotAvailableCountMetrics(
                             client.scannerId,
-                            AdapterService.getAdapterService()
-                                    .getNumOfOffloadedScanFilterSupported());
+                            mAdapterService.getNumOfOffloadedScanFilterSupported());
                 }
                 return true;
             }
@@ -1720,8 +1717,7 @@ public class ScanManager {
         }
 
         private void initFilterIndexStack() {
-            int maxFiltersSupported =
-                    AdapterService.getAdapterService().getNumOfOffloadedScanFilterSupported();
+            int maxFiltersSupported = mAdapterService.getNumOfOffloadedScanFilterSupported();
             if (!isFilteringSupported() && mIsMsftSupported) {
                 // Hardcoded minimum number of hardware adv monitor slots, because this value
                 // cannot be queried from the controller for MSFT enabled devices
@@ -1933,7 +1929,7 @@ public class ScanManager {
             }
             int val = 0;
             int maxTotalTrackableAdvertisements =
-                    AdapterService.getAdapterService().getTotalNumOfTrackableAdvertisements();
+                    mAdapterService.getTotalNumOfTrackableAdvertisements();
             // controller based onfound onlost resources are scarce commodity; the
             // assignment of filters to num of beacons to track is configurable based
             // on hw capabilities. Apps give an intent and allocation of onfound
@@ -1960,7 +1956,7 @@ public class ScanManager {
         private boolean manageAllocationOfTrackingAdvertisement(
                 int numOfTrackableAdvertisement, boolean allocate) {
             int maxTotalTrackableAdvertisements =
-                    AdapterService.getAdapterService().getTotalNumOfTrackableAdvertisements();
+                    mAdapterService.getTotalNumOfTrackableAdvertisements();
             synchronized (mCurUsedTrackableAdvertisementsLock) {
                 int availableEntries =
                         maxTotalTrackableAdvertisements - mCurUsedTrackableAdvertisements;
@@ -2185,12 +2181,9 @@ public class ScanManager {
         }
         Log.d(
                 TAG,
-                "mProfilesConnecting "
-                        + mProfilesConnecting
-                        + ", mProfilesConnected "
-                        + mProfilesConnected
-                        + ", mProfilesDisconnecting "
-                        + mProfilesDisconnecting);
+                ("mProfilesConnecting " + mProfilesConnecting)
+                        + (", mProfilesConnected " + mProfilesConnected)
+                        + (", mProfilesDisconnecting " + mProfilesDisconnecting));
         return (mProfilesConnecting > 0);
     }
 
@@ -2231,12 +2224,9 @@ public class ScanManager {
             }
             Log.d(
                     TAG,
-                    "uid "
-                            + uid
-                            + " isForeground "
-                            + isForeground
-                            + " scanMode "
-                            + getScanModeString(client.settings.getScanMode()));
+                    ("uid " + uid)
+                            + (" isForeground " + isForeground)
+                            + (" scanMode " + getScanModeString(client.settings.getScanMode())));
         }
 
         if (updatedScanParams) {
