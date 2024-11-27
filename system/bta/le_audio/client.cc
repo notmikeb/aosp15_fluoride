@@ -377,7 +377,7 @@ public:
     }
 
     static const uint64_t timeoutMs = 2000;
-    log::debug("Start VBC close timeout with {} ms", static_cast<unsigned long>(timeoutMs));
+    log::debug("Start VBC close timeout with {} ms", timeoutMs);
 
     alarm_set_on_mloop(
             close_vbc_timeout_, timeoutMs,

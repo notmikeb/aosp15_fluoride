@@ -97,3 +97,11 @@ flag {
     description: "Broadcast when remote device encryption changes"
     bug: "369753860"
 }
+
+flag {
+    name: "key_missing_public"
+    is_exported: true
+    namespace: "bluetooth"
+    description: "Make BluetoothDevice.ACTION_KEY_MISSING into public API"
+    bug: "379729762"
+}

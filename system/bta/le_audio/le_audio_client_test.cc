@@ -12557,7 +12557,7 @@ TEST_F(UnicastTest, NoContextvalidateStreamingRequest) {
   Mock::VerifyAndClearExpectations(&mock_audio_hal_client_callbacks_);
   SyncOnMainLoop();
 
-  // Stop streaming and expect Service to be informed about straming suspension
+  // Stop streaming and expect Service to be informed about streaming suspension
   EXPECT_CALL(mock_audio_hal_client_callbacks_,
               OnUnicastMonitorModeStatus(
                       bluetooth::le_audio::types::kLeAudioDirectionSource,
@@ -12581,10 +12581,10 @@ TEST_F(UnicastTest, CodecFrameBlocks2) {
   std::list<MockCodecInterface*> codec_mocks;
   MockCodecInterface::RegisterMockInstanceHook([&](MockCodecInterface* mock, bool is_destroyed) {
     if (is_destroyed) {
-      log::debug("Codec Interface Destroyed: {}", (long)mock);
+      log::debug("Codec Interface Destroyed: {}", std::format_ptr(mock));
       codec_mocks.remove(mock);
     } else {
-      log::debug("Codec Interface Created: {}", (long)mock);
+      log::debug("Codec Interface Created: {}", std::format_ptr(mock));
       ON_CALL(*mock, GetNumOfSamplesPerChannel()).WillByDefault(Return(960));
       ON_CALL(*mock, GetNumOfBytesPerSample()).WillByDefault(Return(2));  // 16bits samples
       ON_CALL(*mock, Encode(_, _, _, _, _))
