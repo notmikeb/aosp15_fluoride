@@ -1896,11 +1896,26 @@ public:
               dev->SetConnectionState(DeviceConnectState::DISCONNECTED);
             }
           }
+
+          /* If group is Streaming or is in transition for Streaming - lets stop it
+           * and mark device to disconnect when stream is closed
+           */
           if (group->IsStreaming() || !group->IsReleasingOrIdle()) {
+            log::debug("group_id {} needs to stop streaming before {} disconnection",
+                       group->group_id_, leAudioDevice->address_);
             leAudioDevice->closing_stream_for_disconnection_ = true;
             groupStateMachine_->StopStream(group);
             return;
           }
+
+          if (group->IsReleasing()) {
+            log::debug("group_id {} needs to stop streaming before {} disconnection",
+                       group->group_id_, leAudioDevice->address_);
+            /* Stream is releasing, wait till it is completed and then disconnect ACL. */
+            leAudioDevice->closing_stream_for_disconnection_ = true;
+            return;
+          }
+
           force_acl_disconnect &= group->IsEnabled();
         }
 
