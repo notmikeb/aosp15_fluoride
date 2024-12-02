@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include <flatbuffers/flatbuffers.h>
-
 #include <memory>
 #include <mutex>
 #include <string>
