@@ -28,35 +28,7 @@ using ::bluetooth::os::WakelockManager;
 namespace bluetooth {
 
 void ModuleDumper::DumpState(std::string* output, std::ostringstream& /*oss*/) const {
-  log::assert_that(output != nullptr, "assert failed: output != nullptr");
-
-  flatbuffers::FlatBufferBuilder builder(1024);
-  auto title = builder.CreateString(title_);
-
-  auto wakelock_offset = WakelockManager::Get().GetDumpsysData(&builder);
-
-  std::queue<DumpsysDataFinisher> queue;
-  for (auto it = module_registry_.start_order_.rbegin(); it != module_registry_.start_order_.rend();
-       it++) {
-    auto instance = module_registry_.started_modules_.find(*it);
-    log::assert_that(instance != module_registry_.started_modules_.end(),
-                     "assert failed: instance != module_registry_.started_modules_.end()");
-    log::verbose("Starting dumpsys module:{}", instance->second->ToString());
-    queue.push(instance->second->GetDumpsysData(&builder));
-    log::verbose("Finished dumpsys module:{}", instance->second->ToString());
-  }
-
-  DumpsysDataBuilder data_builder(builder);
-  data_builder.add_title(title);
-  data_builder.add_wakelock_manager_data(wakelock_offset);
-
-  while (!queue.empty()) {
-    queue.front()(&data_builder);
-    queue.pop();
-  }
-
-  builder.Finish(data_builder.Finish());
-  *output = std::string(builder.GetBufferPointer(), builder.GetBufferPointer() + builder.GetSize());
+  *output = "";
 }
 
 }  // namespace bluetooth

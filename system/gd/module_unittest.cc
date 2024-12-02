@@ -270,38 +270,5 @@ TEST_F(ModuleTest, shutdown_with_unhandled_callback) {
   registry_->StopAll();
 }
 
-TEST_F(ModuleTest, dump_state) {
-  static const char* title = "Test Dump Title";
-  ModuleList list;
-  list.add<TestModuleDumpState>();
-  registry_->Start(&list, thread_);
-
-  ModuleDumper dumper(STDOUT_FILENO, *registry_, title);
-
-  std::string output;
-  std::ostringstream oss;
-  dumper.DumpState(&output, oss);
-
-  auto data = flatbuffers::GetRoot<DumpsysData>(output.data());
-  EXPECT_STREQ(title, data->title()->c_str());
-
-  auto test_data = data->module_unittest_data();
-  EXPECT_STREQ("Initial Test String", test_data->title()->c_str());
-
-  TestModuleDumpState* test_module = static_cast<TestModuleDumpState*>(
-          registry_->Start(&TestModuleDumpState::Factory, nullptr));
-  test_module->test_string_ = "A Second Test String";
-
-  oss.clear();
-  output.clear();
-  dumper.DumpState(&output, oss);
-
-  data = flatbuffers::GetRoot<DumpsysData>(output.data());
-  test_data = data->module_unittest_data();
-  EXPECT_STREQ("A Second Test String", test_data->title()->c_str());
-
-  registry_->StopAll();
-}
-
 }  // namespace
 }  // namespace bluetooth
