@@ -32,8 +32,8 @@ public:
   void DumpState(std::string* output, std::ostringstream& oss) const;
 
 private:
-  const ModuleRegistry& module_registry_;
-  const std::string title_;
+  [[maybe_unused]] const ModuleRegistry& module_registry_;
+  [[maybe_unused]] const std::string title_;
 };
 
 }  // namespace bluetooth
