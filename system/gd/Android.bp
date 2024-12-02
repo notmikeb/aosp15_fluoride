@@ -640,11 +640,9 @@ genrule {
     srcs: [
         "dumpsys_data.fbs",
         "module_unittest.fbs",
-        "os/wakelock_manager.fbs",
     ],
     out: [
         "dumpsys_data.bfbs",
-        "wakelock_manager.bfbs",
     ],
 }
 
@@ -657,10 +655,8 @@ genrule {
     srcs: [
         "dumpsys_data.fbs",
         "module_unittest.fbs",
-        "os/wakelock_manager.fbs",
     ],
     out: [
         "dumpsys_data_generated.h",
-        "wakelock_manager_generated.h",
     ],
 }

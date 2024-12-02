@@ -34,6 +34,7 @@
 #include "module.h"
 #include "module_dumper.h"
 #include "os/system_properties.h"
+#include "os/wakelock_manager.h"
 #include "shim/dumpsys.h"
 
 namespace bluetooth {
@@ -138,17 +139,8 @@ void Dumpsys::impl::DumpWithArgsAsync(int fd, const char** /*args*/) const {
   const auto registry = dumpsys_module_.GetModuleRegistry();
   bluetooth::shim::GetController()->Dump(fd);
   bluetooth::shim::GetAclManager()->Dump(fd);
+  bluetooth::os::WakelockManager::Get().Dump(fd);
   bluetooth::shim::GetSnoopLogger()->DumpSnoozLogToFile();
-
-  ModuleDumper dumper(fd, *registry, kDumpsysTitle);
-  std::string dumpsys_data;
-  std::ostringstream oss;
-  dumper.DumpState(&dumpsys_data, oss);
-
-  dprintf(fd, " ----- Filtering as Developer -----\n");
-  FilterSchema(&dumpsys_data);
-
-  dprintf(fd, "%s", PrintAsJson(&dumpsys_data).c_str());
 }
 
 void Dumpsys::impl::DumpWithArgsSync(int fd, const char** args, std::promise<void> promise) {
