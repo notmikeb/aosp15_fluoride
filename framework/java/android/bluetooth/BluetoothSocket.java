@@ -193,6 +193,7 @@ public final class BluetoothSocket implements Closeable {
 
     private static final int SOCK_CONNECTION_SIGNAL_SIZE = 44;
     private static final long INVALID_SOCKET_ID = 0;
+    private static final int SOCK_ACCEPT_SIGNAL_SIZE = 4;
 
     private ByteBuffer mL2capBuffer = null;
     private int mMaxTxPacketSize = 0; // The l2cap maximum packet size supported by the peer.
@@ -931,7 +932,13 @@ public final class BluetoothSocket implements Closeable {
         if (timeout > 0) {
             mSocket.setSoTimeout(timeout);
         }
-        String RemoteAddr = waitSocketSignal(mSocketIS);
+        sendSocketAcceptSignal(mSocketOS, true);
+        String RemoteAddr;
+        try {
+            RemoteAddr = waitSocketSignal(mSocketIS);
+        } finally {
+            sendSocketAcceptSignal(mSocketOS, false);
+        }
         if (timeout > 0) {
             mSocket.setSoTimeout(0);
         }
@@ -1282,6 +1289,37 @@ public final class BluetoothSocket implements Closeable {
                 addr[3],
                 addr[4],
                 addr[5]);
+    }
+
+    /**
+     * Sends a socket accept signal to the host stack.
+     *
+     * <p>This method is used to notify the host stack whether the host application is actively
+     * accepting a new connection or not. It sends a signal containing the acceptance status to the
+     * output stream associated with the socket.
+     *
+     * <p>This method is only effective when the data path is not {@link
+     * BluetoothSocketSettings#DATA_PATH_NO_OFFLOAD}.
+     *
+     * @param os The output stream to write the signal to.
+     * @param isAccepting {@code true} if the socket connection is being accepted, {@code false}
+     *     otherwise.
+     * @throws IOException If an I/O error occurs while writing to the output stream.
+     * @hide
+     */
+    private void sendSocketAcceptSignal(OutputStream os, boolean isAccepting) throws IOException {
+        if (Flags.socketSettingsApi()) {
+            if (mDataPath == BluetoothSocketSettings.DATA_PATH_NO_OFFLOAD) {
+                return;
+            }
+            Log.d(TAG, "sendSocketAcceptSignal" + " isAccepting " + isAccepting);
+            byte[] sig = new byte[SOCK_ACCEPT_SIGNAL_SIZE];
+            ByteBuffer bb = ByteBuffer.wrap(sig);
+            bb.order(ByteOrder.nativeOrder());
+            bb.putShort((short) SOCK_ACCEPT_SIGNAL_SIZE);
+            bb.putShort((short) (isAccepting ? 1 : 0));
+            os.write(sig, 0, SOCK_ACCEPT_SIGNAL_SIZE);
+        }
     }
 
     private String waitSocketSignal(InputStream is) throws IOException {
