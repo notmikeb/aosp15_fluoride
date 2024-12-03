@@ -851,6 +851,13 @@ static void btsock_l2cap_server_listen(l2cap_socket* sock) {
   /* Setup ETM settings: mtu will be set below */
   std::unique_ptr<tL2CAP_CFG_INFO> cfg = std::make_unique<tL2CAP_CFG_INFO>(
           tL2CAP_CFG_INFO{.fcr_present = true, .fcr = kDefaultErtmOptions});
+  /* For hardware offload data path, host stack sets the initial credits to 0. The offload stack
+   * should send initial credits to peer device through L2CAP signaling command when the data path
+   * is switched successfully. */
+  if (sock->data_path == BTSOCK_DATA_PATH_HARDWARE_OFFLOAD) {
+    cfg->init_credit_present = true;
+    cfg->init_credit = 0;
+  }
 
   std::unique_ptr<tL2CAP_ERTM_INFO> ertm_info;
   if (!sock->is_le_coc) {
@@ -925,6 +932,13 @@ static bt_status_t btsock_l2cap_listen_or_connect(const char* name, const RawAdd
     /* Setup ETM settings: mtu will be set below */
     std::unique_ptr<tL2CAP_CFG_INFO> cfg = std::make_unique<tL2CAP_CFG_INFO>(
             tL2CAP_CFG_INFO{.fcr_present = true, .fcr = kDefaultErtmOptions});
+    /* For hardware offload data path, host stack sets the initial credits to 0. The offload stack
+     * should send initial credits to peer device through L2CAP signaling command when the data path
+     * is switched successfully. */
+    if (sock->data_path == BTSOCK_DATA_PATH_HARDWARE_OFFLOAD) {
+      cfg->init_credit_present = true;
+      cfg->init_credit = 0;
+    }
 
     std::unique_ptr<tL2CAP_ERTM_INFO> ertm_info;
     if (!sock->is_le_coc) {

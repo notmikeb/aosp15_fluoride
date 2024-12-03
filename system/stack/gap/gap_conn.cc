@@ -213,7 +213,8 @@ uint16_t GAP_ConnOpen(const char* /* p_serv_name */, uint8_t service_id, bool is
 
   /* Configure L2CAP COC, if transport is LE */
   if (transport == BT_TRANSPORT_LE) {
-    p_ccb->local_coc_cfg.credits = L2CA_LeCreditDefault();
+    p_ccb->local_coc_cfg.credits =
+            (p_ccb->cfg.init_credit_present) ? p_ccb->cfg.init_credit : L2CA_LeCreditDefault();
     p_ccb->local_coc_cfg.mtu = p_cfg->mtu;
 
     uint16_t max_mps = bluetooth::shim::GetController()->GetLeBufferSize().le_data_packet_length_;
