@@ -2257,6 +2257,9 @@ void btif_dm_acl_evt(tBTA_DM_ACL_EVT event, tBTA_DM_ACL* p_data) {
     case BTA_DM_LE_FEATURES_READ:
       btif_get_adapter_property(BT_PROPERTY_LOCAL_LE_FEATURES);
       break;
+    case BTA_DM_LPP_OFFLOAD_FEATURES_READ:
+      btif_get_adapter_property(BT_PROPERTY_LPP_OFFLOAD_FEATURES);
+      break;
 
     default: {
       log::error("Unexpected tBTA_DM_ACL_EVT:{}", event);
