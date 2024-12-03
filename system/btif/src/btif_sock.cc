@@ -22,12 +22,14 @@
 
 #include <base/functional/callback.h>
 #include <bluetooth/log.h>
+#include <com_android_bluetooth_flags.h>
 #include <hardware/bluetooth.h>
 #include <hardware/bt_sock.h>
 
 #include <atomic>
 
 #include "bta/include/bta_api.h"
+#include "btif_sock_hal.h"
 #include "btif_sock_l2cap.h"
 #include "btif_sock_logging.h"
 #include "btif_sock_rfc.h"
@@ -114,6 +116,13 @@ bt_status_t btif_sock_init(uid_set_t* uid_set) {
     log::error("error initializing SCO sockets: {}", status);
     btsock_rfc_cleanup();
     goto error;
+  }
+
+  if (com::android::bluetooth::flags::socket_settings_api()) {
+    status = btsock_hal_init();
+    if (status != BT_STATUS_SUCCESS) {
+      log::warn("error initializing socket hal: {}", status);
+    }
   }
 
   return BT_STATUS_SUCCESS;
