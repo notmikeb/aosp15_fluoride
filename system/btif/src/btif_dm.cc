@@ -3070,7 +3070,7 @@ static void id_status_callback(tBT_TRANSPORT transport, bool is_valid, const Oct
 
   auto advertiser = bluetooth::shim::get_ble_advertiser_instance();
   ::AdvertiseParameters parameters{};
-  parameters.advertising_event_properties = 0x0045 /* connectable, discoverable, tx power */;
+  parameters.advertising_event_properties = 0x0041 /* connectable, tx power */;
   parameters.min_interval = 0xa0;   // 100 ms
   parameters.max_interval = 0x500;  // 800 ms
   parameters.channel_map = 0x7;     // Use all the channels
@@ -3079,6 +3079,7 @@ static void id_status_callback(tBT_TRANSPORT transport, bool is_valid, const Oct
   parameters.secondary_advertising_phy = 2;
   parameters.scan_request_notification_enable = 0;
   parameters.own_address_type = BLE_ADDR_RANDOM;
+  parameters.discoverable = true;
 
   std::vector<uint8_t> advertisement{0x02, 0x01 /* Flags */, 0x02 /* Connectable */};
   std::vector<uint8_t> scan_data{};
