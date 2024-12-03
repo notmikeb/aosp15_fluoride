@@ -129,6 +129,7 @@ package android.bluetooth {
     method @RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_PRIVILEGED}) public int isDistanceMeasurementSupported();
     method @FlaggedApi("com.android.bluetooth.flags.socket_settings_api") @RequiresPermission(android.Manifest.permission.BLUETOOTH_PRIVILEGED) public boolean isLeCocSocketOffloadSupported();
     method public boolean isLeEnabled();
+    method @FlaggedApi("com.android.bluetooth.flags.socket_settings_api") @RequiresPermission(android.Manifest.permission.BLUETOOTH_PRIVILEGED) public boolean isRfcommSocketOffloadSupported();
     method @NonNull public static String nameForState(int);
     method @RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_PRIVILEGED}) public int notifyActiveDeviceChangeApplied(@NonNull android.bluetooth.BluetoothDevice);
     method @RequiresPermission(allOf={android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_PRIVILEGED}) public boolean registerBluetoothConnectionCallback(@NonNull java.util.concurrent.Executor, @NonNull android.bluetooth.BluetoothAdapter.BluetoothConnectionCallback);
