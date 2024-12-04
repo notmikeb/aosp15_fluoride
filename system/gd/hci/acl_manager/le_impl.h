@@ -857,7 +857,7 @@ public:
       address_with_type = AddressWithType();
     }
 
-    if (controller_->IsRpaOffloadSupported() &&
+    if (controller_->IsRpaGenerationSupported() &&
         own_address_type != OwnAddressType::PUBLIC_DEVICE_ADDRESS) {
       log::info("Support RPA offload, set own address type RESOLVABLE_OR_RANDOM_ADDRESS");
       own_address_type = OwnAddressType::RESOLVABLE_OR_RANDOM_ADDRESS;
