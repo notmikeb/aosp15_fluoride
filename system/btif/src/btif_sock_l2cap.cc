@@ -265,6 +265,12 @@ static void btsock_l2cap_free_l(l2cap_socket* sock) {
           SOCKET_CONNECTION_STATE_DISCONNECTED,
           sock->server ? SOCKET_ROLE_LISTEN : SOCKET_ROLE_CONNECTION, sock->app_uid, sock->channel,
           sock->tx_bytes, sock->rx_bytes, sock->name);
+  if (com::android::bluetooth::flags::socket_settings_api()) {
+    if (sock->data_path == BTSOCK_DATA_PATH_HARDWARE_OFFLOAD && !sock->server &&
+        sock->socket_id != 0) {
+      bluetooth::shim::GetLppOffloadManager()->SocketClosed(sock->socket_id);
+    }
+  }
   if (sock->next) {
     sock->next->prev = sock->prev;
   }
