@@ -120,6 +120,7 @@ cc_defaults {
                 "android.hardware.bluetooth-V1-ndk",
                 "android.hardware.bluetooth.ranging-V2-ndk",
                 "android.hardware.bluetooth.socket-V1-ndk",
+                "android.hardware.contexthub-V4-ndk",
             ],
         },
     },
