@@ -278,6 +278,10 @@ public class AdapterService extends Service {
 
     private final BluetoothHciVendorSpecificDispatcher mBluetoothHciVendorSpecificDispatcher =
             new BluetoothHciVendorSpecificDispatcher();
+    private final BluetoothHciVendorSpecificNativeInterface
+            mBluetoothHciVendorSpecificNativeInterface =
+                    new BluetoothHciVendorSpecificNativeInterface(
+                            mBluetoothHciVendorSpecificDispatcher);
 
     private final Looper mLooper;
     private final AdapterServiceHandler mHandler;
@@ -342,7 +346,6 @@ public class AdapterService extends Service {
     private BassClientService mBassClientService;
     private BatteryService mBatteryService;
     private BluetoothQualityReportNativeInterface mBluetoothQualityReportNativeInterface;
-    private BluetoothHciVendorSpecificNativeInterface mBluetoothHciVendorSpecificNativeInterface;
     private GattService mGattService;
     private ScanController mScanController;
 
@@ -693,11 +696,7 @@ public class AdapterService extends Service {
         mBluetoothQualityReportNativeInterface.init();
 
         if (Flags.hciVendorSpecificExtension()) {
-            mBluetoothHciVendorSpecificNativeInterface =
-                    requireNonNull(
-                            mBluetoothHciVendorSpecificNativeInterface.getInstance(),
-                            "mBluetoothHciVendorSpecificNativeInterface cannot be null");
-            mBluetoothHciVendorSpecificNativeInterface.init(mBluetoothHciVendorSpecificDispatcher);
+            mBluetoothHciVendorSpecificNativeInterface.init();
         }
 
         mSdpManager = new SdpManager(this, mLooper);
