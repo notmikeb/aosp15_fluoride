@@ -109,8 +109,8 @@ stateDiagram-v2
     }
     
     BTA_AV_INIT_ST --> BTA_AV_OPEN_ST : AVRC_OPEN_EVT
-    BTA_AV_OPEN_ST --> BTA_AV_INIT_ST : AVRC_NONE_EVT<br/>API_DISABLE_EVT
-```
+    BTA_AV_OPEN_ST --> BTA_AV_INIT_ST : AVRC_NONE_EVT
+    BTA_AV_OPEN_ST --> BTA_AV_INIT_ST : API_DISABLE_EVT
 ```
 
 ## AVRCP 在串流狀態機中的處理

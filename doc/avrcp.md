@@ -32,7 +32,6 @@ graph LR
     Target --> Respond
     Respond --> Remote
 ```
-```
 
 ## 典型流程
 1. User 在 Controller 端操作播放/暫停/音量等功能。

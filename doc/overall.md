@@ -27,7 +27,6 @@ graph TB
     C -.->|HIDL/Legacy HAL| G[Other HALs]
     C -.->|Socket/IPC| H[Network/Socket Service]
 ```
-```
 
 ---
 
@@ -65,7 +64,6 @@ graph TB
     D -->|AVCTP/L2CAP (RFCOMM)| E
     
     D -.->|Binder callback (狀態/事件)| B
-```
 ```
 
 - **AVRCP Controller/Target**：可同時支援兩個 L2CAP channel（CT/TG）

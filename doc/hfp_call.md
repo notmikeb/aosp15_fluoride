@@ -61,7 +61,6 @@ stateDiagram-v2
     AUDIO_CONNECTED --> SLC_CONNECTED : API_AUDIO_DISCONNECT_EVT
     SLC_CONNECTED --> IDLE : API_DISCONNECT_EVT
 ```
-```
 
 ---
 
@@ -89,7 +88,6 @@ sequenceDiagram
     HFP->>HAL: read()  // 開始讀取音訊資料
     HFP->>HFP: 建立 SCO 連線
     HAL->>HFP: 音訊資料 (FMQ)
-```
 ```
 
 ### 3. 關鍵互動說明

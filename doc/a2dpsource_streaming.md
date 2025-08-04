@@ -42,8 +42,8 @@
 ```mermaid
 sequenceDiagram
     participant App
-    participant Audio as "Audio Service<br/>(audioserver)"
-    participant BT as "Bluetooth Stack<br/>(btif/a2dp)"
+    participant Audio as "Audio Service (audioserver)"
+    participant BT as "Bluetooth Stack (btif/a2dp)"
     participant HAL as "Audio HAL/AIDL"
     
     App->>Audio: 播放音樂
@@ -52,7 +52,6 @@ sequenceDiagram
     Audio->>BT: startStream() callback
     BT->>HAL: read()  // 開始讀取音訊資料
     HAL->>BT: 音訊資料 (FMQ)
-```
 ```
 
 ---
