@@ -52,109 +52,99 @@ BTA_AG 狀態機處理以下事件：
 
 ## 狀態機圖表
 
-```plantuml
-@startuml BTA_AG_State_Machine
-!theme plain
-skinparam backgroundColor white
-skinparam state {
-    BackgroundColor lightblue
-    BorderColor darkblue
-    FontColor black
-}
-
-title BTA_AG State Machine
-
-[*] --> BTA_AG_INIT_ST
-
-state BTA_AG_INIT_ST {
-    [*] --> Idle
-    Idle : 等待註冊或連接請求
+```mermaid
+stateDiagram-v2
+    title BTA_AG State Machine
     
-    note right of Idle
-        處理事件：
-        - API_REGISTER_EVT
-        - API_DEREGISTER_EVT
-        - API_OPEN_EVT
-        - RFC_OPEN_EVT
-        - SCO_OPEN_EVT
-        - SCO_CLOSE_EVT
-        - DISC_ACP_RES_EVT
-    end note
-}
-
-state BTA_AG_OPENING_ST {
-    [*] --> Opening
-    Opening : 正在建立連接
+    [*] --> BTA_AG_INIT_ST
     
-    note right of Opening
-        處理事件：
-        - API_DEREGISTER_EVT
-        - API_OPEN_EVT
-        - API_CLOSE_EVT
-        - RFC_OPEN_EVT
-        - RFC_CLOSE_EVT
-        - SCO_OPEN_EVT
-        - SCO_CLOSE_EVT
-        - DISC_INT_RES_EVT
-        - DISC_OK_EVT
-        - DISC_FAIL_EVT
-        - COLLISION_EVT
-    end note
-}
-
-state BTA_AG_OPEN_ST {
-    [*] --> Open
-    Open : 連接已建立
+    state BTA_AG_INIT_ST {
+        [*] --> Idle
+        Idle : 等待註冊或連接請求
+        
+        note right of Idle
+            處理事件：
+            - API_REGISTER_EVT
+            - API_DEREGISTER_EVT
+            - API_OPEN_EVT
+            - RFC_OPEN_EVT
+            - SCO_OPEN_EVT
+            - SCO_CLOSE_EVT
+            - DISC_ACP_RES_EVT
+        end note
+    }
     
-    note right of Open
-        處理事件：
-        - API_DEREGISTER_EVT
-        - API_OPEN_EVT
-        - API_CLOSE_EVT
-        - API_AUDIO_OPEN_EVT
-        - API_AUDIO_CLOSE_EVT
-        - API_RESULT_EVT
-        - API_SETCODEC_EVT
-        - RFC_CLOSE_EVT
-        - RFC_DATA_EVT
-        - SCO_OPEN_EVT
-        - SCO_CLOSE_EVT
-        - DISC_ACP_RES_EVT
-        - RING_TIMEOUT_EVT
-        - SVC_TIMEOUT_EVT
-    end note
-}
-
-state BTA_AG_CLOSING_ST {
-    [*] --> Closing
-    Closing : 正在關閉連接
+    state BTA_AG_OPENING_ST {
+        [*] --> Opening
+        Opening : 正在建立連接
+        
+        note right of Opening
+            處理事件：
+            - API_DEREGISTER_EVT
+            - API_OPEN_EVT
+            - API_CLOSE_EVT
+            - RFC_OPEN_EVT
+            - RFC_CLOSE_EVT
+            - SCO_OPEN_EVT
+            - SCO_CLOSE_EVT
+            - DISC_INT_RES_EVT
+            - DISC_OK_EVT
+            - DISC_FAIL_EVT
+            - COLLISION_EVT
+        end note
+    }
     
-    note right of Closing
-        處理事件：
-        - API_DEREGISTER_EVT
-        - API_OPEN_EVT
-        - RFC_CLOSE_EVT
-        - SCO_OPEN_EVT
-        - SCO_CLOSE_EVT
-        - DISC_ACP_RES_EVT
-        - DISC_INT_RES_EVT
-    end note
-}
-
-' 狀態轉換
-BTA_AG_INIT_ST --> BTA_AG_OPENING_ST : API_OPEN_EVT
-BTA_AG_INIT_ST --> BTA_AG_OPEN_ST : RFC_OPEN_EVT
-
-BTA_AG_OPENING_ST --> BTA_AG_CLOSING_ST : API_DEREGISTER_EVT\nAPI_CLOSE_EVT
-BTA_AG_OPENING_ST --> BTA_AG_OPEN_ST : RFC_OPEN_EVT
-BTA_AG_OPENING_ST --> BTA_AG_INIT_ST : RFC_CLOSE_EVT\nDISC_FAIL_EVT\nCOLLISION_EVT
-
-BTA_AG_OPEN_ST --> BTA_AG_CLOSING_ST : API_DEREGISTER_EVT\nAPI_CLOSE_EVT\nSVC_TIMEOUT_EVT
-BTA_AG_OPEN_ST --> BTA_AG_INIT_ST : RFC_CLOSE_EVT
-
-BTA_AG_CLOSING_ST --> BTA_AG_INIT_ST : RFC_CLOSE_EVT\nDISC_INT_RES_EVT
-
-@enduml
+    state BTA_AG_OPEN_ST {
+        [*] --> Open
+        Open : 連接已建立
+        
+        note right of Open
+            處理事件：
+            - API_DEREGISTER_EVT
+            - API_OPEN_EVT
+            - API_CLOSE_EVT
+            - API_AUDIO_OPEN_EVT
+            - API_AUDIO_CLOSE_EVT
+            - API_RESULT_EVT
+            - API_SETCODEC_EVT
+            - RFC_CLOSE_EVT
+            - RFC_DATA_EVT
+            - SCO_OPEN_EVT
+            - SCO_CLOSE_EVT
+            - DISC_ACP_RES_EVT
+            - RING_TIMEOUT_EVT
+            - SVC_TIMEOUT_EVT
+        end note
+    }
+    
+    state BTA_AG_CLOSING_ST {
+        [*] --> Closing
+        Closing : 正在關閉連接
+        
+        note right of Closing
+            處理事件：
+            - API_DEREGISTER_EVT
+            - API_OPEN_EVT
+            - RFC_CLOSE_EVT
+            - SCO_OPEN_EVT
+            - SCO_CLOSE_EVT
+            - DISC_ACP_RES_EVT
+            - DISC_INT_RES_EVT
+        end note
+    }
+    
+    BTA_AG_INIT_ST --> BTA_AG_OPENING_ST : API_OPEN_EVT
+    BTA_AG_INIT_ST --> BTA_AG_OPEN_ST : RFC_OPEN_EVT
+    
+    BTA_AG_OPENING_ST --> BTA_AG_CLOSING_ST : API_DEREGISTER_EVT<br/>API_CLOSE_EVT
+    BTA_AG_OPENING_ST --> BTA_AG_OPEN_ST : RFC_OPEN_EVT
+    BTA_AG_OPENING_ST --> BTA_AG_INIT_ST : RFC_CLOSE_EVT<br/>DISC_FAIL_EVT<br/>COLLISION_EVT
+    
+    BTA_AG_OPEN_ST --> BTA_AG_CLOSING_ST : API_DEREGISTER_EVT<br/>API_CLOSE_EVT<br/>SVC_TIMEOUT_EVT
+    BTA_AG_OPEN_ST --> BTA_AG_INIT_ST : RFC_CLOSE_EVT
+    
+    BTA_AG_CLOSING_ST --> BTA_AG_INIT_ST : RFC_CLOSE_EVT<br/>DISC_INT_RES_EVT
+```
 ```
 
 ## 詳細狀態轉換表

@@ -68,59 +68,49 @@ BTA_AV_RC_PSM_EVT               // 遠程控制 PSM 事件
 
 ## AVRCP 狀態機圖表
 
-```plantuml
-@startuml BTA_AVRCP_State_Machine
-!theme plain
-skinparam backgroundColor white
-skinparam state {
-    BackgroundColor lightyellow
-    BorderColor darkorange
-    FontColor black
-}
-
-title AVRCP State Machine (Integrated in BTA_AV)
-
-note as N1
-AVRCP 沒有獨立的狀態機，
-而是整合在 BTA_AV 狀態機中
-end note
-
-[*] --> BTA_AV_INIT_ST
-
-state BTA_AV_INIT_ST {
-    [*] --> Init
-    Init : 初始狀態
+```mermaid
+stateDiagram-v2
+    title AVRCP State Machine (Integrated in BTA_AV)
     
-    note right of Init
-        AVRCP 事件處理：
-        - AVRC_OPEN_EVT → 轉換到 OPEN_ST
-        - AVRC_MSG_EVT → 釋放瀏覽消息
-        - API_META_RSP_EVT → 釋放響應
+    note as N1
+        AVRCP 沒有獨立的狀態機，
+        而是整合在 BTA_AV 狀態機中
     end note
-}
-
-state BTA_AV_OPEN_ST {
-    [*] --> Open
-    Open : 連接已建立狀態
     
-    note right of Open
-        AVRCP 事件處理：
-        - API_REMOTE_CMD_EVT → 處理遠程命令
-        - API_VENDOR_CMD_EVT → 處理廠商命令
-        - API_VENDOR_RSP_EVT → 處理廠商響應
-        - API_META_RSP_EVT → 處理元數據響應
-        - API_RC_CLOSE_EVT → 關閉遠程控制
-        - AVRC_OPEN_EVT → 處理 AVRCP 打開
-        - AVRC_MSG_EVT → 處理 AVRCP 消息
-        - AVRC_NONE_EVT → 轉換到 INIT_ST
-    end note
-}
-
-' 狀態轉換
-BTA_AV_INIT_ST --> BTA_AV_OPEN_ST : AVRC_OPEN_EVT
-BTA_AV_OPEN_ST --> BTA_AV_INIT_ST : AVRC_NONE_EVT\nAPI_DISABLE_EVT
-
-@enduml
+    [*] --> BTA_AV_INIT_ST
+    
+    state BTA_AV_INIT_ST {
+        [*] --> Init
+        Init : 初始狀態
+        
+        note right of Init
+            AVRCP 事件處理：
+            - AVRC_OPEN_EVT → 轉換到 OPEN_ST
+            - AVRC_MSG_EVT → 釋放瀏覽消息
+            - API_META_RSP_EVT → 釋放響應
+        end note
+    }
+    
+    state BTA_AV_OPEN_ST {
+        [*] --> Open
+        Open : 連接已建立狀態
+        
+        note right of Open
+            AVRCP 事件處理：
+            - API_REMOTE_CMD_EVT → 處理遠程命令
+            - API_VENDOR_CMD_EVT → 處理廠商命令
+            - API_VENDOR_RSP_EVT → 處理廠商響應
+            - API_META_RSP_EVT → 處理元數據響應
+            - API_RC_CLOSE_EVT → 關閉遠程控制
+            - AVRC_OPEN_EVT → 處理 AVRCP 打開
+            - AVRC_MSG_EVT → 處理 AVRCP 消息
+            - AVRC_NONE_EVT → 轉換到 INIT_ST
+        end note
+    }
+    
+    BTA_AV_INIT_ST --> BTA_AV_OPEN_ST : AVRC_OPEN_EVT
+    BTA_AV_OPEN_ST --> BTA_AV_INIT_ST : AVRC_NONE_EVT<br/>API_DISABLE_EVT
+```
 ```
 
 ## AVRCP 在串流狀態機中的處理

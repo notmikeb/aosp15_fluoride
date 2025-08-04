@@ -50,17 +50,17 @@ audioProvider->startSession(hfp_port, ...); // 註冊 callback
 - `AUDIO_SERVICE_EVENT`：audio service callback（如 startStream、suspendStream）
 
 #### 狀態機圖
-```plantuml
-@startuml
-[*] --> IDLE
-IDLE --> SLC_CONNECTED : API_CONNECT_EVT
-SLC_CONNECTED --> AUDIO_CONNECTING : API_AUDIO_CONNECT_EVT
-AUDIO_CONNECTING --> AUDIO_CONNECTED : SCO connected
-AUDIO_CONNECTED --> CALL_ACTIVE : CALL_STATE_CHANGED_EVT (active)
-CALL_ACTIVE --> AUDIO_CONNECTED : CALL_STATE_CHANGED_EVT (idle)
-AUDIO_CONNECTED --> SLC_CONNECTED : API_AUDIO_DISCONNECT_EVT
-SLC_CONNECTED --> IDLE : API_DISCONNECT_EVT
-@enduml
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE
+    IDLE --> SLC_CONNECTED : API_CONNECT_EVT
+    SLC_CONNECTED --> AUDIO_CONNECTING : API_AUDIO_CONNECT_EVT
+    AUDIO_CONNECTING --> AUDIO_CONNECTED : SCO connected
+    AUDIO_CONNECTED --> CALL_ACTIVE : CALL_STATE_CHANGED_EVT (active)
+    CALL_ACTIVE --> AUDIO_CONNECTED : CALL_STATE_CHANGED_EVT (idle)
+    AUDIO_CONNECTED --> SLC_CONNECTED : API_AUDIO_DISCONNECT_EVT
+    SLC_CONNECTED --> IDLE : API_DISCONNECT_EVT
+```
 ```
 
 ---
@@ -76,20 +76,20 @@ SLC_CONNECTED --> IDLE : API_DISCONNECT_EVT
 6. 音訊資料流通，通話開始
 
 ### 2. 詳細時序圖
-```plantuml
-@startuml
-actor "VOIP/Telecom Framework" as Framework
-participant "Bluetooth Stack (HFP)" as HFP
-participant "Audio Service (audioserver)" as Audio
-participant "Audio HAL/AIDL" as HAL
-
-Framework -> HFP : 通知 call state (有來電)
-HFP -> Audio : startSession(hfp_port, ...)
-Audio -> HFP : startStream() callback
-HFP -> HAL : read()  // 開始讀取音訊資料
-HFP -> HFP : 建立 SCO 連線
-HAL -> HFP : 音訊資料 (FMQ)
-@enduml
+```mermaid
+sequenceDiagram
+    participant Framework as "VOIP/Telecom Framework"
+    participant HFP as "Bluetooth Stack (HFP)"
+    participant Audio as "Audio Service (audioserver)"
+    participant HAL as "Audio HAL/AIDL"
+    
+    Framework->>HFP: 通知 call state (有來電)
+    HFP->>Audio: startSession(hfp_port, ...)
+    Audio->>HFP: startStream() callback
+    HFP->>HAL: read()  // 開始讀取音訊資料
+    HFP->>HFP: 建立 SCO 連線
+    HAL->>HFP: 音訊資料 (FMQ)
+```
 ```
 
 ### 3. 關鍵互動說明

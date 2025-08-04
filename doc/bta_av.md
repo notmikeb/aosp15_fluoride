@@ -74,201 +74,191 @@ BTA_AV 狀態機處理以下事件：
 
 ## 狀態機圖表
 
-```plantuml
-@startuml BTA_AV_State_Machine
-!theme plain
-skinparam backgroundColor white
-skinparam state {
-    BackgroundColor lightgreen
-    BorderColor darkgreen
-    FontColor black
-}
-
-title BTA_AV State Machine
-
-[*] --> BTA_AV_INIT_SST
-
-state BTA_AV_INIT_SST {
-    [*] --> Init
-    Init : 初始狀態，等待連接請求
+```mermaid
+stateDiagram-v2
+    title BTA_AV State Machine
     
-    note right of Init
-        處理事件：
-        - API_OPEN_EVT
-        - API_CLOSE_EVT
-        - SDP_DISC_OK_EVT
-        - SDP_DISC_FAIL_EVT
-        - STR_CONFIG_IND_EVT
-        - ACP_CONNECT_EVT
-        - API_OFFLOAD_START_EVT
-        - API_OFFLOAD_START_RSP_EVT
-    end note
-}
-
-state BTA_AV_INCOMING_SST {
-    [*] --> Incoming
-    Incoming : 接受連接狀態
+    [*] --> BTA_AV_INIT_SST
     
-    note right of Incoming
-        處理事件：
-        - API_OPEN_EVT
-        - API_CLOSE_EVT
-        - API_PROTECT_REQ_EVT
-        - API_PROTECT_RSP_EVT
-        - CI_SETCONFIG_OK_EVT
-        - CI_SETCONFIG_FAIL_EVT
-        - SDP_DISC_OK_EVT
-        - SDP_DISC_FAIL_EVT
-        - STR_DISC_OK_EVT
-        - STR_GETCAP_OK_EVT
-        - STR_OPEN_OK_EVT
-        - STR_CLOSE_EVT
-        - STR_CONFIG_IND_EVT
-        - STR_SECURITY_IND_EVT
-        - STR_SECURITY_CFM_EVT
-        - AVDT_DISCONNECT_EVT
-        - AVDT_DELAY_RPT_EVT
-        - API_OFFLOAD_START_EVT
-        - API_OFFLOAD_START_RSP_EVT
-    end note
-}
-
-state BTA_AV_OPENING_SST {
-    [*] --> Opening
-    Opening : 正在建立連接
+    state BTA_AV_INIT_SST {
+        [*] --> Init
+        Init : 初始狀態，等待連接請求
+        
+        note right of Init
+            處理事件：
+            - API_OPEN_EVT
+            - API_CLOSE_EVT
+            - SDP_DISC_OK_EVT
+            - SDP_DISC_FAIL_EVT
+            - STR_CONFIG_IND_EVT
+            - ACP_CONNECT_EVT
+            - API_OFFLOAD_START_EVT
+            - API_OFFLOAD_START_RSP_EVT
+        end note
+    }
     
-    note right of Opening
-        處理事件：
-        - API_CLOSE_EVT
-        - API_PROTECT_REQ_EVT
-        - API_PROTECT_RSP_EVT
-        - SDP_DISC_OK_EVT
-        - SDP_DISC_FAIL_EVT
-        - STR_DISC_OK_EVT
-        - STR_DISC_FAIL_EVT
-        - STR_GETCAP_OK_EVT
-        - STR_GETCAP_FAIL_EVT
-        - STR_OPEN_OK_EVT
-        - STR_OPEN_FAIL_EVT
-        - STR_CONFIG_IND_EVT
-        - STR_SECURITY_IND_EVT
-        - STR_SECURITY_CFM_EVT
-        - AVRC_TIMER_EVT
-        - AVDT_CONNECT_EVT
-        - AVDT_DISCONNECT_EVT
-        - ROLE_CHANGE_EVT
-        - AVDT_DELAY_RPT_EVT
-        - API_OFFLOAD_START_EVT
-        - API_OFFLOAD_START_RSP_EVT
-    end note
-}
-
-state BTA_AV_OPEN_SST {
-    [*] --> Open
-    Open : 連接已建立
+    state BTA_AV_INCOMING_SST {
+        [*] --> Incoming
+        Incoming : 接受連接狀態
+        
+        note right of Incoming
+            處理事件：
+            - API_OPEN_EVT
+            - API_CLOSE_EVT
+            - API_PROTECT_REQ_EVT
+            - API_PROTECT_RSP_EVT
+            - CI_SETCONFIG_OK_EVT
+            - CI_SETCONFIG_FAIL_EVT
+            - SDP_DISC_OK_EVT
+            - SDP_DISC_FAIL_EVT
+            - STR_DISC_OK_EVT
+            - STR_GETCAP_OK_EVT
+            - STR_OPEN_OK_EVT
+            - STR_CLOSE_EVT
+            - STR_CONFIG_IND_EVT
+            - STR_SECURITY_IND_EVT
+            - STR_SECURITY_CFM_EVT
+            - AVDT_DISCONNECT_EVT
+            - AVDT_DELAY_RPT_EVT
+            - API_OFFLOAD_START_EVT
+            - API_OFFLOAD_START_RSP_EVT
+        end note
+    }
     
-    note right of Open
-        處理事件：
-        - API_CLOSE_EVT
-        - AP_START_EVT
-        - AP_STOP_EVT
-        - API_RECONFIG_EVT
-        - API_PROTECT_REQ_EVT
-        - API_PROTECT_RSP_EVT
-        - API_RC_OPEN_EVT
-        - SRC_DATA_READY_EVT
-        - SDP_DISC_OK_EVT
-        - SDP_DISC_FAIL_EVT
-        - STR_GETCAP_OK_EVT
-        - STR_START_OK_EVT
-        - STR_START_FAIL_EVT
-        - STR_CLOSE_EVT
-        - STR_CONFIG_IND_EVT
-        - STR_SECURITY_IND_EVT
-        - STR_SECURITY_CFM_EVT
-        - STR_WRITE_CFM_EVT
-        - STR_SUSPEND_CFM_EVT
-        - AVRC_TIMER_EVT
-        - AVDT_DISCONNECT_EVT
-        - ROLE_CHANGE_EVT
-        - AVDT_DELAY_RPT_EVT
-        - API_OFFLOAD_START_EVT
-        - API_OFFLOAD_START_RSP_EVT
-    end note
-}
-
-state BTA_AV_RCFG_SST {
-    [*] --> Rcfg
-    Rcfg : 重新配置狀態
+    state BTA_AV_OPENING_SST {
+        [*] --> Opening
+        Opening : 正在建立連接
+        
+        note right of Opening
+            處理事件：
+            - API_CLOSE_EVT
+            - API_PROTECT_REQ_EVT
+            - API_PROTECT_RSP_EVT
+            - SDP_DISC_OK_EVT
+            - SDP_DISC_FAIL_EVT
+            - STR_DISC_OK_EVT
+            - STR_DISC_FAIL_EVT
+            - STR_GETCAP_OK_EVT
+            - STR_GETCAP_FAIL_EVT
+            - STR_OPEN_OK_EVT
+            - STR_OPEN_FAIL_EVT
+            - STR_CONFIG_IND_EVT
+            - STR_SECURITY_IND_EVT
+            - STR_SECURITY_CFM_EVT
+            - AVRC_TIMER_EVT
+            - AVDT_CONNECT_EVT
+            - AVDT_DISCONNECT_EVT
+            - ROLE_CHANGE_EVT
+            - AVDT_DELAY_RPT_EVT
+            - API_OFFLOAD_START_EVT
+            - API_OFFLOAD_START_RSP_EVT
+        end note
+    }
     
-    note right of Rcfg
-        處理事件：
-        - API_CLOSE_EVT
-        - API_RECONFIG_EVT
-        - SDP_DISC_OK_EVT
-        - SDP_DISC_FAIL_EVT
-        - STR_DISC_OK_EVT
-        - STR_DISC_FAIL_EVT
-        - STR_GETCAP_OK_EVT
-        - STR_GETCAP_FAIL_EVT
-        - STR_OPEN_OK_EVT
-        - STR_OPEN_FAIL_EVT
-        - STR_CLOSE_EVT
-        - STR_CONFIG_IND_EVT
-        - STR_SUSPEND_CFM_EVT
-        - STR_RECONFIG_CFM_EVT
-        - AVDT_CONNECT_EVT
-        - AVDT_DISCONNECT_EVT
-        - AVDT_DELAY_RPT_EVT
-        - API_OFFLOAD_START_EVT
-        - API_OFFLOAD_START_RSP_EVT
-    end note
-}
-
-state BTA_AV_CLOSING_SST {
-    [*] --> Closing
-    Closing : 正在關閉連接
+    state BTA_AV_OPEN_SST {
+        [*] --> Open
+        Open : 連接已建立
+        
+        note right of Open
+            處理事件：
+            - API_CLOSE_EVT
+            - AP_START_EVT
+            - AP_STOP_EVT
+            - API_RECONFIG_EVT
+            - API_PROTECT_REQ_EVT
+            - API_PROTECT_RSP_EVT
+            - API_RC_OPEN_EVT
+            - SRC_DATA_READY_EVT
+            - SDP_DISC_OK_EVT
+            - SDP_DISC_FAIL_EVT
+            - STR_GETCAP_OK_EVT
+            - STR_START_OK_EVT
+            - STR_START_FAIL_EVT
+            - STR_CLOSE_EVT
+            - STR_CONFIG_IND_EVT
+            - STR_SECURITY_IND_EVT
+            - STR_SECURITY_CFM_EVT
+            - STR_WRITE_CFM_EVT
+            - STR_SUSPEND_CFM_EVT
+            - AVRC_TIMER_EVT
+            - AVDT_DISCONNECT_EVT
+            - ROLE_CHANGE_EVT
+            - AVDT_DELAY_RPT_EVT
+            - API_OFFLOAD_START_EVT
+            - API_OFFLOAD_START_RSP_EVT
+        end note
+    }
     
-    note right of Closing
-        處理事件：
-        - API_CLOSE_EVT
-        - SDP_DISC_OK_EVT
-        - SDP_DISC_FAIL_EVT
-        - STR_OPEN_OK_EVT
-        - STR_OPEN_FAIL_EVT
-        - STR_CLOSE_EVT
-        - STR_CONFIG_IND_EVT
-        - STR_SECURITY_IND_EVT
-        - AVDT_DISCONNECT_EVT
-        - API_OFFLOAD_START_EVT
-        - API_OFFLOAD_START_RSP_EVT
-    end note
-}
-
-' 狀態轉換
-BTA_AV_INIT_SST --> BTA_AV_OPENING_SST : API_OPEN_EVT
-BTA_AV_INIT_SST --> BTA_AV_INCOMING_SST : STR_CONFIG_IND_EVT\nACP_CONNECT_EVT
-
-BTA_AV_INCOMING_SST --> BTA_AV_CLOSING_SST : API_CLOSE_EVT\nAVDT_DISCONNECT_EVT
-BTA_AV_INCOMING_SST --> BTA_AV_INIT_SST : CI_SETCONFIG_FAIL_EVT\nSTR_CLOSE_EVT
-BTA_AV_INCOMING_SST --> BTA_AV_OPEN_SST : STR_OPEN_OK_EVT
-
-BTA_AV_OPENING_SST --> BTA_AV_CLOSING_SST : API_CLOSE_EVT\nSTR_DISC_FAIL_EVT\nSTR_GETCAP_FAIL_EVT\nSTR_OPEN_FAIL_EVT
-BTA_AV_OPENING_SST --> BTA_AV_INIT_SST : AVDT_DISCONNECT_EVT
-BTA_AV_OPENING_SST --> BTA_AV_INCOMING_SST : STR_CONFIG_IND_EVT
-BTA_AV_OPENING_SST --> BTA_AV_OPEN_SST : STR_OPEN_OK_EVT
-
-BTA_AV_OPEN_SST --> BTA_AV_CLOSING_SST : API_CLOSE_EVT
-BTA_AV_OPEN_SST --> BTA_AV_INIT_SST : STR_CLOSE_EVT\nAVDT_DISCONNECT_EVT
-BTA_AV_OPEN_SST --> BTA_AV_RCFG_SST : API_RECONFIG_EVT
-
-BTA_AV_RCFG_SST --> BTA_AV_CLOSING_SST : API_CLOSE_EVT
-BTA_AV_RCFG_SST --> BTA_AV_INIT_SST : STR_DISC_FAIL_EVT\nSTR_GETCAP_FAIL_EVT
-BTA_AV_RCFG_SST --> BTA_AV_OPEN_SST : STR_OPEN_OK_EVT
-
-BTA_AV_CLOSING_SST --> BTA_AV_INIT_SST : SDP_DISC_OK_EVT\nSDP_DISC_FAIL_EVT\nAVDT_DISCONNECT_EVT
-
-@enduml
+    state BTA_AV_RCFG_SST {
+        [*] --> Rcfg
+        Rcfg : 重新配置狀態
+        
+        note right of Rcfg
+            處理事件：
+            - API_CLOSE_EVT
+            - API_RECONFIG_EVT
+            - SDP_DISC_OK_EVT
+            - SDP_DISC_FAIL_EVT
+            - STR_DISC_OK_EVT
+            - STR_DISC_FAIL_EVT
+            - STR_GETCAP_OK_EVT
+            - STR_GETCAP_FAIL_EVT
+            - STR_OPEN_OK_EVT
+            - STR_OPEN_FAIL_EVT
+            - STR_CLOSE_EVT
+            - STR_CONFIG_IND_EVT
+            - STR_SUSPEND_CFM_EVT
+            - STR_RECONFIG_CFM_EVT
+            - AVDT_CONNECT_EVT
+            - AVDT_DISCONNECT_EVT
+            - AVDT_DELAY_RPT_EVT
+            - API_OFFLOAD_START_EVT
+            - API_OFFLOAD_START_RSP_EVT
+        end note
+    }
+    
+    state BTA_AV_CLOSING_SST {
+        [*] --> Closing
+        Closing : 正在關閉連接
+        
+        note right of Closing
+            處理事件：
+            - API_CLOSE_EVT
+            - SDP_DISC_OK_EVT
+            - SDP_DISC_FAIL_EVT
+            - STR_OPEN_OK_EVT
+            - STR_OPEN_FAIL_EVT
+            - STR_CLOSE_EVT
+            - STR_CONFIG_IND_EVT
+            - STR_SECURITY_IND_EVT
+            - AVDT_DISCONNECT_EVT
+            - API_OFFLOAD_START_EVT
+            - API_OFFLOAD_START_RSP_EVT
+        end note
+    }
+    
+    BTA_AV_INIT_SST --> BTA_AV_OPENING_SST : API_OPEN_EVT
+    BTA_AV_INIT_SST --> BTA_AV_INCOMING_SST : STR_CONFIG_IND_EVT<br/>ACP_CONNECT_EVT
+    
+    BTA_AV_INCOMING_SST --> BTA_AV_CLOSING_SST : API_CLOSE_EVT<br/>AVDT_DISCONNECT_EVT
+    BTA_AV_INCOMING_SST --> BTA_AV_INIT_SST : CI_SETCONFIG_FAIL_EVT<br/>STR_CLOSE_EVT
+    BTA_AV_INCOMING_SST --> BTA_AV_OPEN_SST : STR_OPEN_OK_EVT
+    
+    BTA_AV_OPENING_SST --> BTA_AV_CLOSING_SST : API_CLOSE_EVT<br/>STR_DISC_FAIL_EVT<br/>STR_GETCAP_FAIL_EVT<br/>STR_OPEN_FAIL_EVT
+    BTA_AV_OPENING_SST --> BTA_AV_INIT_SST : AVDT_DISCONNECT_EVT
+    BTA_AV_OPENING_SST --> BTA_AV_INCOMING_SST : STR_CONFIG_IND_EVT
+    BTA_AV_OPENING_SST --> BTA_AV_OPEN_SST : STR_OPEN_OK_EVT
+    
+    BTA_AV_OPEN_SST --> BTA_AV_CLOSING_SST : API_CLOSE_EVT
+    BTA_AV_OPEN_SST --> BTA_AV_INIT_SST : STR_CLOSE_EVT<br/>AVDT_DISCONNECT_EVT
+    BTA_AV_OPEN_SST --> BTA_AV_RCFG_SST : API_RECONFIG_EVT
+    
+    BTA_AV_RCFG_SST --> BTA_AV_CLOSING_SST : API_CLOSE_EVT
+    BTA_AV_RCFG_SST --> BTA_AV_INIT_SST : STR_DISC_FAIL_EVT<br/>STR_GETCAP_FAIL_EVT
+    BTA_AV_RCFG_SST --> BTA_AV_OPEN_SST : STR_OPEN_OK_EVT
+    
+    BTA_AV_CLOSING_SST --> BTA_AV_INIT_SST : SDP_DISC_OK_EVT<br/>SDP_DISC_FAIL_EVT<br/>AVDT_DISCONNECT_EVT
+```
 ```
 
 ## 詳細狀態轉換表

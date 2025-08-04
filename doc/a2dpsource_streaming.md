@@ -39,20 +39,20 @@
 
 ## 三、PlantUML 時序圖
 
-```plantuml
-@startuml
-actor App
-participant "Audio Service\n(audioserver)" as Audio
-participant "Bluetooth Stack\n(btif/a2dp)" as BT
-participant "Audio HAL/AIDL" as HAL
-
-App -> Audio : 播放音樂
-Audio -> HAL : startSession(stack_if, ...)
-HAL -> BT : onSessionStarted (建立 FMQ, 註冊 callback)
-Audio -> BT : startStream() callback
-BT -> HAL : read()  // 開始讀取音訊資料
-HAL -> BT : 音訊資料 (FMQ)
-@enduml
+```mermaid
+sequenceDiagram
+    participant App
+    participant Audio as "Audio Service<br/>(audioserver)"
+    participant BT as "Bluetooth Stack<br/>(btif/a2dp)"
+    participant HAL as "Audio HAL/AIDL"
+    
+    App->>Audio: 播放音樂
+    Audio->>HAL: startSession(stack_if, ...)
+    HAL->>BT: onSessionStarted (建立 FMQ, 註冊 callback)
+    Audio->>BT: startStream() callback
+    BT->>HAL: read()  // 開始讀取音訊資料
+    HAL->>BT: 音訊資料 (FMQ)
+```
 ```
 
 ---

@@ -11,23 +11,27 @@ AVRCP（Audio/Video Remote Control Profile）是一種藍牙協議，允許控�
 
 ## Use-Case Diagram
 
-```plantuml
-@startuml
-left to right direction
-actor User
-actor "Remote Device" as Remote
-rectangle "AVRCP Controller" as Controller {
-  User --> (Send Play/Pause/Stop)
-  User --> (Send Volume Up/Down)
-}
-rectangle "AVRCP Target" as Target {
-  Remote --> (Respond to Command)
-}
-(Send Play/Pause/Stop) --> (AVRCP Controller)
-(Send Volume Up/Down) --> (AVRCP Controller)
-(AVRCP Controller) --> (AVRCP Target)
-(AVRCP Target) --> (Respond to Command)
-@enduml
+```mermaid
+graph LR
+    User
+    Remote[Remote Device]
+    
+    subgraph Controller[AVRCP Controller]
+        Play[Send Play/Pause/Stop]
+        Volume[Send Volume Up/Down]
+    end
+    
+    subgraph Target[AVRCP Target]
+        Respond[Respond to Command]
+    end
+    
+    User --> Play
+    User --> Volume
+    Play --> Target
+    Volume --> Target
+    Target --> Respond
+    Respond --> Remote
+```
 ```
 
 ## 典型流程

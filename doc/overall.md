@@ -4,40 +4,29 @@
 
 ---
 
-```plantuml
-@startuml
-' 註解：本圖以繁體中文標示各元件與介面
-
-package "Android Framework" {
-  [App]
-  [Java Bluetooth Framework]
-}
-
-package "Native 層" {
-  [Bluetooth Stack (btif/stack)]
-  [JNI Bridge]
-  [Audio Server (audioserver)]
-  [HAL/Audio AIDL Service]
-}
-
-' App <-> Java Framework
-[App] --down-> [Java Bluetooth Framework] : Binder (Java API)
-
-' Java Framework <-> JNI
-[Java Bluetooth Framework] --down-> [JNI Bridge] : JNI (JNI native)
-
-' JNI <-> Bluetooth Stack
-[JNI Bridge] --down-> [Bluetooth Stack (btif/stack)] : C/C++ 呼叫
-
-' Bluetooth Stack <-> Audio Server
-[Bluetooth Stack (btif/stack)] --right-> [HAL/Audio AIDL Service] : AIDL (audio)
-[HAL/Audio AIDL Service] --down-> [Audio Server (audioserver)] : Binder (AIDL)
-
-' 其他常見溝通方式
-[Bluetooth Stack (btif/stack)] ..> [Other HALs] : HIDL/Legacy HAL
-[Bluetooth Stack (btif/stack)] ..> [Network/Socket Service] : Socket/IPC
-
-@enduml
+```mermaid
+graph TB
+    subgraph "Android Framework"
+        A[App]
+        B[Java Bluetooth Framework]
+    end
+    
+    subgraph "Native 層"
+        C[Bluetooth Stack (btif/stack)]
+        D[JNI Bridge]
+        E[Audio Server (audioserver)]
+        F[HAL/Audio AIDL Service]
+    end
+    
+    A -->|Binder (Java API)| B
+    B -->|JNI (JNI native)| D
+    D -->|C/C++ 呼叫| C
+    C -->|AIDL (audio)| F
+    F -->|Binder (AIDL)| E
+    
+    C -.->|HIDL/Legacy HAL| G[Other HALs]
+    C -.->|Socket/IPC| H[Network/Socket Service]
+```
 ```
 
 ---
@@ -57,29 +46,26 @@ package "Native 層" {
 
 AVRCP（Audio/Video Remote Control Profile）在 Android Bluetooth stack 中，與外部溝通主要涉及下列 components 與介面：
 
-```plantuml
-@startuml
-' AVRCP Controller/Target 與外部溝通架構
-
-package "App/Java Framework" {
-  [App]
-  [Java Bluetooth AVRCP API]
-}
-
-package "Native 層" {
-  [JNI Bridge]
-  [Bluetooth Stack (btif/avrcp, stack/avrcp)]
-  [AVCTP/L2CAP Socket]
-}
-
-[App] --down-> [Java Bluetooth AVRCP API] : Binder (Java API)
-[Java Bluetooth AVRCP API] --down-> [JNI Bridge] : JNI
-[JNI Bridge] --down-> [Bluetooth Stack (btif/avrcp, stack/avrcp)] : C/C++
-[Bluetooth Stack (btif/avrcp, stack/avrcp)] --right-> [AVCTP/L2CAP Socket] : AVCTP/L2CAP (RFCOMM)
-
-' 若為 Controller 角色，還會有
-[Bluetooth Stack (btif/avrcp, stack/avrcp)] ..> [Java Bluetooth AVRCP API] : Binder callback (狀態/事件)
-@enduml
+```mermaid
+graph TB
+    subgraph "App/Java Framework"
+        A[App]
+        B[Java Bluetooth AVRCP API]
+    end
+    
+    subgraph "Native 層"
+        C[JNI Bridge]
+        D[Bluetooth Stack (btif/avrcp, stack/avrcp)]
+        E[AVCTP/L2CAP Socket]
+    end
+    
+    A -->|Binder (Java API)| B
+    B -->|JNI| C
+    C -->|C/C++| D
+    D -->|AVCTP/L2CAP (RFCOMM)| E
+    
+    D -.->|Binder callback (狀態/事件)| B
+```
 ```
 
 - **AVRCP Controller/Target**：可同時支援兩個 L2CAP channel（CT/TG）
